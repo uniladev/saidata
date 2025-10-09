@@ -1,6 +1,7 @@
 // frontend/src/components/layout/Navbar.jsx
 import { useState, useEffect } from 'react';
-import { Menu, X, Calendar, Phone, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, X, Calendar, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ==================== NAVBAR CONFIGURATION ====================
 const navbarConfig = {
@@ -66,6 +67,7 @@ const navbarConfig = {
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   useEffect(() => {
     const updateDate = () => {
@@ -76,6 +78,31 @@ const Navbar = () => {
     const interval = setInterval(updateDate, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && !event.target.closest('nav')) {
+        setIsOpen(false);
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Icon mapping
   const iconMap = {
@@ -96,6 +123,17 @@ const Navbar = () => {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
   );
+
+  // Toggle dropdown in mobile
+  const toggleDropdown = (index) => {
+    setOpenDropdown(openDropdown === index ? null : index);
+  };
+
+  // Close mobile menu
+  const closeMobileMenu = () => {
+    setIsOpen(false);
+    setOpenDropdown(null);
+  };
 
   return (
     <>
@@ -136,12 +174,12 @@ const Navbar = () => {
               <img 
                 src={navbarConfig.logo.color} 
                 alt={navbarConfig.logo.alt} 
-                className="h-12 " 
+                className="h-12" 
               />
             </div>
 
             {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center space-x-1 ">
+            <div className="hidden lg:flex items-center space-x-1">
               {navbarConfig.menuItems.map((item, index) => (
                 item.children ? (
                   <div key={index} className="relative group">
@@ -151,42 +189,43 @@ const Navbar = () => {
                     </button>
                     <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                       {item.children.map((child, childIndex) => (
-                        <a 
+                        <Link
                           key={childIndex}
-                          href={child.path} 
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                          to={child.path} 
+                          className="block px-4 py-2 text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
                         >
                           {child.name}
-                        </a>
+                        </Link>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <a 
+                  <Link
                     key={index}
-                    href={item.path} 
+                    to={item.path} 
                     className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 )
               ))}
             </div>
 
-            <div className="hidden lg:block ">
-              <a 
-                href={navbarConfig.authButton.link}
+            <div className="hidden lg:block">
+              <Link
+                to={navbarConfig.authButton.link}
                 className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition inline-block"
               >
                 {navbarConfig.authButton.text}
-              </a>
+              </Link>
             </div>
 
             {/* Mobile menu button */}
             <div className="lg:hidden">
               <button 
                 onClick={() => setIsOpen(!isOpen)} 
-                className="text-gray-700 hover:text-blue-600"
+                className="text-gray-700 hover:text-blue-600 transition p-2"
+                aria-label="Toggle menu"
               >
                 {isOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -194,48 +233,84 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Overlay */}
         {isOpen && (
-          <div className="lg:hidden bg-white border-t">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navbarConfig.menuItems.map((item, index) => (
-                item.children ? (
-                  <div key={index}>
-                    <div className="px-3 py-2 text-gray-500 font-semibold text-sm">
-                      {item.name}
-                    </div>
-                    {item.children.map((child, childIndex) => (
-                      <a 
-                        key={childIndex}
-                        href={child.path} 
-                        className="block text-gray-700 hover:text-blue-600 pl-6 py-2 rounded-md"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {child.name}
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <a 
-                    key={index}
-                    href={item.path} 
-                    className="block text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium"
-                    onClick={() => setIsOpen(false)}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={closeMobileMenu}
+          />
+        )}
+
+        {/* Mobile Menu - Absolute Position */}
+        <div 
+          className={`
+            fixed top-16 left-0 right-0 bg-white shadow-lg z-50 lg:hidden
+            transform transition-transform duration-300 ease-in-out
+            max-h-[calc(100vh-4rem)] overflow-y-auto
+            ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+        >
+          <div className="px-4 py-4 space-y-2">
+            {navbarConfig.menuItems.map((item, index) => (
+              item.children ? (
+                <div key={index} className="border-b border-gray-100 pb-2">
+                  <button
+                    onClick={() => toggleDropdown(index)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-gray-700 font-medium hover:bg-gray-50 rounded-md transition"
                   >
-                    {item.name}
-                  </a>
-                )
-              ))}
-              <a
-                href={navbarConfig.authButton.link}
-                className="block w-full mt-2 bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition text-center"
-                onClick={() => setIsOpen(false)}
+                    <span>{item.name}</span>
+                    {openDropdown === index ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                  
+                  {/* Dropdown Content */}
+                  <div 
+                    className={`
+                      overflow-hidden transition-all duration-300 ease-in-out
+                      ${openDropdown === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
+                    `}
+                  >
+                    <div className="pl-6 py-2 space-y-1">
+                      {item.children.map((child, childIndex) => (
+                        <Link
+                          key={childIndex}
+                          to={child.path} 
+                          className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition"
+                          onClick={closeMobileMenu}
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  key={index}
+                  to={item.path} 
+                  className="block px-3 py-2 text-gray-700 font-medium hover:bg-gray-50 rounded-md transition"
+                  onClick={closeMobileMenu}
+                >
+                  {item.name}
+                </Link>
+              )
+            ))}
+            
+            {/* Mobile Login Button */}
+            <div className="pt-4">
+              <Link
+                to={navbarConfig.authButton.link}
+                className="block w-full bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition text-center shadow-md"
+                onClick={closeMobileMenu}
               >
                 {navbarConfig.authButton.text}
-              </a>
+              </Link>
             </div>
           </div>
-        )}
+        </div>
       </nav>
     </>
   );
