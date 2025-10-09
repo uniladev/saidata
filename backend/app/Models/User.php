@@ -3,29 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use MongoDB\Laravel\Eloquent\Model;
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Model implements AuthenticatableContract
+class User extends Authenticatable
 {
-    use Authenticatable, HasFactory, Notifiable;
-
-    /**
-     * The connection name for the model.
-     *
-     * @var string|null
-     */
-    protected $connection = 'mongodb';
-
-    /**
-     * The collection associated with the model.
-     *
-     * @var string
-     */
-    protected $collection = 'users';
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
