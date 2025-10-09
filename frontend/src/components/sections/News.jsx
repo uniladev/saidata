@@ -1,78 +1,79 @@
+import { Calendar, ArrowRight } from 'lucide-react';
+
+// ==================== NEWS ====================
 const News = () => {
   const newsData = [
     {
       date: "14-15 Oktober 2024",
       title: "International Conference on Applied Science, Mathematics, and Informatics (ICASMI) 2024",
-      description: "Telah dilaksanakan pada tanggal 14-15 Oktober 2024, di Hotel Emersia Bandar Lampung. Acara dua tahunan konferensi internasional yang ke lima yang diselenggarakan oleh Fakultas Matematika.",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-      link: "https://fmipa.unila.ac.id/international-conference-on-applied-science-mathematics-and-informatics-icasmi-2024/"
+      description: "Konferensi internasional dua tahunan yang ke-lima diselenggarakan di Hotel Emersia Bandar Lampung.",
+      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=400&fit=crop",
+      link: "https://fmipa.unila.ac.id"
     },
     {
       date: "27 September 2024",
       title: "Kerja Sama Akademik FMIPA Unila dan FST Undana",
-      description: "Labuan Bajo – Fakultas Matematika dan Ilmu Pengetahuan Alam (FMIPA) Universitas Lampung (Unila) dan Fakultas Sains dan Teknik (FST) Universitas Nusa Cendana.",
-      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-      link: "https://fmipa.unila.ac.id/kerja-sama-akademik-fmipa-unila-dan-fst-undana-penandatanganan-pks-dan-ia-di-icest-2024/"
+      description: "Penandatanganan PKS dan IA di Labuan Bajo dalam rangka ICEST 2024.",
+      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+      link: "https://fmipa.unila.ac.id"
     },
     {
       date: "26 Agustus 2024",
-      title: "Kolaborasi Internasional FMIPA UNILA – Universiti Teknologi MARA (UiTM)",
-      description: "Fakultas Matematika dan Ilmu Pengetahuan Alam (FMIPA) menerima kunjungan rombongan dari Universiti Teknologi MARA (UiTM), yang terdiri dari delegasi akademik.",
-      image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=400&h=300&fit=crop",
-      link: "https://fmipa.unila.ac.id/kolaborasi-internasional-fmipa-unila-universiti-teknologi-mara-uitm-pada-program-inbound-mobility-program-26-agustus-s-d-09-september-2024/"
+      title: "Kolaborasi Internasional dengan UiTM Malaysia",
+      description: "Program Inbound Mobility dengan delegasi akademik dari Universiti Teknologi MARA.",
+      image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=600&h=400&fit=crop",
+      link: "https://fmipa.unila.ac.id"
     }
   ];
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-12">
-          <p className="text-blue-600 font-semibold text-lg mb-2">Berita</p>
-          <h2 className="text-4xl font-bold text-gray-900">
-            Fakultas Matematika dan Ilmu Pengetahuan Alam
+    <section className="py-20 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <p className="text-blue-600 font-semibold mb-2">Berita Terkini</p>
+          <h2 className="text-3xl font-bold text-gray-900">
+            Kabar Terbaru dari FMIPA
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {newsData.map((news, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group">
-              <div className="relative h-48 overflow-hidden">
-                <img 
-                  src={news.image} 
-                  alt={news.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+            <article key={index} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
+              <div className="relative h-48">
+                <img src={news.image} alt={news.title} className="w-full h-full object-cover" />
               </div>
+              
               <div className="p-6">
-                <p className="text-sm text-gray-500 mb-2">{news.date}</p>
-                <a 
-                  href={news.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-lg font-semibold mb-3 text-gray-800 hover:text-blue-600 transition"
-                >
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                  <Calendar className="w-4 h-4" />
+                  <span>{news.date}</span>
+                </div>
+                
+                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
                   {news.title}
-                </a>
-                <p className="text-gray-600 text-sm text-justify mb-4">{news.description}</p>
+                </h3>
+                
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  {news.description}
+                </p>
+
                 <a 
                   href={news.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 font-medium hover:text-blue-700 transition inline-flex items-center"
+                  className="inline-flex items-center gap-1 text-blue-600 font-semibold text-sm hover:gap-2 transition-all"
                 >
-                  Baca Selengkapnya 
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  Baca Selengkapnya
+                  <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </div>
     </section>
   );
 };
+
 
 export default News;

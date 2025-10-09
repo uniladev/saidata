@@ -1,27 +1,49 @@
-import { Database } from 'lucide-react';
+// frontend/src/components/sections/Features.jsx
+import { Database, Lightbulb} from 'lucide-react';
 
 const Features = () => {
+  const features = [
+    {
+      icon: Database,
+      title: 'Pengolahan Data',
+      description: 'Efektivitas dan optimasi pengolahan data untuk pengambilan keputusan yang lebih baik'
+    },
+    {
+      icon: Lightbulb,
+      title: 'Solusi Inovatif',
+      description: 'Platform cerdas untuk memudahkan pengelolaan data akademik dan penelitian'
+    }
+  ];
+
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border border-gray-200 rounded-lg p-8 hover:shadow-lg transition">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Database className="text-blue-600" size={32} />
+    <section className="py-20 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Fitur Unggulan
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Platform komprehensif untuk pengelolaan data akademik yang efisien
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <feature.icon className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                {feature.description}
+              </p>
             </div>
-            <h3 className="text-xl font-semibold mb-3 text-gray-800">Pengolahan Data</h3>
-            <p className="text-gray-600">Efektifitas dan Optimasi Pengolahan Data</p>
-          </div>
-          
-          <div className="border border-gray-200 rounded-lg p-8 hover:shadow-lg transition">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3 text-gray-800">Pengambilan Keputusan</h3>
-            <p className="text-gray-600">Memudahkan Dalam Pengambilan Keputusan</p>
-          </div>
+          ))}
         </div>
       </div>
     </section>

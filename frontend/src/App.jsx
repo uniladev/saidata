@@ -2,11 +2,47 @@ import { Outlet } from "react-router-dom";
 import { Suspense } from "react";
 import { Navbar, Footer } from "./components/layout";
 
+// Elegant Loading Component - pilih salah satu design di bawah
+const ElegantLoading = () => {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="relative">
+        {/* Outer animated ring - ping effect */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-24 h-24 border-4 border-blue-200 rounded-full animate-ping opacity-75" />
+        </div>
+        
+        {/* Middle spinning ring */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-20 h-20 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+        
+        {/* Inner counter-spinning ring */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div 
+            className="w-16 h-16 border-4 border-indigo-400 border-b-transparent rounded-full animate-spin" 
+            style={{ 
+              animationDirection: 'reverse', 
+              animationDuration: '1s' 
+            }} 
+          />
+        </div>
+        
+        {/* Center pulsing dot */}
+        <div className="relative flex items-center justify-center w-24 h-24">
+          <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse shadow-lg shadow-blue-600/50" />
+        </div>
+        
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   return (
     <div className="min-h-dvh flex flex-col">
       <Navbar />
-      <Suspense fallback={<div className="p-6">Loading…</div>}>
+      <Suspense fallback={<ElegantLoading />}>
         <Outlet />
       </Suspense>
       <Footer />

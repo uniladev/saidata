@@ -12,9 +12,12 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <Home /> },
-      { path: "login", element: <Login /> },
       { path: "*", element: <NotFound /> },
     ],
+  },
+  {
+    path: "/login",
+    element: <Login />, // Login tidak menggunakan App layout (tanpa Navbar)
   },
 ]);
 

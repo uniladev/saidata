@@ -1,3 +1,4 @@
+// frontend/src/components/layout/Navbar.jsx
 import { useState, useEffect } from 'react';
 import { Menu, X, Calendar, Phone, Mail } from 'lucide-react';
 
@@ -100,13 +101,13 @@ const Navbar = () => {
     <>
       {/* Topbar */}
       <div className="bg-blue-600 text-white hidden lg:block">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <img 
                 src={navbarConfig.logo.white} 
                 alt={navbarConfig.logo.alt} 
-                className="h-14 -mt-5" 
+                className="h-12" 
               />
             </div>
             <div className="flex items-center space-x-6 text-sm">
@@ -135,12 +136,12 @@ const Navbar = () => {
               <img 
                 src={navbarConfig.logo.color} 
                 alt={navbarConfig.logo.alt} 
-                className="h-12 -mt-6" 
+                className="h-12 " 
               />
             </div>
 
             {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center space-x-1 -mt-5">
+            <div className="hidden lg:flex items-center space-x-1 ">
               {navbarConfig.menuItems.map((item, index) => (
                 item.children ? (
                   <div key={index} className="relative group">
@@ -172,7 +173,7 @@ const Navbar = () => {
               ))}
             </div>
 
-            <div className="hidden lg:block -mt-5">
+            <div className="hidden lg:block ">
               <a 
                 href={navbarConfig.authButton.link}
                 className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition inline-block"
