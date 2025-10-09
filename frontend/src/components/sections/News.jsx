@@ -1,4 +1,5 @@
 import { Calendar, ArrowRight } from 'lucide-react';
+import { LinkButton } from '../ui/Button';
 
 // ==================== NEWS ====================
 const News = () => {
@@ -57,15 +58,13 @@ const News = () => {
                   {news.description}
                 </p>
 
-                <a 
-                  href={news.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 font-semibold text-sm hover:gap-2 transition-all"
+                <LinkButton 
+                  onClick={() => window.open(news.link, '_blank')}
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                  className="text-sm hover:gap-2 transition-all"
                 >
                   Baca Selengkapnya
-                  <ArrowRight className="w-4 h-4" />
-                </a>
+                </LinkButton>
               </div>
             </article>
           ))}

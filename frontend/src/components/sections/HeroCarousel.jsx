@@ -1,6 +1,7 @@
 // frontend/src/components/sections/HeroCarousel.jsx
 import { useState, useEffect } from 'react';
-import {  ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { PrimaryButton, GhostButton } from '../ui/Button';
 
 const HeroCarousel = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -56,12 +57,12 @@ const HeroCarousel = () => {
                   {slide.subtitle}
                 </p>
                 <div className="flex flex-wrap gap-4 pt-4">
-                  <button className="px-8 py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                  <PrimaryButton className="px-8 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                     Explore More
-                  </button>
-                  <button className="px-8 py-3 bg-white/10 backdrop-blur-sm text-white rounded-full font-semibold hover:bg-white/20 transition border border-white/30">
+                  </PrimaryButton>
+                  <GhostButton className="px-8 py-3 bg-white/10 backdrop-blur-sm text-white rounded-full border border-white/30 hover:bg-white/20">
                     Learn About Us
-                  </button>
+                  </GhostButton>
                 </div>
               </div>
             </div>

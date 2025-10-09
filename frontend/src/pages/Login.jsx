@@ -1,5 +1,6 @@
 // frontend/src/pages/Login.jsx
 import React, { useState } from 'react';
+import { PrimaryButton, OutlineButton, LinkButton } from '../components/ui/Button';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -113,72 +114,6 @@ const LoginPage = () => {
           color: #666;
           cursor: pointer;
           z-index: 10;
-        }
-
-        .btn-primary-custom {
-          width: 100%;
-          background: #0000FF;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .btn-primary-custom:hover {
-          background: #0000CC;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,255,0.3);
-        }
-
-        .btn-outline-custom {
-          width: 100%;
-          background: white;
-          color: #0000FF;
-          border: 2px solid #0000FF;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          text-decoration: none;
-          display: block;
-          text-align: center;
-        }
-
-        .btn-outline-custom:hover {
-          background: #0000FF;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,255,0.3);
-        }
-
-        .btn-back-custom {
-          width: 100%;
-          background: transparent;
-          color: #666;
-          border: 2px solid #ddd;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          text-decoration: none;
-          display: block;
-          text-align: center;
-        }
-
-        .btn-back-custom:hover {
-          background: #f5f5f5;
-          color: #333;
-          border-color: #bbb;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .error-text {
@@ -300,9 +235,9 @@ const LoginPage = () => {
 
                 {/* Submit Button */}
                 <div className="mb-4">
-                  <button type="submit" className="btn-primary-custom">
+                  <PrimaryButton type="submit" className="w-full">
                     Masuk
-                  </button>
+                  </PrimaryButton>
                 </div>
 
                 {/* Divider */}
@@ -312,16 +247,16 @@ const LoginPage = () => {
 
                 {/* Register Link */}
                 <div className="mb-4">
-                  <a href="#register" className="btn-outline-custom">
+                  <OutlineButton className="w-full">
                     Daftar Akun
-                  </a>
+                  </OutlineButton>
                 </div>
 
                 {/* Back Link */}
                 <div className="text-center mt-2 mb-8">
-                  <a href="/" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
-                    Kembali
-                  </a>
+                  <LinkButton onClick={() => window.location.href = '/'} className="text-sm">
+                    Kembali ke Beranda
+                  </LinkButton>
                 </div>
               </form>
             </div>
