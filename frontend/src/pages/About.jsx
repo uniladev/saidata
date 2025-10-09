@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Circle } from 'lucide-react';
 
 const AboutPage = () => {
@@ -191,12 +192,12 @@ const AboutPage = () => {
             >
               Kunjungi Website FMIPA
             </a>
-            <a
-              href="/"
+            <Link
+              to="/"
               className="px-8 py-3 bg-white text-blue-600 rounded-full font-semibold hover:bg-gray-50 transition border-2 border-blue-600 transform hover:-translate-y-0.5"
             >
               Kembali ke Beranda
-            </a>
+            </Link>
           </div>
         </div>
       </section>

@@ -1,5 +1,6 @@
 
 import {ArrowRight} from 'lucide-react';
+import { PrimaryButton } from '../ui/Button';
 
 
 // ==================== ABOUT ====================
@@ -32,15 +33,13 @@ const About = () => {
               Kami bertujuan untuk mewujudkan transformasi data yang lebih terstruktur dan terorganisir, memfasilitasi pengguna dalam mencari dan memanfaatkan informasi yang relevan secara efisien.
             </p>
             
-            <a 
-              href="https://fmipa.unila.ac.id/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+            <PrimaryButton 
+              onClick={() => window.open('https://fmipa.unila.ac.id/', '_blank')}
+              rightIcon={<ArrowRight className="w-5 h-5" />}
+              className="inline-flex items-center gap-2 px-6 py-3"
             >
               Pelajari Lebih Lanjut
-              <ArrowRight className="w-5 h-5" />
-            </a>
+            </PrimaryButton>
           </div>
         </div>
       </div>

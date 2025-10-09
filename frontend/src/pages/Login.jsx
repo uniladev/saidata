@@ -1,7 +1,10 @@
 // frontend/src/pages/Login.jsx
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { PrimaryButton, OutlineButton, LinkButton } from '../components/ui/Button';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -115,72 +118,6 @@ const LoginPage = () => {
           z-index: 10;
         }
 
-        .btn-primary-custom {
-          width: 100%;
-          background: #0000FF;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .btn-primary-custom:hover {
-          background: #0000CC;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,255,0.3);
-        }
-
-        .btn-outline-custom {
-          width: 100%;
-          background: white;
-          color: #0000FF;
-          border: 2px solid #0000FF;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          text-decoration: none;
-          display: block;
-          text-align: center;
-        }
-
-        .btn-outline-custom:hover {
-          background: #0000FF;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,255,0.3);
-        }
-
-        .btn-back-custom {
-          width: 100%;
-          background: transparent;
-          color: #666;
-          border: 2px solid #ddd;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          text-decoration: none;
-          display: block;
-          text-align: center;
-        }
-
-        .btn-back-custom:hover {
-          background: #f5f5f5;
-          color: #333;
-          border-color: #bbb;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
         .error-text {
           color: #dc3545;
           font-size: 13px;
@@ -202,6 +139,23 @@ const LoginPage = () => {
           .illustration-container {
             margin-bottom: 30px;
           }
+          
+          .login-box {
+            margin: 0 auto;
+            max-width: 100%;
+          }
+          
+          .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .login-box {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          }
         }
       `}</style>
 
@@ -209,7 +163,7 @@ const LoginPage = () => {
       <div className="login-header">
         <div className="container mx-auto px-4 py-3 flex justify-center items-center">
           <div className="brand-logo">
-            <a href="/">
+            <Link to="/">
             <img 
                 src="/images/logo/color.webp" 
                 alt="Logo"
@@ -221,16 +175,16 @@ const LoginPage = () => {
                   objectFit: 'contain'
                 }}
             />
-            </a>
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-4 py-6 md:py-10">
         <div className="flex flex-wrap items-center min-h-[70vh]">
-          {/* Illustration */}
-          <div className="w-full lg:w-7/12 md:w-6/12 px-4 mb-8 lg:mb-0">
+          {/* Illustration - Hidden on mobile */}
+          <div className="hidden lg:block w-full lg:w-7/12 md:w-6/12 px-4 mb-8 lg:mb-0">
             <div className="text-center illustration-container">
               <img 
                 src="/images/bg-login.webp" 
@@ -246,9 +200,9 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Login Form */}
-          <div className="w-full lg:w-5/12 md:w-6/12 px-4">
-            <div className="login-box p-10">
+          {/* Login Form - Full width on mobile */}
+          <div className="w-full lg:w-5/12 md:w-6/12 px-2 md:px-4">
+            <div className="login-box p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold" style={{ color: '#0000FF' }}>Masuk Akun</h2>
               </div>
@@ -293,16 +247,16 @@ const LoginPage = () => {
 
                 {/* Forgot Password */}
                 <div className="text-right mt-2 mb-8">
-                  <a href="#forgot-password" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
+                  <Link to="/forgot-password" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
                     Lupa Kata Sandi?
-                  </a>
+                  </Link>
                 </div>
 
                 {/* Submit Button */}
                 <div className="mb-4">
-                  <button type="submit" className="btn-primary-custom">
+                  <PrimaryButton type="submit" className="w-full">
                     Masuk
-                  </button>
+                  </PrimaryButton>
                 </div>
 
                 {/* Divider */}
@@ -312,16 +266,16 @@ const LoginPage = () => {
 
                 {/* Register Link */}
                 <div className="mb-4">
-                  <a href="#register" className="btn-outline-custom">
+                  <OutlineButton className="w-full">
                     Daftar Akun
-                  </a>
+                  </OutlineButton>
                 </div>
 
                 {/* Back Link */}
                 <div className="text-center mt-2 mb-8">
-                  <a href="/" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
-                    Kembali
-                  </a>
+                  <LinkButton onClick={() => navigate('/')} className="text-sm">
+                    Kembali ke Beranda
+                  </LinkButton>
                 </div>
               </form>
             </div>

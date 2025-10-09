@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { PrimaryButton, SecondaryButton } from "../components/ui/Button";
 
 export default function NotFound() {
   const { pathname, search } = useLocation();
@@ -18,18 +19,14 @@ export default function NotFound() {
         </div>
 
         <div className="flex items-center justify-center gap-3">
-          <Link
-            to="/"
-            className="inline-flex h-10 items-center rounded-lg bg-blue-600 px-4 text-white hover:bg-blue-700"
-          >
-            Kembali ke Beranda
+          <Link to="/">
+            <PrimaryButton>
+              Kembali ke Beranda
+            </PrimaryButton>
           </Link>
-          <button
-            onClick={() => window.history.back()}
-            className="inline-flex h-10 items-center rounded-lg border px-4 hover:bg-gray-50"
-          >
+          <SecondaryButton onClick={() => window.history.back()}>
             Kembali
-          </button>
+          </SecondaryButton>
         </div>
 
         <p className="text-xs text-gray-500">
