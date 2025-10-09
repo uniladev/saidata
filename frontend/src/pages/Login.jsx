@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PrimaryButton, OutlineButton, LinkButton } from '../components/ui/Button';
+import '../assets/css/Login.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -62,103 +63,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-100">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-        
-        * {
-          font-family: 'Poppins', sans-serif;
-        }
-
-        .login-header {
-          background: white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          position: sticky;
-          top: 0;
-          z-index: 1000;
-        }
-
-        .login-box {
-          background: white;
-          border-radius: 15px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-
-        .input-group-custom {
-          position: relative;
-          margin-bottom: 5px;
-        }
-
-        .input-group-custom input {
-          width: 100%;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 12px 45px 12px 15px;
-          font-size: 15px;
-          transition: all 0.3s;
-        }
-
-        .input-group-custom input:focus {
-          border-color: #0000FF;
-          box-shadow: 0 0 0 0.2rem rgba(0,0,255,0.1);
-          outline: none;
-        }
-
-        .input-group-custom.error input {
-          border-color: #dc3545;
-        }
-
-        .input-icon {
-          position: absolute;
-          right: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #666;
-          cursor: pointer;
-          z-index: 10;
-        }
-
-        .error-text {
-          color: #dc3545;
-          font-size: 13px;
-          margin-top: 5px;
-          margin-bottom: 10px;
-          display: block;
-        }
-
-        .alert-danger {
-          background-color: #f8d7da;
-          border: 1px solid #f5c2c7;
-          color: #842029;
-          padding: 12px 15px;
-          border-radius: 8px;
-          margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-          .illustration-container {
-            margin-bottom: 30px;
-          }
-          
-          .login-box {
-            margin: 0 auto;
-            max-width: 100%;
-          }
-          
-          .container {
-            padding-left: 1rem;
-            padding-right: 1rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .login-box {
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          }
-        }
-      `}</style>
-
+    <div className="login-page">
       {/* Header */}
       <div className="login-header">
         <div className="container mx-auto px-4 py-3 flex justify-center items-center">
