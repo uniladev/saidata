@@ -1,5 +1,6 @@
 // frontend/src/components/layout/Footer.jsx
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook, Youtube, Linkedin, ExternalLink } from 'lucide-react';
 
 const Footer = () => {
@@ -11,16 +12,16 @@ const Footer = () => {
 
   const footerLinks = {
     quickLinks: [
-      { name: 'Beranda', path: '#home' },
-      { name: 'Tentang', path: '#about' },
-      { name: 'Bantuan', path: '#help' },
-      { name: 'Validasi Dokumen', path: '#validasi' }
+      { name: 'Beranda', path: '/' },
+      { name: 'Tentang', path: '/about' },
+      { name: 'Bantuan', path: '/help' },
+      { name: 'Validasi Dokumen', path: '/validasi' }
     ],
     services: [
-      { name: 'Seminar S1', path: '#s1' },
-      { name: 'Seminar S2', path: '#s2' },
-      { name: 'PKL', path: '#pkl' },
-      { name: 'Tugas Akhir', path: '#ta' }
+      { name: 'Seminar S1', path: '/seminar-s1' },
+      { name: 'Seminar S2', path: '/seminar-s2' },
+      { name: 'PKL', path: '/pkl' },
+      { name: 'Tugas Akhir', path: '/tugas-akhir' }
     ]
   };
 
@@ -88,13 +89,13 @@ const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.quickLinks.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href={link.path}
+                  <Link
+                    to={link.path}
                     className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"
                   >
                     <span className="w-0 h-0.5 bg-blue-500 group-hover:w-4 transition-all duration-200" />
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -106,13 +107,13 @@ const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.services.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href={link.path}
+                  <Link
+                    to={link.path}
                     className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"
                   >
                     <span className="w-0 h-0.5 bg-blue-500 group-hover:w-4 transition-all duration-200" />
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

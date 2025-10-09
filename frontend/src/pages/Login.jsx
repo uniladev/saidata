@@ -1,8 +1,10 @@
 // frontend/src/pages/Login.jsx
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { PrimaryButton, OutlineButton, LinkButton } from '../components/ui/Button';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -144,7 +146,7 @@ const LoginPage = () => {
       <div className="login-header">
         <div className="container mx-auto px-4 py-3 flex justify-center items-center">
           <div className="brand-logo">
-            <a href="/">
+            <Link to="/">
             <img 
                 src="/images/logo/color.webp" 
                 alt="Logo"
@@ -156,7 +158,7 @@ const LoginPage = () => {
                   objectFit: 'contain'
                 }}
             />
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -228,9 +230,9 @@ const LoginPage = () => {
 
                 {/* Forgot Password */}
                 <div className="text-right mt-2 mb-8">
-                  <a href="#forgot-password" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
+                  <Link to="/forgot-password" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
                     Lupa Kata Sandi?
-                  </a>
+                  </Link>
                 </div>
 
                 {/* Submit Button */}
@@ -254,7 +256,7 @@ const LoginPage = () => {
 
                 {/* Back Link */}
                 <div className="text-center mt-2 mb-8">
-                  <LinkButton onClick={() => window.location.href = '/'} className="text-sm">
+                  <LinkButton onClick={() => navigate('/')} className="text-sm">
                     Kembali ke Beranda
                   </LinkButton>
                 </div>
