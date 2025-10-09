@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App.jsx";
 import "./index.css";
 
-import { Home, Login, NotFound } from "./pages"; // <= dari barrel
+import { Home, Login, NotFound ,About} from "./pages"; // <= dari barrel
 
 const router = createBrowserRouter([
   {
@@ -12,6 +12,7 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <Home /> },
+      { path:"about", element: <About /> },
       { path: "*", element: <NotFound /> },
     ],
   },

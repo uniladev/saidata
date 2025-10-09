@@ -33,8 +33,8 @@ const navbarConfig = {
   },
   
   menuItems: [
-    { name: 'Beranda', path: '#home' },
-    { name: 'Tentang', path: '#about' },
+    { name: 'Beranda', path: '/' },
+    { name: 'Tentang', path: '/about' },
     {
       name: 'Seminar S1',
       children: [
