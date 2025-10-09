@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Reset gaya kotak bawaan Vite */
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: initial;
+}
+
+/* Pastikan body bersih */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #fff; /* atau sesuai tema Tailwind kamu */
+}

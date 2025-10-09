@@ -1,19 +1,15 @@
-// Import all components using barrel exports
-import { Navbar, Footer } from './components/layout';
-import { HeroCarousel, Features, About, News } from './components/sections';
+import { Outlet } from "react-router-dom";
+import { Suspense } from "react";
+import { Navbar, Footer } from "./components/layout";
 
-// Main App Component
-const App = () => {
+export default function App() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-dvh flex flex-col">
       <Navbar />
-      <HeroCarousel />
-      <Features />
-      <About />
-      <News />
+      <Suspense fallback={<div className="p-6">Loading…</div>}>
+        <Outlet />
+      </Suspense>
       <Footer />
     </div>
   );
-};
-
-export default App;
+}
