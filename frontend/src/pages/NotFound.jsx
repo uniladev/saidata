@@ -13,7 +13,7 @@ export default function NotFound() {
           {/* Maskot - Kiri */}
           <div className="flex-shrink-0">
             <img 
-              src="/images/maskot/notfound_maskot.png" 
+              src="/images/maskot/notfound_maskot.webp" 
               alt="Maskot 404" 
               className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 object-contain"
               loading="lazy"
