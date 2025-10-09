@@ -4,8 +4,8 @@ import { Menu, X, Calendar, Phone, Mail } from 'lucide-react';
 // ==================== NAVBAR CONFIGURATION ====================
 const navbarConfig = {
   logo: {
-    white: '/images/logo/white.png',
-    color: '/images/logo/color.png',
+    white: '/images/logo/white.webp',
+    color: '/images/logo/color.webp',
     alt: 'Logo FMIPA'
   },
   
