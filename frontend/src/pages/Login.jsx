@@ -139,6 +139,23 @@ const LoginPage = () => {
           .illustration-container {
             margin-bottom: 30px;
           }
+          
+          .login-box {
+            margin: 0 auto;
+            max-width: 100%;
+          }
+          
+          .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .login-box {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          }
         }
       `}</style>
 
@@ -164,10 +181,10 @@ const LoginPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-4 py-6 md:py-10">
         <div className="flex flex-wrap items-center min-h-[70vh]">
-          {/* Illustration */}
-          <div className="w-full lg:w-7/12 md:w-6/12 px-4 mb-8 lg:mb-0">
+          {/* Illustration - Hidden on mobile */}
+          <div className="hidden lg:block w-full lg:w-7/12 md:w-6/12 px-4 mb-8 lg:mb-0">
             <div className="text-center illustration-container">
               <img 
                 src="/images/bg-login.webp" 
@@ -183,9 +200,9 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Login Form */}
-          <div className="w-full lg:w-5/12 md:w-6/12 px-4">
-            <div className="login-box p-10">
+          {/* Login Form - Full width on mobile */}
+          <div className="w-full lg:w-5/12 md:w-6/12 px-2 md:px-4">
+            <div className="login-box p-6 md:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold" style={{ color: '#0000FF' }}>Masuk Akun</h2>
               </div>
