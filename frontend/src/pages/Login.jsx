@@ -45,8 +45,6 @@ const LoginPage = () => {
     let newErrors = {};
     if (!formData.username) {
       newErrors.username = 'username harus diisi';
-    } else if (!/\S+@\S+\.\S+/.test(formData.username)) {
-      newErrors.username = 'Format username tidak valid';
     }
     
     if (!formData.password) {
