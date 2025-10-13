@@ -1,5 +1,4 @@
-// Lightweight fetch wrapper with auto JWT + refresh + retry
-// Works with Vite (reads VITE_* envs)
+// frontend/src/utils/fetch.js
 
 let inMemoryAccessToken = null;
 

@@ -1,18 +1,20 @@
-// frontend/src/pages/Login.jsx
+// frontend/src/pages/Login.jsx (Axios version)
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PrimaryButton, OutlineButton, LinkButton } from '../components/ui/Button';
+import api, { setAccessToken } from '../config/api';
 import '../assets/css/Login.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [errors, setErrors] = useState({
-    email: '',
+    username: '',
     password: '',
     status: ''
   });
@@ -36,15 +38,15 @@ const LoginPage = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validation
     let newErrors = {};
-    if (!formData.email) {
-      newErrors.email = 'Email harus diisi';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Format email tidak valid';
+    if (!formData.username) {
+      newErrors.username = 'username harus diisi';
+    } else if (!/\S+@\S+\.\S+/.test(formData.username)) {
+      newErrors.username = 'Format username tidak valid';
     }
     
     if (!formData.password) {
@@ -59,7 +61,41 @@ const LoginPage = () => {
     }
 
     // Submit form
-    alert('Form berhasil disubmit!\nEmail: ' + formData.email);
+    setIsLoading(true);
+    setErrors({ username: '', password: '', status: '' });
+
+    try {
+      const { data } = await api.post('/auth/login', {
+        username: formData.username,
+        password: formData.password
+      });
+
+      // Store access token in memory
+      if (data?.accessToken) {
+        setAccessToken(data.accessToken);
+      }
+
+      // Optional: Store user data if returned
+      if (data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
+      // Navigate to dashboard or home
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      const errorMessage = error.response?.data?.message 
+        || error.message 
+        || 'Login gagal. Silakan coba lagi.';
+      
+      setErrors(prev => ({
+        ...prev,
+        status: errorMessage
+      }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,7 +105,7 @@ const LoginPage = () => {
         <div className="container mx-auto px-4 py-3 flex justify-center items-center">
           <div className="brand-logo">
             <Link to="/">
-            <img 
+              <img 
                 src="/images/logo/color.webp" 
                 alt="Logo"
                 style={{ 
@@ -79,7 +115,7 @@ const LoginPage = () => {
                   margin: '0 auto',
                   objectFit: 'contain'
                 }}
-            />
+              />
             </Link>
           </div>
         </div>
@@ -120,20 +156,21 @@ const LoginPage = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                {/* Email Input */}
-                <div className={`input-group-custom ${errors.email ? 'error' : ''}`}>
+                {/* username Input */}
+                <div className={`input-group-custom ${errors.username ? 'error' : ''}`}>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
+                    type="text"
+                    name="username"
+                    value={formData.username}
                     onChange={handleChange}
-                    placeholder="kajur.ilkom@fmipa.unila.ac.id"
+                    placeholder="NPM / NIM"
+                    disabled={isLoading}
                   />
                   <span className="input-icon">
                     <i className="fa-solid fa-envelope"></i>
                   </span>
                 </div>
-                {errors.email && <small className="error-text">{errors.email}</small>}
+                {errors.username && <small className="error-text">{errors.username}</small>}
 
                 {/* Password Input */}
                 <div className={`input-group-custom mt-2 ${errors.password ? 'error' : ''}`}>
@@ -143,6 +180,7 @@ const LoginPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Kata Sandi"
+                    disabled={isLoading}
                   />
                   <span className="input-icon" onClick={togglePasswordVisibility}>
                     <i className={`fas ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
@@ -159,8 +197,8 @@ const LoginPage = () => {
 
                 {/* Submit Button */}
                 <div className="mb-4">
-                  <PrimaryButton type="submit" className="w-full">
-                    Masuk
+                  <PrimaryButton type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Memproses...' : 'Masuk'}
                   </PrimaryButton>
                 </div>
 
@@ -171,14 +209,18 @@ const LoginPage = () => {
 
                 {/* Register Link */}
                 <div className="mb-4">
-                  <OutlineButton className="w-full">
+                  <OutlineButton 
+                    className="w-full"
+                    onClick={() => navigate('/register')}
+                    disabled={isLoading}
+                  >
                     Daftar Akun
                   </OutlineButton>
                 </div>
 
                 {/* Back Link */}
                 <div className="text-center mt-2 mb-8">
-                  <LinkButton onClick={() => navigate('/')} className="text-sm">
+                  <LinkButton onClick={() => navigate('/')} className="text-sm" disabled={isLoading}>
                     Kembali ke Beranda
                   </LinkButton>
                 </div>
