@@ -1,4 +1,3 @@
-Here’s your updated **API documentation** — all endpoints are now under the prefix `/api/v1/auth`, and I’ve clarified that **JWT is issued and verified by your backend** (not the campus SSO).
 
 ---
 
@@ -8,7 +7,9 @@ All routes below are prefixed with
 
 > **`/api/v1/auth`**
 
-JWT tokens are **generated and validated by the backend system**, while the campus SSO only verifies user credentials (returns true/false).
+JWT tokens are **issued and verified by the backend system**,
+while the **campus SSO only verifies login credentials** (returns true/false).
+The **refresh token** is stored securely in an **HttpOnly cookie** (not accessible from JavaScript).
 
 ---
 
@@ -20,7 +21,7 @@ JWT tokens are **generated and validated by the backend system**, while the camp
 
 ```json
 {
-  "npm": "2267051001",
+  "username": "2267051001",
   "password": "12345678"
 }
 ```
@@ -30,8 +31,7 @@ JWT tokens are **generated and validated by the backend system**, while the camp
 ```json
 {
   "success": true,
-  "token": "jwt-token-string",
-  "refreshToken": "refresh-token-string",
+  "token": "jwt-access-token",
   "user": {
     "id": "abc123",
     "name": "Dafahan",
@@ -42,8 +42,10 @@ JWT tokens are **generated and validated by the backend system**, while the camp
 ```
 
 > **Frontend note:**
-> Store the `token` in **localStorage** or send it in the `Authorization` header on future requests.
-> The token is **issued by the backend**, not by the SSO.
+>
+> * The access token should be stored in memory or localStorage for short-term use.
+> * The refresh token is **automatically stored in an HttpOnly cookie** by the backend (`Set-Cookie` header).
+> * The cookie will be sent automatically by the browser when calling `/refresh`.
 
 ---
 
@@ -54,7 +56,7 @@ JWT tokens are **generated and validated by the backend system**, while the camp
 ### Header
 
 ```
-Authorization: Bearer <token>
+Authorization: Bearer <access_token>
 ```
 
 ### Expected Response
@@ -80,7 +82,7 @@ Authorization: Bearer <token>
 ### Header
 
 ```
-Authorization: Bearer <token>
+Authorization: Bearer <access_token>
 ```
 
 ### Expected Response
@@ -92,100 +94,57 @@ Authorization: Bearer <token>
 }
 ```
 
+> The backend should also **delete the refresh token cookie**
+> (by setting it expired using `withoutCookie('refresh_token')`).
+
 ---
 
 ## 4. Refresh Token
 
 **Method:** `POST /api/v1/auth/refresh`
 
-### Request
-
-```json
-{
-  "refreshToken": "refresh-token-string"
-}
-```
+> The frontend does **not** need to send any JSON body —
+> the `refresh_token` is read automatically from the secure cookie.
 
 ### Expected Response
 
 ```json
 {
   "success": true,
-  "token": "new-access-token",
-  "refreshToken": "new-refresh-token"
+  "token": "new-access-token"
 }
 ```
 
----
-
-## 5. Forgot Password
-
-**Method:** `POST /api/v1/auth/forgot-password`
-
-### Request
-
-```json
-{
-  "email": "dafahan@example.com"
-}
-```
-
-### Expected Response
-
-```json
-{
-  "success": true,
-  "message": "Password reset link sent to email"
-}
-```
-
----
-
-## 6. Reset Password
-
-**Method:** `POST /api/v1/auth/reset-password`
-
-### Request
-
-```json
-{
-  "token": "reset-token-from-email",
-  "newPassword": "newpassword123"
-}
-```
-
-### Expected Response
-
-```json
-{
-  "success": true,
-  "message": "Password reset successfully"
-}
-```
-
+> **Backend behavior:**
+>
+> * Validate the refresh token from the cookie.
+> * Issue a new short-lived access token.
+> * Rotate and re-set a new refresh token cookie.
 
 ---
 
 ## 📋 Summary Table
 
-|  # | Method | Endpoint                       | Description                        | Auth Required |
-| -: | :----: | :----------------------------- | :--------------------------------- | :-----------: |
-|  1 |  POST  | `/api/v1/auth/login`           | Login & get JWT token              |       ❌       |
-|  2 |   GET  | `/api/v1/auth/me`              | Get current logged-in user         |       ✅       |
-|  3 |  POST  | `/api/v1/auth/logout`          | Logout and invalidate token        |       ✅       |
-|  4 |  POST  | `/api/v1/auth/refresh`         | Refresh access token               |       ❌       |
-|  5 |  POST  | `/api/v1/auth/forgot-password` | Request password reset email       |       ❌       |
-|  6 |  POST  | `/api/v1/auth/reset-password`  | Reset user password                |       ❌       |
+|  # | Method | Endpoint               | Description                            | Auth Required |
+| -: | :----: | :--------------------- | :------------------------------------- | :-----------: |
+|  1 |  POST  | `/api/v1/auth/login`   | Login via SSO & get access token       |       ❌       |
+|  2 |   GET  | `/api/v1/auth/me`      | Get current logged-in user             |       ✅       |
+|  3 |  POST  | `/api/v1/auth/logout`  | Logout and delete refresh token cookie |       ✅       |
+|  4 |  POST  | `/api/v1/auth/refresh` | Refresh access token using cookie      |       ❌       |
+
 ---
 
 ## ⚙️ Notes for Backend Developers
 
-* **JWT is handled by your backend**, not by the campus SSO.
+* **JWT is handled by the backend**, not by the campus SSO.
 
-  * The backend calls the campus SSO for credential verification only.
-  * On success, the backend issues its own **JWT access** and **refresh tokens**.
-* All protected routes (`/me`, `/logout`) should use **auth:api** or equivalent middleware.
-* All responses must follow the standard format:
+  * The backend calls the **SSO API** to validate `username` + `password`.
+  * On success, it issues its own **JWT access token** and **refresh token**.
+* **Access token:** short-lived (e.g., 15 minutes), returned in JSON.
+* **Refresh token:** long-lived (e.g., 7 days), stored in `HttpOnly`, `Secure` cookie.
+* **Logout:** must clear or blacklist the refresh token.
+* **Protected routes** (`/me`, `/logout`) must use middleware like `auth:api`.
+* All responses must follow this structure:
 
 ```json
 {
@@ -195,6 +154,5 @@ Authorization: Bearer <token>
 }
 ```
 
-* **Base path:**
-  All endpoints are served under `/api/v1/auth`
+---
 
