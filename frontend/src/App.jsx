@@ -8,6 +8,7 @@ import { lazy } from "react";
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
 const HomePage = lazy(() => import("./pages/guest/Home"));
 const AboutPage = lazy(() => import("./pages/guest/About"));
+const DocumentValidationPage = lazy(() => import("./pages/guest/DocumentValidation"));
 const LoginPage = lazy(() => import("./pages/auth/Login"));
 
 // Protected Route Component
@@ -39,6 +40,7 @@ export default function App() {
       <Route element={<GuestLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/validasi" element={<DocumentValidationPage />} />
       </Route>
 
       {/* Auth Routes */}
