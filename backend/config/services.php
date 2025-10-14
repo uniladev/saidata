@@ -18,14 +18,14 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
-    'resend' => [
-        'key' => env('RESEND_KEY'),
-    ],
-
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+
+    'resend' => [
+        'key' => env('RESEND_KEY'),
     ],
 
     'slack' => [
@@ -33,6 +33,23 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Campus SSO Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for campus Single Sign-On (SSO) integration.
+    | The SSO service is used to verify user credentials.
+    |
+    */
+
+    'sso' => [
+        'base_url' => env('SSO_BASE_URL', 'https://sso.unila.ac.id'),
+        'api_key' => env('SSO_API_KEY'),
+        'timeout' => env('SSO_TIMEOUT', 10),
+        'mock_enabled' => env('SSO_MOCK_ENABLED', false),
     ],
 
 ];
