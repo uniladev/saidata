@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import { Outlet } from "react-router-dom";
 import { Suspense } from "react";
 import { Navbar, Footer } from "./components/layout";
