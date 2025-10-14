@@ -1,7 +1,7 @@
 // frontend/src/components/sections/HeroCarousel.jsx
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { PrimaryButton, GhostButton } from '../ui/Button';
+import { PrimaryButton, GhostButton } from '../../ui/Button';
 
 const HeroCarousel = () => {
   const [currentSlide, setCurrentSlide] = useState(0);

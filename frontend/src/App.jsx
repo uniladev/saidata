@@ -1,6 +1,6 @@
 // frontend/src/App.jsx (Improved Version with AuthContext)
 import { Routes, Route, Navigate } from "react-router-dom";
-import { GuestLayout, DashboardLayout } from "./components/layout";
+import { GuestLayout, AuthenticatedLayout } from "./components/layout";
 import { useAuth } from "./context/AuthContext";
 import { lazy } from "react";
 
