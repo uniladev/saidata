@@ -55,7 +55,7 @@ export default function App() {
       <Route
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <AuthenticatedLayout />
           </ProtectedRoute>
         }
       >
