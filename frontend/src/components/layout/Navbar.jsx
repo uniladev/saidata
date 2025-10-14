@@ -36,6 +36,7 @@ const navbarConfig = {
   menuItems: [
     { name: 'Beranda', path: '/' },
     { name: 'Tentang', path: '/about' },
+    { name: 'Buat Formulir', path: '/create-form' },
     {
       name: 'Dokumen',
       children: [
