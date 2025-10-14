@@ -1,6 +1,6 @@
 // frontend/src/components/layout/Navbar.jsx
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Calendar, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ==================== NAVBAR CONFIGURATION ====================
@@ -25,11 +25,11 @@ const navbarConfig = {
         text: '0721-704625',
         link: 'tel:+62721704625'
       },
-      {
-        type: 'date',
-        icon: 'calendar',
-        showDate: true
-      }
+      // {
+      //   type: 'date',
+      //   icon: 'calendar',
+      //   showDate: true
+      // }
     ]
   },
   
@@ -37,24 +37,12 @@ const navbarConfig = {
     { name: 'Beranda', path: '/' },
     { name: 'Tentang', path: '/about' },
     {
-      name: 'Seminar S1',
+      name: 'Dokumen',
       children: [
-        { name: 'Praktik Kerja Lapangan', path: '#pkl' },
-        { name: 'Tugas Akhir 1', path: '#ta1' },
-        { name: 'Tugas Akhir 2', path: '#ta2' },
-        { name: 'Komprehensif', path: '#kompre' }
+        { name: 'Validasi Dokumen', path: '/validasi' },
       ]
     },
-    {
-      name: 'Seminar S2',
-      children: [
-        { name: 'Tesis 1', path: '#tesis1' },
-        { name: 'Tesis 2', path: '#tesis2' },
-        { name: 'Sidang Tesis', path: '#sidang' }
-      ]
-    },
-    { name: 'Bantuan', path: '#help' },
-    { name: 'Validasi Dokumen', path: '#validasi' }
+    { name: 'Bantuan', path: '/help' },
   ],
   
   authButton: {
@@ -68,6 +56,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
   const [openDropdown, setOpenDropdown] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     const updateDate = () => {
@@ -103,6 +92,16 @@ const Navbar = () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Check if link is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  // Check if parent menu item has active child
+  const hasActiveChild = (children) => {
+    return children?.some(child => location.pathname === child.path);
+  };
 
   // Icon mapping
   const iconMap = {
@@ -183,7 +182,13 @@ const Navbar = () => {
               {navbarConfig.menuItems.map((item, index) => (
                 item.children ? (
                   <div key={index} className="relative group">
-                    <button className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition flex items-center">
+                    <button 
+                      className={`px-3 py-2 rounded-md font-medium transition flex items-center ${
+                        hasActiveChild(item.children)
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-gray-700 hover:text-blue-600'
+                      }`}
+                    >
                       {item.name}
                       <DropdownArrow />
                     </button>
@@ -192,7 +197,11 @@ const Navbar = () => {
                         <Link
                           key={childIndex}
                           to={child.path} 
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
+                          className={`block px-4 py-2 first:rounded-t-md last:rounded-b-md ${
+                            isActive(child.path)
+                              ? 'bg-blue-50 text-blue-600 font-semibold'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
                         >
                           {child.name}
                         </Link>
@@ -203,7 +212,11 @@ const Navbar = () => {
                   <Link
                     key={index}
                     to={item.path} 
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition"
+                    className={`px-3 py-2 rounded-md font-medium transition ${
+                      isActive(item.path)
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-gray-700 hover:text-blue-600'
+                    }`}
                   >
                     {item.name}
                   </Link>
@@ -256,7 +269,11 @@ const Navbar = () => {
                 <div key={index} className="border-b border-gray-100 pb-2">
                   <button
                     onClick={() => toggleDropdown(index)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-gray-700 font-medium hover:bg-gray-50 rounded-md transition"
+                    className={`w-full flex items-center justify-between px-3 py-2 font-medium rounded-md transition ${
+                      hasActiveChild(item.children)
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
                   >
                     <span>{item.name}</span>
                     {openDropdown === index ? (
@@ -278,7 +295,11 @@ const Navbar = () => {
                         <Link
                           key={childIndex}
                           to={child.path} 
-                          className="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition"
+                          className={`block px-3 py-2 rounded-md transition ${
+                            isActive(child.path)
+                              ? 'text-blue-600 bg-blue-50 font-semibold'
+                              : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                          }`}
                           onClick={closeMobileMenu}
                         >
                           {child.name}
@@ -291,7 +312,11 @@ const Navbar = () => {
                 <Link
                   key={index}
                   to={item.path} 
-                  className="block px-3 py-2 text-gray-700 font-medium hover:bg-gray-50 rounded-md transition"
+                  className={`block px-3 py-2 font-medium rounded-md transition ${
+                    isActive(item.path)
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   {item.name}
