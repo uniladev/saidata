@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import "./index.css";
 
 import { Home, Login, NotFound ,About} from "./pages"; // <= dari barrel
+import SurveyTest from "./js/components/SurveyTest.jsx"; // import komponen SurveyTest
 
 const router = createBrowserRouter([
   {
@@ -13,6 +14,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path:"about", element: <About /> },
+      { path: "survey-test", element: <SurveyTest /> },
       { path: "*", element: <NotFound /> },
     ],
   },
