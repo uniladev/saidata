@@ -1,0 +1,55 @@
+{
+  "title": "Customer Satisfaction Survey",
+  "description": "A survey to gather customer feedback on our services.",
+  "pages": [
+    {
+      "name": "page1",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "satisfaction",
+          "title": "How satisfied are you with our service?",
+          "isRequired": true,
+          "choices": [
+            "Very satisfied",
+            "Satisfied",
+            "Neutral",
+            "Dissatisfied",
+            "Very dissatisfied"
+          ]
+        },
+        {
+          "type": "comment",
+          "name": "improvements",
+          "title": "What can we do to improve our service?"
+        }
+      ]
+    },
+    {
+      "name": "page2",
+      "elements": [
+        {
+          "type": "checkbox",
+          "name": "features",
+          "title": "Which features do you find most useful?",
+          "isRequired": true,
+          "choices": [
+            "Feature A",
+            "Feature B",
+            "Feature C",
+            "Feature D"
+          ]
+        },
+        {
+          "type": "text",
+          "name": "email",
+          "title": "Please enter your email address:",
+          "inputType": "email",
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showProgressBar": "bottom",
+  "completedHtml": "<h4>Thank you for completing the survey!</h4>"
+}
