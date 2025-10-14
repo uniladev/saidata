@@ -204,7 +204,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       navigate('/login');
