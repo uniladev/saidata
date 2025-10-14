@@ -450,21 +450,61 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "type": "object",
-                                        "example": {
-                                            "id": 1,
-                                            "title": "Customer Satisfaction Survey",
-                                            "description": "Survey to measure customer satisfaction",
-                                            "status": "active",
-                                            "created_at": "2025-10-14T10:00:00.000000Z",
-                                            "updated_at": "2025-10-14T10:00:00.000000Z"
-                                        }
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "example": "68ee4fc2754f6e95b809e492"
+                                            },
+                                            "title": {
+                                                "type": "string",
+                                                "example": "Customer Satisfaction Survey"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Survey to measure customer satisfaction"
+                                            },
+                                            "created_by": {
+                                                "type": "string",
+                                                "example": "68ee3e2c5336195833053652"
+                                            },
+                                            "is_published": {
+                                                "type": "boolean",
+                                                "example": false
+                                            },
+                                            "current_version": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "visibility": {
+                                                "type": "string",
+                                                "example": "public"
+                                            },
+                                            "created_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-10-14T10:00:00.000000Z"
+                                            },
+                                            "updated_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-10-14T10:00:00.000000Z"
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -490,14 +530,30 @@
                                         "type": "string",
                                         "example": "Survey to measure customer satisfaction"
                                     },
-                                    "status": {
+                                    "created_by": {
+                                        "type": "string",
+                                        "example": "68ee3e2c5336195833053652"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "secret123"
+                                    },
+                                    "is_published": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "current_version": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "visibility": {
                                         "type": "string",
                                         "enum": [
-                                            "draft",
-                                            "active",
-                                            "inactive"
+                                            "public",
+                                            "private",
+                                            "restricted"
                                         ],
-                                        "example": "draft"
+                                        "example": "public"
                                     }
                                 },
                                 "type": "object"
@@ -511,24 +567,53 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form created successfully"
+                                        },
+                                        "form": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "example": "68ee4fc2754f6e95b809e492"
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Customer Satisfaction Survey"
+                                                },
+                                                "description": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
                                     "type": "object"
-                                },
-                                "example": {
-                                    "message": "Form created successfully",
-                                    "form": {
-                                        "id": 1,
-                                        "title": "Customer Satisfaction Survey",
-                                        "description": "Survey to measure customer satisfaction",
-                                        "status": "draft"
-                                    }
                                 }
                             }
                         }
                     },
                     "422": {
                         "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/forms/{id}": {
@@ -537,16 +622,18 @@
                     "Forms"
                 ],
                 "summary": "Get form by ID",
-                "description": "Retrieve a specific form by ID",
+                "description": "Retrieve a specific form by MongoDB ObjectId",
                 "operationId": "5f0cd5c61e672872fc3de42d9bd86a9d",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Form ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "68ee4fc2754f6e95b809e492"
                         }
                     }
                 ],
@@ -556,23 +643,63 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "example": "68ee4fc2754f6e95b809e492"
+                                        },
+                                        "title": {
+                                            "type": "string",
+                                            "example": "Customer Satisfaction Survey"
+                                        },
+                                        "description": {
+                                            "type": "string",
+                                            "example": "Survey to measure customer satisfaction"
+                                        },
+                                        "created_by": {
+                                            "type": "string",
+                                            "example": "68ee3e2c5336195833053652"
+                                        },
+                                        "is_published": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "current_version": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "visibility": {
+                                            "type": "string",
+                                            "example": "public"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-10-14T10:00:00.000000Z"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-10-14T10:00:00.000000Z"
+                                        }
+                                    },
                                     "type": "object"
-                                },
-                                "example": {
-                                    "id": 1,
-                                    "title": "Customer Satisfaction Survey",
-                                    "description": "Survey to measure customer satisfaction",
-                                    "status": "active",
-                                    "created_at": "2025-10-14T10:00:00.000000Z",
-                                    "updated_at": "2025-10-14T10:00:00.000000Z"
                                 }
                             }
                         }
                     },
                     "404": {
                         "description": "Form not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -585,10 +712,12 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Form ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "68ee4fc2754f6e95b809e492"
                         }
                     }
                 ],
@@ -606,14 +735,18 @@
                                         "type": "string",
                                         "example": "Updated description"
                                     },
-                                    "status": {
+                                    "is_published": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "visibility": {
                                         "type": "string",
                                         "enum": [
-                                            "draft",
-                                            "active",
-                                            "inactive"
+                                            "public",
+                                            "private",
+                                            "restricted"
                                         ],
-                                        "example": "active"
+                                        "example": "public"
                                     }
                                 },
                                 "type": "object"
@@ -623,12 +756,36 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Form updated successfully"
+                        "description": "Form updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form updated successfully"
+                                        },
+                                        "form": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Form not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -641,186 +798,199 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Form ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "68ee4fc2754f6e95b809e492"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Form deleted successfully"
+                        "description": "Form deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Form not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/survey": {
             "post": {
                 "tags": [
-                    "Survey"
+                    "Form Submissions"
                 ],
-                "summary": "Submit survey data",
-                "description": "Endpoint untuk menerima hasil survey dari frontend",
+                "summary": "Submit survey response",
+                "description": "Submit a response to a survey form",
                 "operationId": "b6957a616d66e3d73ab529ed5edcdd8c",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "object"
-                            },
-                            "example": {
-                                "form_id": 1,
-                                "form_version_id": 2,
-                                "user_id": 5,
-                                "answers": [
-                                    {
-                                        "question_id": "Q1",
-                                        "answer": "Yes"
+                                "required": [
+                                    "form_id",
+                                    "version_id",
+                                    "submitted_by"
+                                ],
+                                "properties": {
+                                    "form_id": {
+                                        "type": "string",
+                                        "example": "68ee4fc2754f6e95b809e492"
                                     },
-                                    {
-                                        "question_id": "Q2",
-                                        "answer": "No"
+                                    "version_id": {
+                                        "type": "string",
+                                        "example": "68ee4fc2754f6e95b809e493"
+                                    },
+                                    "submitted_by": {
+                                        "type": "string",
+                                        "example": "68ee3e2c5336195833053652"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "completed",
+                                            "draft"
+                                        ],
+                                        "example": "completed"
                                     }
-                                ]
+                                },
+                                "type": "object"
                             }
                         }
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "Survey data stored successfully",
+                    "201": {
+                        "description": "Survey submitted successfully",
                         "content": {
                             "application/json": {
-                                "schema": {},
-                                "example": {
-                                    "message": "Survey data saved",
-                                    "submission_id": 10
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Survey submitted successfully"
+                                        },
+                                        "submission": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/submissions/{submissionId}/payload": {
             "get": {
                 "tags": [
-                    "Submission Payloads"
+                    "Form Submission Payloads"
                 ],
-                "summary": "Get submission payload",
-                "description": "Retrieve the payload (answers) for a specific submission",
+                "summary": "Get submission payload by submission ID",
+                "description": "Retrieve payload data for a specific submission",
                 "operationId": "27484e7cf3539113e224675d502305df",
                 "parameters": [
                     {
                         "name": "submissionId",
                         "in": "path",
-                        "description": "Submission ID",
+                        "description": "MongoDB ObjectId of the submission",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Submission payload details",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "id": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "submission_id": {
-                                            "type": "integer",
-                                            "example": 10
-                                        },
-                                        "answers": {
-                                            "type": "object",
-                                            "example": {
-                                                "Q1": "Yes",
-                                                "Q2": "No"
-                                            }
-                                        },
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time",
-                                            "example": "2025-10-14T10:00:00.000000Z"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Submission payload details"
                     },
                     "404": {
                         "description": "Payload not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/payloads/{id}": {
             "get": {
                 "tags": [
-                    "Submission Payloads"
+                    "Form Submission Payloads"
                 ],
                 "summary": "Get payload by ID",
-                "description": "Retrieve a specific payload by ID",
+                "description": "Retrieve a specific payload by its ID",
                 "operationId": "9703347d049b0ec4130e3ce4cad7e3b4",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Payload ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Payload details",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "id": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "submission_id": {
-                                            "type": "integer",
-                                            "example": 10
-                                        },
-                                        "answers": {
-                                            "type": "object",
-                                            "example": {
-                                                "Q1": "Yes",
-                                                "Q2": "No"
-                                            }
-                                        },
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time",
-                                            "example": "2025-10-14T10:00:00.000000Z"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Payload details"
                     },
                     "404": {
                         "description": "Payload not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/forms/{formId}/versions": {
@@ -835,10 +1005,12 @@
                     {
                         "name": "formId",
                         "in": "path",
-                        "description": "Form ID",
+                        "description": "MongoDB ObjectId of the form",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "68ee4fc2754f6e95b809e492"
                         }
                     }
                 ],
@@ -850,40 +1022,21 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "properties": {
-                                            "id": {
-                                                "type": "integer",
-                                                "example": 1
-                                            },
-                                            "form_id": {
-                                                "type": "integer",
-                                                "example": 1
-                                            },
-                                            "version_number": {
-                                                "type": "integer",
-                                                "example": 1
-                                            },
-                                            "schema_json": {
-                                                "type": "string",
-                                                "example": "{}"
-                                            },
-                                            "is_active": {
-                                                "type": "boolean",
-                                                "example": true
-                                            },
-                                            "created_at": {
-                                                "type": "string",
-                                                "format": "date-time",
-                                                "example": "2025-10-14T10:00:00.000000Z"
-                                            }
-                                        },
                                         "type": "object"
                                     }
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/form-versions/{id}": {
@@ -898,53 +1051,30 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Form Version ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Form version details",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "id": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "form_id": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "version_number": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "schema_json": {
-                                            "type": "string"
-                                        },
-                                        "is_active": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Form version details"
                     },
                     "404": {
                         "description": "Form version not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -957,10 +1087,11 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Form Version ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
@@ -970,11 +1101,11 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "schema_json": {
-                                        "type": "string"
+                                    "schema": {
+                                        "type": "object"
                                     },
-                                    "is_active": {
-                                        "type": "boolean"
+                                    "version_number": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object"
@@ -984,28 +1115,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Form version updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Form version updated successfully"
-                                        },
-                                        "version": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Form version updated successfully"
                     },
                     "404": {
                         "description": "Form version not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -1018,34 +1144,30 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Form Version ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Form version deleted successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Form version deleted successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Form version deleted successfully"
                     },
                     "404": {
                         "description": "Form version not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/form-versions": {
@@ -1064,24 +1186,19 @@
                                 "required": [
                                     "form_id",
                                     "version_number",
-                                    "schema_json"
+                                    "schema"
                                 ],
                                 "properties": {
                                     "form_id": {
-                                        "type": "integer",
-                                        "example": 1
+                                        "type": "string",
+                                        "example": "68ee4fc2754f6e95b809e492"
                                     },
                                     "version_number": {
                                         "type": "integer",
                                         "example": 1
                                     },
-                                    "schema_json": {
-                                        "type": "string",
-                                        "example": "{}"
-                                    },
-                                    "is_active": {
-                                        "type": "boolean",
-                                        "example": true
+                                    "schema": {
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object"
@@ -1091,28 +1208,20 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Form version created successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Form version created successfully"
-                                        },
-                                        "version": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Form version created successfully"
                     },
                     "422": {
                         "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/users/{userId}/profile": {
@@ -1120,46 +1229,37 @@
                 "tags": [
                     "User Profiles"
                 ],
-                "summary": "Get user profile",
-                "description": "Retrieve user profile by user ID",
+                "summary": "Get user profile by user ID",
+                "description": "Retrieve profile for a specific user",
                 "operationId": "04f204f71059d8bf7281ef291fc8d491",
                 "parameters": [
                     {
                         "name": "userId",
                         "in": "path",
-                        "description": "User ID",
+                        "description": "MongoDB ObjectId of the user",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "User profile details",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                },
-                                "example": {
-                                    "id": 1,
-                                    "user_id": 5,
-                                    "full_name": "John Doe",
-                                    "phone": "+628123456789",
-                                    "address": "Jakarta, Indonesia",
-                                    "date_of_birth": "1990-01-01",
-                                    "avatar_url": "https://example.com/avatar.jpg",
-                                    "created_at": "2025-10-14T10:00:00.000000Z",
-                                    "updated_at": "2025-10-14T10:00:00.000000Z"
-                                }
-                            }
-                        }
+                        "description": "User profile details"
                     },
                     "404": {
                         "description": "Profile not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/user-profiles": {
@@ -1180,8 +1280,8 @@
                                 ],
                                 "properties": {
                                     "user_id": {
-                                        "type": "integer",
-                                        "example": 5
+                                        "type": "string",
+                                        "example": "68ee3e2c5336195833053652"
                                     },
                                     "full_name": {
                                         "type": "string",
@@ -1189,20 +1289,11 @@
                                     },
                                     "phone": {
                                         "type": "string",
-                                        "example": "+628123456789"
+                                        "example": "+1234567890"
                                     },
                                     "address": {
                                         "type": "string",
-                                        "example": "Jakarta, Indonesia"
-                                    },
-                                    "date_of_birth": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "1990-01-01"
-                                    },
-                                    "avatar_url": {
-                                        "type": "string",
-                                        "example": "https://example.com/avatar.jpg"
+                                        "example": "123 Main St"
                                     }
                                 },
                                 "type": "object"
@@ -1216,8 +1307,16 @@
                     },
                     "422": {
                         "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/user-profiles/{id}": {
@@ -1232,10 +1331,11 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Profile ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
@@ -1253,13 +1353,6 @@
                                     },
                                     "address": {
                                         "type": "string"
-                                    },
-                                    "date_of_birth": {
-                                        "type": "string",
-                                        "format": "date"
-                                    },
-                                    "avatar_url": {
-                                        "type": "string"
                                     }
                                 },
                                 "type": "object"
@@ -1273,8 +1366,19 @@
                     },
                     "404": {
                         "description": "Profile not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -1287,10 +1391,11 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Profile ID",
+                        "description": "MongoDB ObjectId",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
                         }
                     }
                 ],
@@ -1300,8 +1405,16 @@
                     },
                     "404": {
                         "description": "Profile not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         }
     },
@@ -1325,12 +1438,12 @@
             "description": "Forms"
         },
         {
-            "name": "Survey",
-            "description": "Survey"
+            "name": "Form Submissions",
+            "description": "Form Submissions"
         },
         {
-            "name": "Submission Payloads",
-            "description": "Submission Payloads"
+            "name": "Form Submission Payloads",
+            "description": "Form Submission Payloads"
         },
         {
             "name": "Form Versions",

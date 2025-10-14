@@ -15,6 +15,7 @@ class FormController extends Controller
      *     summary="Get all forms",
      *     description="Retrieve all forms",
      *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Response(
      *         response=200,
      *         description="List of forms",
@@ -22,16 +23,21 @@ class FormController extends Controller
      *             type="array",
      *             @OA\Items(
      *                 type="object",
-     *                 example={
-     *                     "id": 1,
-     *                     "title": "Customer Satisfaction Survey",
-     *                     "description": "Survey to measure customer satisfaction",
-     *                     "status": "active",
-     *                     "created_at": "2025-10-14T10:00:00.000000Z",
-     *                     "updated_at": "2025-10-14T10:00:00.000000Z"
-     *                 }
+     *                 @OA\Property(property="id", type="string", example="68ee4fc2754f6e95b809e492"),
+     *                 @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
+     *                 @OA\Property(property="description", type="string", example="Survey to measure customer satisfaction"),
+     *                 @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
+     *                 @OA\Property(property="is_published", type="boolean", example=false),
+     *                 @OA\Property(property="current_version", type="integer", example=1),
+     *                 @OA\Property(property="visibility", type="string", example="public"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z")
      *             )
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
      *     )
      * )
      */
@@ -45,33 +51,43 @@ class FormController extends Controller
      * @OA\Get(
      *     path="/api/v1/forms/{id}",
      *     summary="Get form by ID",
-     *     description="Retrieve a specific form by ID",
+     *     description="Retrieve a specific form by MongoDB ObjectId",
      *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Form ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(
+     *             type="string",
+     *             pattern="^[a-f0-9]{24}$",
+     *             example="68ee4fc2754f6e95b809e492"
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Form details",
      *         @OA\JsonContent(
      *             type="object",
-     *             example={
-     *                 "id": 1,
-     *                 "title": "Customer Satisfaction Survey",
-     *                 "description": "Survey to measure customer satisfaction",
-     *                 "status": "active",
-     *                 "created_at": "2025-10-14T10:00:00.000000Z",
-     *                 "updated_at": "2025-10-14T10:00:00.000000Z"
-     *             }
+     *             @OA\Property(property="id", type="string", example="68ee4fc2754f6e95b809e492"),
+     *             @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
+     *             @OA\Property(property="description", type="string", example="Survey to measure customer satisfaction"),
+     *             @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
+     *             @OA\Property(property="is_published", type="boolean", example=false),
+     *             @OA\Property(property="current_version", type="integer", example=1),
+     *             @OA\Property(property="visibility", type="string", example="public"),
+     *             @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z"),
+     *             @OA\Property(property="updated_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z")
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
      *         description="Form not found"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
      *     )
      * )
      */
@@ -94,6 +110,7 @@ class FormController extends Controller
      *     summary="Create new form",
      *     description="Create a new form",
      *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -101,7 +118,11 @@ class FormController extends Controller
      *             required={"title"},
      *             @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
      *             @OA\Property(property="description", type="string", example="Survey to measure customer satisfaction"),
-     *             @OA\Property(property="status", type="string", enum={"draft", "active", "inactive"}, example="draft")
+     *             @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
+     *             @OA\Property(property="password", type="string", example="secret123"),
+     *             @OA\Property(property="is_published", type="boolean", example=false),
+     *             @OA\Property(property="current_version", type="integer", example=1),
+     *             @OA\Property(property="visibility", type="string", enum={"public", "private", "restricted"}, example="public")
      *         )
      *     ),
      *     @OA\Response(
@@ -109,20 +130,25 @@ class FormController extends Controller
      *         description="Form created successfully",
      *         @OA\JsonContent(
      *             type="object",
-     *             example={
-     *                 "message": "Form created successfully",
-     *                 "form": {
-     *                     "id": 1,
-     *                     "title": "Customer Satisfaction Survey",
-     *                     "description": "Survey to measure customer satisfaction",
-     *                     "status": "draft"
-     *                 }
-     *             }
+     *             @OA\Property(property="message", type="string", example="Form created successfully"),
+     *             @OA\Property(
+     *                 property="form",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string", example="68ee4fc2754f6e95b809e492"),
+     *                 @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
+     *                 @OA\Property(property="description", type="string"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=422,
      *         description="Validation error"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
      *     )
      * )
      */
@@ -131,7 +157,11 @@ class FormController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:draft,active,inactive',
+            'created_by' => 'nullable|string|regex:/^[a-f0-9]{24}$/',
+            'password' => 'nullable|string',
+            'is_published' => 'nullable|boolean',
+            'current_version' => 'nullable|integer',
+            'visibility' => 'nullable|in:public,private,restricted',
         ]);
 
         if ($validator->fails()) {
@@ -141,11 +171,7 @@ class FormController extends Controller
             ], 422);
         }
 
-        $form = Form::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'status' => $request->status ?? 'draft',
-        ]);
+        $form = Form::create($request->all());
 
         return response()->json([
             'message' => 'Form created successfully',
@@ -159,12 +185,17 @@ class FormController extends Controller
      *     summary="Update form",
      *     description="Update an existing form",
      *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Form ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(
+     *             type="string",
+     *             pattern="^[a-f0-9]{24}$",
+     *             example="68ee4fc2754f6e95b809e492"
+     *         )
      *     ),
      *     @OA\RequestBody(
      *         required=true,
@@ -172,16 +203,26 @@ class FormController extends Controller
      *             type="object",
      *             @OA\Property(property="title", type="string", example="Updated Survey Title"),
      *             @OA\Property(property="description", type="string", example="Updated description"),
-     *             @OA\Property(property="status", type="string", enum={"draft", "active", "inactive"}, example="active")
+     *             @OA\Property(property="is_published", type="boolean", example=true),
+     *             @OA\Property(property="visibility", type="string", enum={"public", "private", "restricted"}, example="public")
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Form updated successfully"
+     *         description="Form updated successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Form updated successfully"),
+     *             @OA\Property(property="form", type="object")
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
      *         description="Form not found"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
      *     )
      * )
      */
@@ -198,7 +239,10 @@ class FormController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|in:draft,active,inactive',
+            'password' => 'nullable|string',
+            'is_published' => 'nullable|boolean',
+            'current_version' => 'nullable|integer',
+            'visibility' => 'nullable|in:public,private,restricted',
         ]);
 
         if ($validator->fails()) {
@@ -208,7 +252,7 @@ class FormController extends Controller
             ], 422);
         }
 
-        $form->update($request->only(['title', 'description', 'status']));
+        $form->update($request->all());
 
         return response()->json([
             'message' => 'Form updated successfully',
@@ -222,20 +266,33 @@ class FormController extends Controller
      *     summary="Delete form",
      *     description="Delete a form",
      *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Form ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(
+     *             type="string",
+     *             pattern="^[a-f0-9]{24}$",
+     *             example="68ee4fc2754f6e95b809e492"
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Form deleted successfully"
+     *         description="Form deleted successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Form deleted successfully")
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
      *         description="Form not found"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
      *     )
      * )
      */

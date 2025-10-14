@@ -11,31 +11,20 @@ class FormSubmissionPayloadController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/submissions/{submissionId}/payload",
-     *     summary="Get submission payload",
-     *     description="Retrieve the payload (answers) for a specific submission",
-     *     tags={"Submission Payloads"},
+     *     summary="Get submission payload by submission ID",
+     *     description="Retrieve payload data for a specific submission",
+     *     tags={"Form Submission Payloads"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="submissionId",
      *         in="path",
      *         required=true,
-     *         description="Submission ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId of the submission",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Submission payload details",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="id", type="integer", example=1),
-     *             @OA\Property(property="submission_id", type="integer", example=10),
-     *             @OA\Property(property="answers", type="object", example={"Q1": "Yes", "Q2": "No"}),
-     *             @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Payload not found"
-     *     )
+     *     @OA\Response(response=200, description="Submission payload details"),
+     *     @OA\Response(response=404, description="Payload not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function show($submissionId)
@@ -48,42 +37,26 @@ class FormSubmissionPayloadController extends Controller
             ], 404);
         }
 
-        return response()->json([
-            'id' => $payload->id,
-            'submission_id' => $payload->submission_id,
-            'answers' => json_decode($payload->answers_json),
-            'created_at' => $payload->created_at
-        ], 200);
+        return response()->json($payload, 200);
     }
 
     /**
      * @OA\Get(
      *     path="/api/v1/payloads/{id}",
      *     summary="Get payload by ID",
-     *     description="Retrieve a specific payload by ID",
-     *     tags={"Submission Payloads"},
+     *     description="Retrieve a specific payload by its ID",
+     *     tags={"Form Submission Payloads"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Payload ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Payload details",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="id", type="integer", example=1),
-     *             @OA\Property(property="submission_id", type="integer", example=10),
-     *             @OA\Property(property="answers", type="object", example={"Q1": "Yes", "Q2": "No"}),
-     *             @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Payload not found"
-     *     )
+     *     @OA\Response(response=200, description="Payload details"),
+     *     @OA\Response(response=404, description="Payload not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function showById($id)
@@ -96,11 +69,6 @@ class FormSubmissionPayloadController extends Controller
             ], 404);
         }
 
-        return response()->json([
-            'id' => $payload->id,
-            'submission_id' => $payload->submission_id,
-            'answers' => json_decode($payload->answers_json),
-            'created_at' => $payload->created_at
-        ], 200);
+        return response()->json($payload, 200);
     }
 }
