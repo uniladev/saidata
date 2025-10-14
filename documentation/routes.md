@@ -163,32 +163,6 @@ Authorization: Bearer <token>
 }
 ```
 
----
-
-## 7. Verify SSO Credentials (optional internal endpoint)
-
-**Method:** `POST /api/v1/auth/verify-sso`
-
-> Used internally by the backend to validate username/password against the campus SSO.
-> This endpoint **does not issue JWTs**, it only checks credentials.
-
-### Request
-
-```json
-{
-  "username": "2267051001",
-  "password": "12345678"
-}
-```
-
-### Expected Response
-
-```json
-{
-  "success": true,
-  "verified": true
-}
-```
 
 ---
 
@@ -202,8 +176,6 @@ Authorization: Bearer <token>
 |  4 |  POST  | `/api/v1/auth/refresh`         | Refresh access token               |       ❌       |
 |  5 |  POST  | `/api/v1/auth/forgot-password` | Request password reset email       |       ❌       |
 |  6 |  POST  | `/api/v1/auth/reset-password`  | Reset user password                |       ❌       |
-|  7 |  POST  | `/api/v1/auth/verify-sso`      | Verify credentials with campus SSO |       ❌       |
-
 ---
 
 ## ⚙️ Notes for Backend Developers
