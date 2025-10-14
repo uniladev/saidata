@@ -1,8 +1,11 @@
+// frontend/src/App.jsx
 import { Outlet } from "react-router-dom";
 import { Suspense } from "react";
 import { Navbar, Footer } from "./components/layout";
+import ScrollToTop from "./components/common/ScrollToTop";
+import ScrollToTopButton from "./components/common/ScrollToTopButton";
 
-// Elegant Loading Component - pilih salah satu design di bawah
+// Elegant Loading Component
 const ElegantLoading = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -32,7 +35,6 @@ const ElegantLoading = () => {
         <div className="relative flex items-center justify-center w-24 h-24">
           <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse shadow-lg shadow-blue-600/50" />
         </div>
-        
       </div>
     </div>
   );
@@ -41,11 +43,19 @@ const ElegantLoading = () => {
 export default function App() {
   return (
     <div className="min-h-dvh flex flex-col">
+      {/* Scroll to top on route change */}
+      <ScrollToTop />
+      
       <Navbar />
+      
       <Suspense fallback={<ElegantLoading />}>
         <Outlet />
       </Suspense>
+      
       <Footer />
+      
+      {/* Floating scroll to top button */}
+      <ScrollToTopButton />
     </div>
   );
 }
