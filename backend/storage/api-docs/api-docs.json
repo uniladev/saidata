@@ -433,6 +433,876 @@
                     }
                 }
             }
+        },
+        "/api/v1/forms": {
+            "get": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get all forms",
+                "description": "Retrieve all forms",
+                "operationId": "bcad6aeac6086ec1d97b7245504ebcc3",
+                "responses": {
+                    "200": {
+                        "description": "List of forms",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "example": {
+                                            "id": 1,
+                                            "title": "Customer Satisfaction Survey",
+                                            "description": "Survey to measure customer satisfaction",
+                                            "status": "active",
+                                            "created_at": "2025-10-14T10:00:00.000000Z",
+                                            "updated_at": "2025-10-14T10:00:00.000000Z"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Create new form",
+                "description": "Create a new form",
+                "operationId": "9c6257241b15498a5c9fbb8e36879f40",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Customer Satisfaction Survey"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Survey to measure customer satisfaction"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "draft",
+                                            "active",
+                                            "inactive"
+                                        ],
+                                        "example": "draft"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Form created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Form created successfully",
+                                    "form": {
+                                        "id": 1,
+                                        "title": "Customer Satisfaction Survey",
+                                        "description": "Survey to measure customer satisfaction",
+                                        "status": "draft"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/{id}": {
+            "get": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get form by ID",
+                "description": "Retrieve a specific form by ID",
+                "operationId": "5f0cd5c61e672872fc3de42d9bd86a9d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "title": "Customer Satisfaction Survey",
+                                    "description": "Survey to measure customer satisfaction",
+                                    "status": "active",
+                                    "created_at": "2025-10-14T10:00:00.000000Z",
+                                    "updated_at": "2025-10-14T10:00:00.000000Z"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Update form",
+                "description": "Update an existing form",
+                "operationId": "cd7f11d5218d6865724c77f1ea25d841",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Updated Survey Title"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Updated description"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "draft",
+                                            "active",
+                                            "inactive"
+                                        ],
+                                        "example": "active"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Form updated successfully"
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Delete form",
+                "description": "Delete a form",
+                "operationId": "01f1be53256aaaaa8a2db6c2e9876bf8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form deleted successfully"
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/survey": {
+            "post": {
+                "tags": [
+                    "Survey"
+                ],
+                "summary": "Submit survey data",
+                "description": "Endpoint untuk menerima hasil survey dari frontend",
+                "operationId": "b6957a616d66e3d73ab529ed5edcdd8c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            },
+                            "example": {
+                                "form_id": 1,
+                                "form_version_id": 2,
+                                "user_id": 5,
+                                "answers": [
+                                    {
+                                        "question_id": "Q1",
+                                        "answer": "Yes"
+                                    },
+                                    {
+                                        "question_id": "Q2",
+                                        "answer": "No"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Survey data stored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "message": "Survey data saved",
+                                    "submission_id": 10
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/submissions/{submissionId}/payload": {
+            "get": {
+                "tags": [
+                    "Submission Payloads"
+                ],
+                "summary": "Get submission payload",
+                "description": "Retrieve the payload (answers) for a specific submission",
+                "operationId": "27484e7cf3539113e224675d502305df",
+                "parameters": [
+                    {
+                        "name": "submissionId",
+                        "in": "path",
+                        "description": "Submission ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission payload details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "submission_id": {
+                                            "type": "integer",
+                                            "example": 10
+                                        },
+                                        "answers": {
+                                            "type": "object",
+                                            "example": {
+                                                "Q1": "Yes",
+                                                "Q2": "No"
+                                            }
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-10-14T10:00:00.000000Z"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Payload not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/payloads/{id}": {
+            "get": {
+                "tags": [
+                    "Submission Payloads"
+                ],
+                "summary": "Get payload by ID",
+                "description": "Retrieve a specific payload by ID",
+                "operationId": "9703347d049b0ec4130e3ce4cad7e3b4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Payload ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payload details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "submission_id": {
+                                            "type": "integer",
+                                            "example": 10
+                                        },
+                                        "answers": {
+                                            "type": "object",
+                                            "example": {
+                                                "Q1": "Yes",
+                                                "Q2": "No"
+                                            }
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-10-14T10:00:00.000000Z"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Payload not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/forms/{formId}/versions": {
+            "get": {
+                "tags": [
+                    "Form Versions"
+                ],
+                "summary": "Get all versions of a form",
+                "description": "Retrieve all versions for a specific form",
+                "operationId": "cf6157625d9d4c0e2642e9eb53d938aa",
+                "parameters": [
+                    {
+                        "name": "formId",
+                        "in": "path",
+                        "description": "Form ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of form versions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "form_id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "version_number": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "schema_json": {
+                                                "type": "string",
+                                                "example": "{}"
+                                            },
+                                            "is_active": {
+                                                "type": "boolean",
+                                                "example": true
+                                            },
+                                            "created_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-10-14T10:00:00.000000Z"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/form-versions/{id}": {
+            "get": {
+                "tags": [
+                    "Form Versions"
+                ],
+                "summary": "Get form version by ID",
+                "description": "Retrieve a specific form version",
+                "operationId": "504e96836a2aab8493548f6f2cacc707",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form Version ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form version details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "form_id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "version_number": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "schema_json": {
+                                            "type": "string"
+                                        },
+                                        "is_active": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form version not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Form Versions"
+                ],
+                "summary": "Update form version",
+                "description": "Update an existing form version",
+                "operationId": "18cf806c971eb52190e5612023f01076",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form Version ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "schema_json": {
+                                        "type": "string"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Form version updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form version updated successfully"
+                                        },
+                                        "version": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form version not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Form Versions"
+                ],
+                "summary": "Delete form version",
+                "description": "Delete a form version",
+                "operationId": "e6d215020073dbf03d912faa77ede192",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Form Version ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form version deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form version deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form version not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/form-versions": {
+            "post": {
+                "tags": [
+                    "Form Versions"
+                ],
+                "summary": "Create new form version",
+                "description": "Create a new version for a form",
+                "operationId": "3fe59d2b293e24fa9621c41536b6b88f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "form_id",
+                                    "version_number",
+                                    "schema_json"
+                                ],
+                                "properties": {
+                                    "form_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "version_number": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "schema_json": {
+                                        "type": "string",
+                                        "example": "{}"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Form version created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form version created successfully"
+                                        },
+                                        "version": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{userId}/profile": {
+            "get": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Get user profile",
+                "description": "Retrieve user profile by user ID",
+                "operationId": "04f204f71059d8bf7281ef291fc8d491",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "user_id": 5,
+                                    "full_name": "John Doe",
+                                    "phone": "+628123456789",
+                                    "address": "Jakarta, Indonesia",
+                                    "date_of_birth": "1990-01-01",
+                                    "avatar_url": "https://example.com/avatar.jpg",
+                                    "created_at": "2025-10-14T10:00:00.000000Z",
+                                    "updated_at": "2025-10-14T10:00:00.000000Z"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Profile not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/user-profiles": {
+            "post": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Create user profile",
+                "description": "Create a new user profile",
+                "operationId": "383a38ef7f8b7f3036b3ea8bab2c4442",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "user_id"
+                                ],
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+628123456789"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "Jakarta, Indonesia"
+                                    },
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
+                                    },
+                                    "avatar_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/avatar.jpg"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Profile created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/user-profiles/{id}": {
+            "put": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Update user profile",
+                "description": "Update an existing user profile",
+                "operationId": "5ff67a911a207ce9cf5394b96de05bd8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Profile ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "avatar_url": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully"
+                    },
+                    "404": {
+                        "description": "Profile not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "User Profiles"
+                ],
+                "summary": "Delete user profile",
+                "description": "Delete a user profile",
+                "operationId": "a26281abf789fc8640faa39b66bd0ade",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Profile ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile deleted successfully"
+                    },
+                    "404": {
+                        "description": "Profile not found"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -449,6 +1319,26 @@
         {
             "name": "Authentication",
             "description": "API Endpoints for user authentication"
+        },
+        {
+            "name": "Forms",
+            "description": "Forms"
+        },
+        {
+            "name": "Survey",
+            "description": "Survey"
+        },
+        {
+            "name": "Submission Payloads",
+            "description": "Submission Payloads"
+        },
+        {
+            "name": "Form Versions",
+            "description": "Form Versions"
+        },
+        {
+            "name": "User Profiles",
+            "description": "User Profiles"
         }
     ]
 }
