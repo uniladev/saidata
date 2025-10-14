@@ -1,9 +1,9 @@
 // frontend/src/pages/Login.jsx (Axios version)
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PrimaryButton, OutlineButton, LinkButton } from '../components/ui/Button';
-import api, { setAccessToken } from '../config/api';
-import '../assets/css/Login.css';
+import { PrimaryButton, OutlineButton, LinkButton } from '../../components/ui/Button';
+import api, { setAccessToken } from '../../config/api';
+import '../../assets/css/Login.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
