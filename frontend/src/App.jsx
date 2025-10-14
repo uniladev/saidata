@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { lazy } from "react";
 
 // Guest Pages
+const NotFoundPage = lazy(() => import("./pages/NotFound"));
 const HomePage = lazy(() => import("./pages/guest/Home"));
 const AboutPage = lazy(() => import("./pages/guest/About"));
 const LoginPage = lazy(() => import("./pages/auth/Login"));
@@ -63,7 +64,7 @@ export default function App() {
       </Route>
 
       {/* 404 Not Found */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
