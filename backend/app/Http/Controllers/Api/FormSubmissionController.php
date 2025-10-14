@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
-
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\FormSubmission;
-use App\Models\FormSubmissionPayload;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class FormSubmissionController extends Controller
@@ -14,40 +12,39 @@ class FormSubmissionController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/survey",
-     *     summary="Submit survey data",
-     *     description="Endpoint untuk menerima hasil survey dari frontend",
-     *     tags={"Survey"},
+     *     summary="Submit survey response",
+     *     description="Submit a response to a survey form",
+     *     tags={"Form Submissions"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             type="object",
-     *             example={
-     *                 "form_id": 1,
-     *                 "form_version_id": 2,
-     *                 "user_id": 5,
-     *                 "answers": {
-     *                     {"question_id": "Q1", "answer": "Yes"},
-     *                     {"question_id": "Q2", "answer": "No"}
-     *                 }
-     *             }
+     *             required={"form_id", "version_id", "submitted_by"},
+     *             @OA\Property(property="form_id", type="string", example="68ee4fc2754f6e95b809e492"),
+     *             @OA\Property(property="version_id", type="string", example="68ee4fc2754f6e95b809e493"),
+     *             @OA\Property(property="submitted_by", type="string", example="68ee3e2c5336195833053652"),
+     *             @OA\Property(property="status", type="string", enum={"completed", "draft"}, example="completed")
      *         )
      *     ),
      *     @OA\Response(
-     *         response=200,
-     *         description="Survey data stored successfully",
+     *         response=201,
+     *         description="Survey submitted successfully",
      *         @OA\JsonContent(
-     *             example={"message": "Survey data saved", "submission_id": 10}
+     *             @OA\Property(property="message", type="string", example="Survey submitted successfully"),
+     *             @OA\Property(property="submission", type="object")
      *         )
-     *     )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'form_id' => 'required|integer',
-            'form_version_id' => 'required|integer',
-            'user_id' => 'required|integer',
-            'answers' => 'required|array',
+            'form_id' => 'required|string|regex:/^[a-f0-9]{24}$/',
+            'version_id' => 'required|string|regex:/^[a-f0-9]{24}$/',
+            'submitted_by' => 'required|string|regex:/^[a-f0-9]{24}$/',
+            'status' => 'nullable|in:completed,draft',
         ]);
 
         if ($validator->fails()) {
@@ -57,23 +54,11 @@ class FormSubmissionController extends Controller
             ], 422);
         }
 
-        $submission = FormSubmission::create([
-            'form_id' => $request->form_id,
-            'form_version_id' => $request->form_version_id,
-            'user_id' => $request->user_id,
-            'status' => 'submitted',
-            'submitted_at' => now(),
-        ]);
-
-        FormSubmissionPayload::create([
-            'submission_id' => $submission->id,
-            'answers_json' => json_encode($request->answers),
-            'created_at' => now(),
-        ]);
+        $submission = FormSubmission::create($request->all());
 
         return response()->json([
-            'message' => 'Survey data saved',
-            'submission_id' => $submission->id
-        ], 200);
+            'message' => 'Survey submitted successfully',
+            'submission' => $submission
+        ], 201);
     }
 }

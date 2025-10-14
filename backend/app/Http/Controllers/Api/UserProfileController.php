@@ -12,38 +12,20 @@ class UserProfileController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/users/{userId}/profile",
-     *     summary="Get user profile",
-     *     description="Retrieve user profile by user ID",
+     *     summary="Get user profile by user ID",
+     *     description="Retrieve profile for a specific user",
      *     tags={"User Profiles"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="userId",
      *         in="path",
      *         required=true,
-     *         description="User ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId of the user",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="User profile details",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             example={
-     *                 "id": 1,
-     *                 "user_id": 5,
-     *                 "full_name": "John Doe",
-     *                 "phone": "+628123456789",
-     *                 "address": "Jakarta, Indonesia",
-     *                 "date_of_birth": "1990-01-01",
-     *                 "avatar_url": "https://example.com/avatar.jpg",
-     *                 "created_at": "2025-10-14T10:00:00.000000Z",
-     *                 "updated_at": "2025-10-14T10:00:00.000000Z"
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Profile not found"
-     *     )
+     *     @OA\Response(response=200, description="User profile details"),
+     *     @OA\Response(response=404, description="Profile not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function show($userId)
@@ -65,38 +47,29 @@ class UserProfileController extends Controller
      *     summary="Create user profile",
      *     description="Create a new user profile",
      *     tags={"User Profiles"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             type="object",
      *             required={"user_id"},
-     *             @OA\Property(property="user_id", type="integer", example=5),
+     *             @OA\Property(property="user_id", type="string", example="68ee3e2c5336195833053652"),
      *             @OA\Property(property="full_name", type="string", example="John Doe"),
-     *             @OA\Property(property="phone", type="string", example="+628123456789"),
-     *             @OA\Property(property="address", type="string", example="Jakarta, Indonesia"),
-     *             @OA\Property(property="date_of_birth", type="string", format="date", example="1990-01-01"),
-     *             @OA\Property(property="avatar_url", type="string", example="https://example.com/avatar.jpg")
+     *             @OA\Property(property="phone", type="string", example="+1234567890"),
+     *             @OA\Property(property="address", type="string", example="123 Main St")
      *         )
      *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Profile created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error"
-     *     )
+     *     @OA\Response(response=201, description="Profile created successfully"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|unique:user_profiles,user_id',
+            'user_id' => 'required|string|regex:/^[a-f0-9]{24}$/',
             'full_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
-            'date_of_birth' => 'nullable|date',
-            'avatar_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -120,32 +93,26 @@ class UserProfileController extends Controller
      *     summary="Update user profile",
      *     description="Update an existing user profile",
      *     tags={"User Profiles"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Profile ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             type="object",
      *             @OA\Property(property="full_name", type="string"),
      *             @OA\Property(property="phone", type="string"),
-     *             @OA\Property(property="address", type="string"),
-     *             @OA\Property(property="date_of_birth", type="string", format="date"),
-     *             @OA\Property(property="avatar_url", type="string")
+     *             @OA\Property(property="address", type="string")
      *         )
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Profile updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Profile not found"
-     *     )
+     *     @OA\Response(response=200, description="Profile updated successfully"),
+     *     @OA\Response(response=404, description="Profile not found"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function update(Request $request, $id)
@@ -159,11 +126,9 @@ class UserProfileController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'full_name' => 'sometimes|string|max:255',
-            'phone' => 'sometimes|string|max:20',
-            'address' => 'sometimes|string',
-            'date_of_birth' => 'sometimes|date',
-            'avatar_url' => 'sometimes|url',
+            'full_name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -173,7 +138,7 @@ class UserProfileController extends Controller
             ], 422);
         }
 
-        $profile->update($request->only(['full_name', 'phone', 'address', 'date_of_birth', 'avatar_url']));
+        $profile->update($request->all());
 
         return response()->json([
             'message' => 'Profile updated successfully',
@@ -187,21 +152,17 @@ class UserProfileController extends Controller
      *     summary="Delete user profile",
      *     description="Delete a user profile",
      *     tags={"User Profiles"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Profile ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Profile deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Profile not found"
-     *     )
+     *     @OA\Response(response=200, description="Profile deleted successfully"),
+     *     @OA\Response(response=404, description="Profile not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function destroy($id)

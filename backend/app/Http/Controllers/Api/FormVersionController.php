@@ -15,29 +15,24 @@ class FormVersionController extends Controller
      *     summary="Get all versions of a form",
      *     description="Retrieve all versions for a specific form",
      *     tags={"Form Versions"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="formId",
      *         in="path",
      *         required=true,
-     *         description="Form ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId of the form",
+     *         @OA\Schema(
+     *             type="string",
+     *             pattern="^[a-f0-9]{24}$",
+     *             example="68ee4fc2754f6e95b809e492"
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of form versions",
-     *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(
-     *                 type="object",
-     *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="form_id", type="integer", example=1),
-     *                 @OA\Property(property="version_number", type="integer", example=1),
-     *                 @OA\Property(property="schema_json", type="string", example="{}"),
-     *                 @OA\Property(property="is_active", type="boolean", example=true),
-     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-14T10:00:00.000000Z")
-     *             )
-     *         )
-     *     )
+     *         @OA\JsonContent(type="array", @OA\Items(type="object"))
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function index($formId)
@@ -52,30 +47,17 @@ class FormVersionController extends Controller
      *     summary="Get form version by ID",
      *     description="Retrieve a specific form version",
      *     tags={"Form Versions"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Form Version ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Form version details",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="id", type="integer", example=1),
-     *             @OA\Property(property="form_id", type="integer", example=1),
-     *             @OA\Property(property="version_number", type="integer", example=1),
-     *             @OA\Property(property="schema_json", type="string"),
-     *             @OA\Property(property="is_active", type="boolean", example=true),
-     *             @OA\Property(property="created_at", type="string", format="date-time")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Form version not found"
-     *     )
+     *     @OA\Response(response=200, description="Form version details"),
+     *     @OA\Response(response=404, description="Form version not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function show($id)
@@ -97,39 +79,27 @@ class FormVersionController extends Controller
      *     summary="Create new form version",
      *     description="Create a new version for a form",
      *     tags={"Form Versions"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             type="object",
-     *             required={"form_id", "version_number", "schema_json"},
-     *             @OA\Property(property="form_id", type="integer", example=1),
+     *             required={"form_id", "version_number", "schema"},
+     *             @OA\Property(property="form_id", type="string", example="68ee4fc2754f6e95b809e492"),
      *             @OA\Property(property="version_number", type="integer", example=1),
-     *             @OA\Property(property="schema_json", type="string", example="{}"),
-     *             @OA\Property(property="is_active", type="boolean", example=true)
+     *             @OA\Property(property="schema", type="object")
      *         )
      *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Form version created successfully",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="message", type="string", example="Form version created successfully"),
-     *             @OA\Property(property="version", type="object")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error"
-     *     )
+     *     @OA\Response(response=201, description="Form version created successfully"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'form_id' => 'required|integer',
+            'form_id' => 'required|string|regex:/^[a-f0-9]{24}$/',
             'version_number' => 'required|integer',
-            'schema_json' => 'required|json',
-            'is_active' => 'boolean',
+            'schema' => 'required|array',
         ]);
 
         if ($validator->fails()) {
@@ -139,18 +109,7 @@ class FormVersionController extends Controller
             ], 422);
         }
 
-        // Deactivate other versions if this is set as active
-        if ($request->is_active) {
-            FormVersion::where('form_id', $request->form_id)
-                ->update(['is_active' => false]);
-        }
-
-        $version = FormVersion::create([
-            'form_id' => $request->form_id,
-            'version_number' => $request->version_number,
-            'schema_json' => $request->schema_json,
-            'is_active' => $request->is_active ?? false,
-        ]);
+        $version = FormVersion::create($request->all());
 
         return response()->json([
             'message' => 'Form version created successfully',
@@ -164,34 +123,25 @@ class FormVersionController extends Controller
      *     summary="Update form version",
      *     description="Update an existing form version",
      *     tags={"Form Versions"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Form Version ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="schema_json", type="string"),
-     *             @OA\Property(property="is_active", type="boolean")
+     *             @OA\Property(property="schema", type="object"),
+     *             @OA\Property(property="version_number", type="integer")
      *         )
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Form version updated successfully",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="message", type="string", example="Form version updated successfully"),
-     *             @OA\Property(property="version", type="object")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Form version not found"
-     *     )
+     *     @OA\Response(response=200, description="Form version updated successfully"),
+     *     @OA\Response(response=404, description="Form version not found"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function update(Request $request, $id)
@@ -205,8 +155,8 @@ class FormVersionController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'schema_json' => 'sometimes|required|json',
-            'is_active' => 'boolean',
+            'schema' => 'sometimes|required|array',
+            'version_number' => 'sometimes|required|integer',
         ]);
 
         if ($validator->fails()) {
@@ -216,14 +166,7 @@ class FormVersionController extends Controller
             ], 422);
         }
 
-        // Deactivate other versions if this is being set as active
-        if ($request->has('is_active') && $request->is_active) {
-            FormVersion::where('form_id', $version->form_id)
-                ->where('id', '!=', $id)
-                ->update(['is_active' => false]);
-        }
-
-        $version->update($request->only(['schema_json', 'is_active']));
+        $version->update($request->all());
 
         return response()->json([
             'message' => 'Form version updated successfully',
@@ -237,25 +180,17 @@ class FormVersionController extends Controller
      *     summary="Delete form version",
      *     description="Delete a form version",
      *     tags={"Form Versions"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Form Version ID",
-     *         @OA\Schema(type="integer")
+     *         description="MongoDB ObjectId",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Form version deleted successfully",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="message", type="string", example="Form version deleted successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Form version not found"
-     *     )
+     *     @OA\Response(response=200, description="Form version deleted successfully"),
+     *     @OA\Response(response=404, description="Form version not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function destroy($id)
