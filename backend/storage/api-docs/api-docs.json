@@ -16,85 +16,32 @@
         }
     ],
     "paths": {
-        "/api/users": {
-            "get": {
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Get all users",
-                "description": "Get list of all users",
-                "operationId": "566aed8efb436ca506e0ef51a032ecd9",
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "properties": {
-                                            "_id": {
-                                                "type": "string",
-                                                "example": "507f1f77bcf86cd799439011"
-                                            },
-                                            "name": {
-                                                "type": "string",
-                                                "example": "John Doe"
-                                            },
-                                            "email": {
-                                                "type": "string",
-                                                "example": "john@example.com"
-                                            },
-                                            "created_at": {
-                                                "type": "string",
-                                                "format": "date-time"
-                                            },
-                                            "updated_at": {
-                                                "type": "string",
-                                                "format": "date-time"
-                                            }
-                                        },
-                                        "type": "object"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
+        "/api/v1/auth/login": {
             "post": {
                 "tags": [
-                    "Users"
+                    "Authentication"
                 ],
-                "summary": "Create new user",
-                "description": "Create a new user",
-                "operationId": "be551c1d694a01c164966f58bfa77013",
+                "summary": "Login via SSO",
+                "description": "Authenticate user with campus SSO credentials and receive JWT tokens",
+                "operationId": "login",
                 "requestBody": {
+                    "description": "User credentials",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "name",
-                                    "email",
+                                    "username",
                                     "password"
                                 ],
                                 "properties": {
-                                    "name": {
+                                    "username": {
+                                        "description": "NPM from SSO",
                                         "type": "string",
-                                        "example": "John Doe"
-                                    },
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "john@example.com"
+                                        "example": "2267051001"
                                     },
                                     "password": {
+                                        "description": "User password (min 6 characters)",
                                         "type": "string",
                                         "format": "password",
                                         "example": "password123"
@@ -106,26 +53,46 @@
                     }
                 },
                 "responses": {
-                    "201": {
-                        "description": "User created successfully",
+                    "200": {
+                        "description": "Successful login",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "HTTP-only refresh token cookie",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=abc123...; HttpOnly; Secure; SameSite=Strict"
+                                }
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "message": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "token": {
                                             "type": "string",
-                                            "example": "User created successfully"
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGc..."
                                         },
                                         "user": {
                                             "properties": {
-                                                "_id": {
-                                                    "type": "string"
+                                                "id": {
+                                                    "type": "string",
+                                                    "example": "68ee2e761fa10bc4f109c732"
                                                 },
                                                 "name": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "example": "Dafahan"
                                                 },
                                                 "email": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "example": "dafahan@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "user"
                                                 }
                                             },
                                             "type": "object"
@@ -136,8 +103,173 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Username atau password salah"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "username": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The username field is required."
+                                                    }
+                                                },
+                                                "password": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The password must be at least 6 characters."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login failed: Internal server error"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get current user",
+                "description": "Get authenticated user information",
+                "operationId": "me",
+                "responses": {
+                    "200": {
+                        "description": "User information retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "example": "68ee2e761fa10bc4f109c732"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Dafahan"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "dafahan@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "user"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token invalid or expired"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -147,51 +279,37 @@
                 ]
             }
         },
-        "/api/users/{id}": {
-            "get": {
+        "/api/v1/auth/logout": {
+            "post": {
                 "tags": [
-                    "Users"
+                    "Authentication"
                 ],
-                "summary": "Get user by ID",
-                "description": "Get single user by ID",
-                "operationId": "6f51bd5fa2dddcd25e44cfa53dcbd10a",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "User ID",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
+                "summary": "Logout user",
+                "description": "Invalidate JWT token and clear refresh token",
+                "operationId": "logout",
                 "responses": {
                     "200": {
-                        "description": "Successful operation",
+                        "description": "Successfully logged out",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "Clears the refresh token cookie",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT"
+                                }
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "_id": {
-                                            "type": "string",
-                                            "example": "507f1f77bcf86cd799439011"
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
                                         },
-                                        "name": {
+                                        "message": {
                                             "type": "string",
-                                            "example": "John Doe"
-                                        },
-                                        "email": {
-                                            "type": "string",
-                                            "example": "john@example.com"
-                                        },
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time"
-                                        },
-                                        "updated_at": {
-                                            "type": "string",
-                                            "format": "date-time"
+                                            "example": "Logged out successfully"
                                         }
                                     },
                                     "type": "object"
@@ -199,8 +317,25 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "User not found"
+                    "500": {
+                        "description": "Logout failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to logout"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -208,6 +343,95 @@
                         "bearerAuth": []
                     }
                 ]
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh access token",
+                "description": "Get a new access token using refresh token from cookie (token rotation enabled)",
+                "operationId": "refresh",
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "New HTTP-only refresh token cookie (token rotation)",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=xyz789...; HttpOnly; Secure; SameSite=Strict"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired refresh token",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "Clears the invalid refresh token cookie",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid or expired refresh token"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to refresh token"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     },
@@ -223,8 +447,8 @@
     },
     "tags": [
         {
-            "name": "Users",
-            "description": "Users"
+            "name": "Authentication",
+            "description": "API Endpoints for user authentication"
         }
     ]
 }

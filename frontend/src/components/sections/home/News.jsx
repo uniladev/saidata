@@ -1,5 +1,5 @@
 import { Calendar, ArrowRight } from 'lucide-react';
-import { LinkButton } from '../ui/Button';
+import { LinkButton } from '../../ui/Button';
 
 // ==================== NEWS ====================
 const News = () => {

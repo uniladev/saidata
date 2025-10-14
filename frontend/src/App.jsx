@@ -1,52 +1,72 @@
-// frontend/src/App.jsx
-import { Outlet } from "react-router-dom";
-import { Suspense } from "react";
-import { Navbar, Footer } from "./components/layout";
+// frontend/src/App.jsx (Improved Version with AuthContext)
+import { Routes, Route, Navigate } from "react-router-dom";
+import { GuestLayout, AuthenticatedLayout } from "./components/layout";
+import { useAuth } from "./context/AuthContext";
+import { lazy } from "react";
 
-// Elegant Loading Component - pilih salah satu design di bawah
-const ElegantLoading = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="relative">
-        {/* Outer animated ring - ping effect */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-24 h-24 border-4 border-blue-200 rounded-full animate-ping opacity-75" />
-        </div>
-        
-        {/* Middle spinning ring */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-20 h-20 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
-        </div>
-        
-        {/* Inner counter-spinning ring */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div 
-            className="w-16 h-16 border-4 border-indigo-400 border-b-transparent rounded-full animate-spin" 
-            style={{ 
-              animationDirection: 'reverse', 
-              animationDuration: '1s' 
-            }} 
-          />
-        </div>
-        
-        {/* Center pulsing dot */}
-        <div className="relative flex items-center justify-center w-24 h-24">
-          <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse shadow-lg shadow-blue-600/50" />
-        </div>
-        
-      </div>
-    </div>
-  );
+// Guest Pages
+const NotFoundPage = lazy(() => import("./pages/NotFound"));
+const HomePage = lazy(() => import("./pages/guest/Home"));
+const AboutPage = lazy(() => import("./pages/guest/About"));
+const DocumentValidationPage = lazy(() => import("./pages/guest/DocumentValidation"));
+const LoginPage = lazy(() => import("./pages/auth/Login"));
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// Public Route Component (redirect if already logged in)
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (isAuthenticated()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
 };
 
 export default function App() {
   return (
-    <div className="min-h-dvh flex flex-col">
-      <Navbar />
-      <Suspense fallback={<ElegantLoading />}>
-        <Outlet />
-      </Suspense>
-      <Footer />
-    </div>
+    <Routes>
+      {/* Guest Routes */}
+      <Route element={<GuestLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/validasi" element={<DocumentValidationPage />} />
+      </Route>
+
+      {/* Auth Routes */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+
+      {/* Dashboard Routes (Protected) */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <AuthenticatedLayout />
+          </ProtectedRoute>
+        }
+      >
+        {/* <Route path="/dashboard" element={<DashboardHome />} /> */}
+
+      </Route>
+
+      {/* 404 Not Found */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }

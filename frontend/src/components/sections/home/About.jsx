@@ -1,6 +1,6 @@
 
 import {ArrowRight} from 'lucide-react';
-import { PrimaryButton } from '../ui/Button';
+import { PrimaryButton } from '../../ui/Button';
 
 
 // ==================== ABOUT ====================

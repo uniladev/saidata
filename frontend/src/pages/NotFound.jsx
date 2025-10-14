@@ -6,7 +6,7 @@ export default function NotFound() {
   const tried = `${pathname}${search}`;
 
   return (
-    <main className="min-h-[70vh] flex items-center justify-center px-6 py-12">
+    <main className="min-h-screen flex items-center justify-center px-6 py-12">
       <div className="max-w-5xl w-full">
         {/* Hero Section - Maskot & 404 Bersebelahan */}
         <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 mb-8">

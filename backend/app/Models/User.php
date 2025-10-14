@@ -3,86 +3,115 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use MongoDB\Laravel\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
-    protected $table = 'users';
+    protected $connection = 'mongodb';
+    protected $collection = 'users';
 
     /**
-     * Atribut yang bisa diisi massal.
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
      */
     protected $fillable = [
+        'username', // NPM is the username from SSO
         'name',
         'email',
-        'password',
         'role',
+        'refresh_token',
+        'refresh_token_expires_at',
     ];
 
     /**
-     * Atribut yang harus disembunyikan saat serialisasi.
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
      */
     protected $hidden = [
-        'password',
         'remember_token',
+        'refresh_token',
+        'refresh_token_expires_at', // Add this
     ];
 
     /**
-     * Konversi otomatis tipe data.
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        // Don't cast this - MongoDB handles it natively
+        // 'refresh_token_expires_at' => 'datetime',
     ];
 
     /**
-     * Relasi: satu user punya satu profil.
+     * Get the identifier that will be stored in the subject claim of the JWT.
+     *
+     * @return mixed
+     */
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    /**
+     * Return a key value array, containing any custom claims to be added to the JWT.
+     *
+     * @return array
+     */
+    public function getJWTCustomClaims()
+    {
+        return [
+            'username' => $this->username,
+            'role' => $this->role,
+        ];
+    }
+
+    /**
+     * Check if user has a specific role
+     *
+     * @param string $role
+     * @return bool
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    /**
+     * Check if user has any of the given roles
+     *
+     * @param array $roles
+     * @return bool
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role, $roles);
+    }
+
+    /**
+     * Check if refresh token is valid
+     *
+     * @return bool
+     */
+    public function hasValidRefreshToken(): bool
+    {
+        return $this->refresh_token !== null 
+            && $this->refresh_token_expires_at !== null
+            && $this->refresh_token_expires_at->isFuture();
+    }
+
+    /**
+     * Relasi ke user profile
      */
     public function profile()
     {
         return $this->hasOne(UserProfile::class);
-    }
-
-    /**
-     * Relasi: satu user bisa membuat banyak form.
-     */
-    public function forms()
-    {
-        return $this->hasMany(Form::class, 'created_by');
-    }
-
-    /**
-     * Relasi: user bisa punya banyak submission form.
-     */
-    public function submissions()
-    {
-        return $this->hasMany(FormSubmission::class);
-    }
-
-    /**
-     * Cek apakah user adalah admin.
-     */
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
-    }
-
-    /**
-     * Cek apakah user adalah dosen.
-     */
-    public function isLecturer(): bool
-    {
-        return $this->role === 'lecturer';
-    }
-
-    /**
-     * Cek apakah user adalah mahasiswa.
-     */
-    public function isStudent(): bool
-    {
-        return $this->role === 'student';
     }
 }
