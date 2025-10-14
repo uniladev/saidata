@@ -1,12 +1,15 @@
-// frontend/src/pages/Login.jsx (Axios version)
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { PrimaryButton, OutlineButton, LinkButton } from '../../components/ui/Button';
-import api, { setAccessToken } from '../../config/api';
-import '../../assets/css/Login.css';
+// frontend/src/pages/Login.jsx
+import { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { PrimaryButton, LinkButton } from '@/components/ui/Button';
+import '@/assets/css/Login.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,6 +22,9 @@ const LoginPage = () => {
     status: ''
   });
 
+  // Get redirect path from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -29,6 +35,7 @@ const LoginPage = () => {
       ...prev,
       [name]: value
     }));
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -43,8 +50,9 @@ const LoginPage = () => {
     
     // Validation
     let newErrors = {};
+    
     if (!formData.username) {
-      newErrors.username = 'username harus diisi';
+      newErrors.username = 'Username harus diisi';
     }
     
     if (!formData.password) {
@@ -63,29 +71,28 @@ const LoginPage = () => {
     setErrors({ username: '', password: '', status: '' });
 
     try {
-      const { data } = await api.post('/auth/login', {
-        username: formData.username,
-        password: formData.password
-      });
-
-      // Store access token in memory
-      if (data?.accessToken) {
-        setAccessToken(data.accessToken);
-      }
-
-      // Optional: Store user data if returned
-      if (data?.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-
-      // Navigate to dashboard or home
-      navigate('/dashboard');
+      // Use login from AuthProvider
+      await login(formData.username, formData.password);
+      
+      // Navigate to the page they tried to visit or dashboard
+      navigate(from, { replace: true });
     } catch (error) {
       console.error('Login error:', error);
       
-      const errorMessage = error.response?.data?.message 
-        || error.message 
-        || 'Login gagal. Silakan coba lagi.';
+      // Handle different error scenarios
+      let errorMessage = 'Login gagal. Silakan coba lagi.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Username atau password salah';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Akun Anda telah dinonaktifkan';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'Terlalu banyak percobaan login. Silakan coba lagi nanti';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda';
+      }
       
       setErrors(prev => ({
         ...prev,
@@ -143,7 +150,12 @@ const LoginPage = () => {
           <div className="w-full lg:w-5/12 md:w-6/12 px-2 md:px-4">
             <div className="login-box p-6 md:p-10">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold" style={{ color: '#0000FF' }}>Masuk Akun</h2>
+                <h2 className="text-3xl font-bold" style={{ color: '#0000FF' }}>
+                  Masuk Akun
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  Masuk untuk melanjutkan ke dashboard
+                </p>
               </div>
 
               {errors.status && (
@@ -154,7 +166,7 @@ const LoginPage = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                {/* username Input */}
+                {/* Username Input */}
                 <div className={`input-group-custom ${errors.username ? 'error' : ''}`}>
                   <input
                     type="text"
@@ -162,10 +174,11 @@ const LoginPage = () => {
                     value={formData.username}
                     onChange={handleChange}
                     placeholder="NPM / NIM"
+                    autoComplete="username"
                     disabled={isLoading}
                   />
                   <span className="input-icon">
-                    <i className="fa-solid fa-envelope"></i>
+                    <i className="fa-solid fa-user"></i>
                   </span>
                 </div>
                 {errors.username && <small className="error-text">{errors.username}</small>}
@@ -178,47 +191,45 @@ const LoginPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Kata Sandi"
+                    autoComplete="current-password"
                     disabled={isLoading}
                   />
-                  <span className="input-icon" onClick={togglePasswordVisibility}>
+                  <span 
+                    className="input-icon cursor-pointer" 
+                    onClick={togglePasswordVisibility}
+                    role="button"
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  >
                     <i className={`fas ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
                   </span>
                 </div>
                 {errors.password && <small className="error-text">{errors.password}</small>}
 
-                {/* Forgot Password */}
-                <div className="text-right mt-2 mb-8">
-                  <Link to="/forgot-password" className="text-sm font-medium hover:underline" style={{ color: '#0000FF' }}>
-                    Lupa Kata Sandi?
-                  </Link>
-                </div>
-
                 {/* Submit Button */}
-                <div className="mb-4">
-                  <PrimaryButton type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Memproses...' : 'Masuk'}
+                <div className="mb-4 mt-6">
+                  <PrimaryButton 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center">
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Memproses...
+                      </span>
+                    ) : (
+                      'Masuk'
+                    )}
                   </PrimaryButton>
                 </div>
 
-                {/* Divider */}
-                <div className="text-center my-4" style={{ color: '#707373', fontWeight: 600 }}>
-                  ATAU
-                </div>
-
-                {/* Register Link */}
-                <div className="mb-4">
-                  <OutlineButton 
-                    className="w-full"
-                    onClick={() => navigate('/register')}
+                {/* Back Link */}
+                <div className="text-center mt-4">
+                  <LinkButton 
+                    onClick={() => navigate('/')} 
+                    className="text-sm" 
                     disabled={isLoading}
                   >
-                    Daftar Akun
-                  </OutlineButton>
-                </div>
-
-                {/* Back Link */}
-                <div className="text-center mt-2 mb-8">
-                  <LinkButton onClick={() => navigate('/')} className="text-sm" disabled={isLoading}>
                     Kembali ke Beranda
                   </LinkButton>
                 </div>

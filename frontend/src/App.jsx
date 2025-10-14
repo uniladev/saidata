@@ -10,6 +10,10 @@ const HomePage = lazy(() => import("./pages/guest/Home"));
 const AboutPage = lazy(() => import("./pages/guest/About"));
 const LoginPage = lazy(() => import("./pages/auth/Login"));
 
+// Authenticated Pages
+const DashboardPage = lazy(() => import("./pages/authenticated/Dashboard"));
+
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -59,7 +63,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        {/* <Route path="/dashboard" element={<DashboardHome />} /> */}
+        <Route path="/dashboard" element={<DashboardPage />} />
 
       </Route>
 

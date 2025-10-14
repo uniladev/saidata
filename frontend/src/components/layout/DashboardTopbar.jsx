@@ -1,20 +1,19 @@
-// frontend/src/components/layout/DashboardTopbar.jsx
+
+// ============================================
+// FILE: frontend/src/components/layout/DashboardTopbar.jsx
+// ============================================
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, Bell, Search, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const DashboardTopbar = ({ toggleSidebar }) => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Mock user data - replace with actual auth data
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'Admin',
-    avatar: null // Set to image URL if available
-  };
-
-  // Mock notifications - replace with actual data
+  // Mock notifications
   const notifications = [
     { id: 1, message: 'Dokumen baru telah diupload', time: '5 menit yang lalu', unread: true },
     { id: 2, message: 'Validasi dokumen selesai', time: '1 jam yang lalu', unread: true },
@@ -23,9 +22,14 @@ const DashboardTopbar = ({ toggleSidebar }) => {
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
-  const handleLogout = () => {
-    // Implement logout logic here
-    console.log('Logging out...');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/login');
+    }
   };
 
   return (
@@ -34,7 +38,6 @@ const DashboardTopbar = ({ toggleSidebar }) => {
         <div className="flex items-center justify-between h-16">
           {/* Left Section */}
           <div className="flex items-center gap-4">
-            {/* Mobile menu button */}
             <button
               onClick={toggleSidebar}
               className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition"
@@ -43,7 +46,6 @@ const DashboardTopbar = ({ toggleSidebar }) => {
               <Menu className="h-6 w-6" />
             </button>
 
-            {/* Search Bar - Hidden on mobile */}
             <div className="hidden md:flex items-center">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -58,7 +60,6 @@ const DashboardTopbar = ({ toggleSidebar }) => {
 
           {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Search Icon for Mobile */}
             <button className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition">
               <Search className="h-5 w-5" />
             </button>
@@ -78,7 +79,6 @@ const DashboardTopbar = ({ toggleSidebar }) => {
                 )}
               </button>
 
-              {/* Notifications Dropdown */}
               {showNotifications && (
                 <>
                   <div
@@ -119,26 +119,23 @@ const DashboardTopbar = ({ toggleSidebar }) => {
                 className="flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-lg hover:bg-gray-100 transition"
               >
                 <div className="flex items-center gap-2 sm:gap-3">
-                  {/* Avatar */}
                   <div className="h-8 w-8 sm:h-9 sm:w-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {user.avatar ? (
+                    {user?.avatar ? (
                       <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
                     ) : (
-                      <span className="text-sm">{user.name.charAt(0)}</span>
+                      <span className="text-sm">{user?.name?.charAt(0) || 'U'}</span>
                     )}
                   </div>
                   
-                  {/* User Info - Hidden on small mobile */}
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.role}</p>
+                    <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                    <p className="text-xs text-gray-500">{user?.role || 'Member'}</p>
                   </div>
                 </div>
                 
                 <ChevronDown className="h-4 w-4 text-gray-600 hidden sm:block" />
               </button>
 
-              {/* Profile Dropdown */}
               {showProfileMenu && (
                 <>
                   <div
@@ -147,15 +144,27 @@ const DashboardTopbar = ({ toggleSidebar }) => {
                   />
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                     <div className="p-3 border-b border-gray-200">
-                      <p className="font-medium text-gray-900">{user.name}</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
+                      <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
                     </div>
                     <div className="py-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          navigate('/dashboard/profile');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                      >
                         <User className="h-4 w-4" />
                         Profil Saya
                       </button>
-                      <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                      <button 
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          navigate('/dashboard/settings');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                      >
                         <Settings className="h-4 w-4" />
                         Pengaturan
                       </button>
