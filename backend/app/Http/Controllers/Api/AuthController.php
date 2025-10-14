@@ -9,7 +9,14 @@ use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Models\User;
+use MongoDB\BSON\UTCDateTime;
 
+/**
+ * @OA\Tag(
+ *     name="Authentication",
+ *     description="API Endpoints for user authentication"
+ * )
+ */
 class AuthController extends Controller
 {
     protected $ssoService;
@@ -20,17 +27,79 @@ class AuthController extends Controller
     }
 
     /**
-     * Login via SSO and issue JWT tokens
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/v1/auth/login",
+     *     summary="Login via SSO",
+     *     description="Authenticate user with campus SSO credentials and receive JWT tokens",
+     *     operationId="login",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="User credentials",
+     *         @OA\JsonContent(
+     *             required={"username","password"},
+     *             @OA\Property(property="username", type="string", example="2267051001", description="NPM from SSO"),
+     *             @OA\Property(property="password", type="string", format="password", example="password123", description="User password (min 6 characters)")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful login",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGc..."),
+     *             @OA\Property(
+     *                 property="user",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string", example="68ee2e761fa10bc4f109c732"),
+     *                 @OA\Property(property="name", type="string", example="Dafahan"),
+     *                 @OA\Property(property="email", type="string", example="dafahan@example.com"),
+     *                 @OA\Property(property="role", type="string", example="user")
+     *             )
+     *         ),
+     *         @OA\Header(
+     *             header="Set-Cookie",
+     *             description="HTTP-only refresh token cookie",
+     *             @OA\Schema(type="string", example="refresh_token=abc123...; HttpOnly; Secure; SameSite=Strict")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Invalid credentials",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Username atau password salah")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Validation error"),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 @OA\Property(property="username", type="array", @OA\Items(type="string", example="The username field is required.")),
+     *                 @OA\Property(property="password", type="array", @OA\Items(type="string", example="The password must be at least 6 characters."))
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Login failed: Internal server error")
+     *         )
+     *     )
+     * )
      */
     public function login(Request $request)
     {
-        dd($request);
         // Validate input
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string', // NPM from SSO
+            'username' => 'required|string',
             'password' => 'required|string|min:6',
         ]);
 
@@ -42,7 +111,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $username = $request->username; // NPM is the username
+        $username = $request->username;
         $password = $request->password;
 
         try {
@@ -58,7 +127,6 @@ class AuthController extends Controller
                 ]
             ];
 
-
             if (!$ssoResponse['success']) {
                 return response()->json([
                     'success' => false,
@@ -66,9 +134,9 @@ class AuthController extends Controller
                 ], 401);
             }
 
-
             // Get or create user from SSO data
             $user = $this->getOrCreateUser($ssoResponse['data']);
+            
             // Generate JWT access token
             $token = JWTAuth::fromUser($user);
 
@@ -77,7 +145,7 @@ class AuthController extends Controller
 
             // Store refresh token in database
             $user->refresh_token = hash('sha256', $refreshToken);
-            $user->refresh_token_expires_at = now()->addDays(7);
+            $user->refresh_token_expires_at = new UTCDateTime(now()->addDays(7)->timestamp * 1000);
             $user->save();
 
             // Return response with access token and set refresh token cookie
@@ -96,10 +164,10 @@ class AuthController extends Controller
                 60 * 24 * 7, // 7 days in minutes
                 '/',
                 null,
-                config('app.env') === 'production', // secure - only HTTPS in production
-                true, // httpOnly
+                config('app.env') === 'production',
+                true,
                 false,
-                'strict' // sameSite
+                'strict'
             );
 
         } catch (\Exception $e) {
@@ -111,10 +179,45 @@ class AuthController extends Controller
     }
 
     /**
-     * Get current authenticated user
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/v1/auth/me",
+     *     summary="Get current user",
+     *     description="Get authenticated user information",
+     *     operationId="me",
+     *     tags={"Authentication"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="User information retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string", example="68ee2e761fa10bc4f109c732"),
+     *                 @OA\Property(property="name", type="string", example="Dafahan"),
+     *                 @OA\Property(property="email", type="string", example="dafahan@example.com"),
+     *                 @OA\Property(property="role", type="string", example="user")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized - Invalid or missing token",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Token invalid or expired")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="User not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="User not found")
+     *         )
+     *     )
+     * )
      */
     public function me(Request $request)
     {
@@ -147,28 +250,48 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout and invalidate tokens
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/v1/auth/logout",
+     *     summary="Logout user",
+     *     description="Invalidate JWT token and clear refresh token",
+     *     operationId="logout",
+     *     tags={"Authentication"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successfully logged out",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Logged out successfully")
+     *         ),
+     *         @OA\Header(
+     *             header="Set-Cookie",
+     *             description="Clears the refresh token cookie",
+     *             @OA\Schema(type="string", example="refresh_token=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Logout failed",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Failed to logout")
+     *         )
+     *     )
+     * )
      */
     public function logout(Request $request)
     {
         try {
-            // Get the authenticated user
             $user = JWTAuth::parseToken()->authenticate();
-
-            // Invalidate the JWT token
             JWTAuth::invalidate(JWTAuth::getToken());
 
-            // Clear refresh token from database
             if ($user) {
                 $user->refresh_token = null;
                 $user->refresh_token_expires_at = null;
                 $user->save();
             }
 
-            // Clear refresh token cookie
             return response()->json([
                 'success' => true,
                 'message' => 'Logged out successfully'
@@ -183,14 +306,50 @@ class AuthController extends Controller
     }
 
     /**
-     * Refresh access token using refresh token from cookie
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/v1/auth/refresh",
+     *     summary="Refresh access token",
+     *     description="Get a new access token using refresh token from cookie (token rotation enabled)",
+     *     operationId="refresh",
+     *     tags={"Authentication"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Token refreshed successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGc...")
+     *         ),
+     *         @OA\Header(
+     *             header="Set-Cookie",
+     *             description="New HTTP-only refresh token cookie (token rotation)",
+     *             @OA\Schema(type="string", example="refresh_token=xyz789...; HttpOnly; Secure; SameSite=Strict")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Invalid or expired refresh token",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Invalid or expired refresh token")
+     *         ),
+     *         @OA\Header(
+     *             header="Set-Cookie",
+     *             description="Clears the invalid refresh token cookie",
+     *             @OA\Schema(type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Failed to refresh token")
+     *         )
+     *     )
+     * )
      */
     public function refresh(Request $request)
     {
-        // Get refresh token from cookie
         $refreshToken = $request->cookie('refresh_token');
 
         if (!$refreshToken) {
@@ -201,12 +360,10 @@ class AuthController extends Controller
         }
 
         try {
-            // Hash the token to compare with database
             $hashedToken = hash('sha256', $refreshToken);
 
-            // Find user with this refresh token
             $user = User::where('refresh_token', $hashedToken)
-                ->where('refresh_token_expires_at', '>', now())
+                ->where('refresh_token_expires_at', '>', new UTCDateTime(now()->timestamp * 1000))
                 ->first();
 
             if (!$user) {
@@ -216,29 +373,24 @@ class AuthController extends Controller
                 ], 401)->withoutCookie('refresh_token');
             }
 
-            // Generate new access token
             $newAccessToken = JWTAuth::fromUser($user);
-
-            // Generate new refresh token (token rotation)
             $newRefreshToken = $this->generateRefreshToken();
 
-            // Update refresh token in database
             $user->refresh_token = hash('sha256', $newRefreshToken);
-            $user->refresh_token_expires_at = now()->addDays(7);
+            $user->refresh_token_expires_at = new UTCDateTime(now()->addDays(7)->timestamp * 1000);
             $user->save();
 
-            // Return new access token and set new refresh token cookie
             return response()->json([
                 'success' => true,
                 'token' => $newAccessToken
             ])->cookie(
                 'refresh_token',
                 $newRefreshToken,
-                60 * 24 * 7, // 7 days
+                60 * 24 * 7,
                 '/',
                 null,
                 config('app.env') === 'production',
-                true, // httpOnly
+                true,
                 false,
                 'strict'
             );
@@ -267,14 +419,15 @@ class AuthController extends Controller
                 'name' => $ssoData['name'],
                 'email' => $ssoData['email'],
                 'role' => $ssoData['role'] ?? 'user',
-                'username' => $ssoData['username'] ?? null,
+                'created_at' => now()->timestamp,
+                'updated_at' => now()->timestamp,
             ]);
         } else {
-            // Update user data from SSO
             $user->update([
                 'name' => $ssoData['name'],
                 'email' => $ssoData['email'],
                 'role' => $ssoData['role'] ?? $user->role,
+                'updated_at' => now()->timestamp,
             ]);
         }
 

@@ -3,15 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use MongoDB\Laravel\Auth\User as Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable;
 
-    protected $table = 'users';
+    protected $connection = 'mongodb';
+    protected $collection = 'users';
 
     /**
      * The attributes that are mass assignable.
@@ -35,6 +36,7 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'remember_token',
         'refresh_token',
+        'refresh_token_expires_at', // Add this
     ];
 
     /**
@@ -42,13 +44,11 @@ class User extends Authenticatable implements JWTSubject
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'refresh_token_expires_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        // Don't cast this - MongoDB handles it natively
+        // 'refresh_token_expires_at' => 'datetime',
+    ];
 
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
@@ -105,5 +105,13 @@ class User extends Authenticatable implements JWTSubject
         return $this->refresh_token !== null 
             && $this->refresh_token_expires_at !== null
             && $this->refresh_token_expires_at->isFuture();
+    }
+
+    /**
+     * Relasi ke user profile
+     */
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
     }
 }
