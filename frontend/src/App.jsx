@@ -13,6 +13,7 @@ const LoginPage = lazy(() => import("./pages/auth/Login"));
 
 // Authenticated Pages
 const DashboardPage = lazy(() => import("./pages/authenticated/Dashboard"));
+const FormBuilderPage = lazy(() => import("./pages/authenticated/FormBuilderPage"));
 
 
 // Protected Route Component
@@ -66,6 +67,8 @@ export default function App() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/create-form" element={<FormBuilderPage />} />
+
 
       </Route>
 
