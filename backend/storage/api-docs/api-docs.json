@@ -467,6 +467,10 @@
                                                 "type": "string",
                                                 "example": "68ee3e2c5336195833053652"
                                             },
+                                            "updated_by": {
+                                                "type": "string",
+                                                "example": "68ee3e2c5336195833053652"
+                                            },
                                             "is_published": {
                                                 "type": "boolean",
                                                 "example": false
@@ -511,7 +515,7 @@
                     "Forms"
                 ],
                 "summary": "Create new form",
-                "description": "Create a new form",
+                "description": "Create a new form (created_by is automatically set from authenticated user)",
                 "operationId": "9c6257241b15498a5c9fbb8e36879f40",
                 "requestBody": {
                     "required": true,
@@ -529,10 +533,6 @@
                                     "description": {
                                         "type": "string",
                                         "example": "Survey to measure customer satisfaction"
-                                    },
-                                    "created_by": {
-                                        "type": "string",
-                                        "example": "68ee3e2c5336195833053652"
                                     },
                                     "password": {
                                         "type": "string",
@@ -584,6 +584,14 @@
                                                 },
                                                 "description": {
                                                     "type": "string"
+                                                },
+                                                "created_by": {
+                                                    "type": "string",
+                                                    "example": "68ee3e2c5336195833053652"
+                                                },
+                                                "updated_by": {
+                                                    "type": "string",
+                                                    "example": "68ee3e2c5336195833053652"
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -660,6 +668,10 @@
                                             "type": "string",
                                             "example": "68ee3e2c5336195833053652"
                                         },
+                                        "updated_by": {
+                                            "type": "string",
+                                            "example": "68ee3e2c5336195833053652"
+                                        },
                                         "is_published": {
                                             "type": "boolean",
                                             "example": false
@@ -706,7 +718,7 @@
                     "Forms"
                 ],
                 "summary": "Update form",
-                "description": "Update an existing form",
+                "description": "Update an existing form (updated_by is automatically set from authenticated user)",
                 "operationId": "cd7f11d5218d6865724c77f1ea25d841",
                 "parameters": [
                     {

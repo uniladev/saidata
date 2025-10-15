@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Form;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class FormController extends Controller
 {
@@ -27,6 +28,7 @@ class FormController extends Controller
      *                 @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
      *                 @OA\Property(property="description", type="string", example="Survey to measure customer satisfaction"),
      *                 @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
+     *                 @OA\Property(property="updated_by", type="string", example="68ee3e2c5336195833053652"),
      *                 @OA\Property(property="is_published", type="boolean", example=false),
      *                 @OA\Property(property="current_version", type="integer", example=1),
      *                 @OA\Property(property="visibility", type="string", example="public"),
@@ -74,6 +76,7 @@ class FormController extends Controller
      *             @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
      *             @OA\Property(property="description", type="string", example="Survey to measure customer satisfaction"),
      *             @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
+     *             @OA\Property(property="updated_by", type="string", example="68ee3e2c5336195833053652"),
      *             @OA\Property(property="is_published", type="boolean", example=false),
      *             @OA\Property(property="current_version", type="integer", example=1),
      *             @OA\Property(property="visibility", type="string", example="public"),
@@ -108,7 +111,7 @@ class FormController extends Controller
      * @OA\Post(
      *     path="/api/v1/forms",
      *     summary="Create new form",
-     *     description="Create a new form",
+     *     description="Create a new form (created_by is automatically set from authenticated user)",
      *     tags={"Forms"},
      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
@@ -118,7 +121,6 @@ class FormController extends Controller
      *             required={"title"},
      *             @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
      *             @OA\Property(property="description", type="string", example="Survey to measure customer satisfaction"),
-     *             @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
      *             @OA\Property(property="password", type="string", example="secret123"),
      *             @OA\Property(property="is_published", type="boolean", example=false),
      *             @OA\Property(property="current_version", type="integer", example=1),
@@ -137,6 +139,8 @@ class FormController extends Controller
      *                 @OA\Property(property="id", type="string", example="68ee4fc2754f6e95b809e492"),
      *                 @OA\Property(property="title", type="string", example="Customer Satisfaction Survey"),
      *                 @OA\Property(property="description", type="string"),
+     *                 @OA\Property(property="created_by", type="string", example="68ee3e2c5336195833053652"),
+     *                 @OA\Property(property="updated_by", type="string", example="68ee3e2c5336195833053652"),
      *                 @OA\Property(property="created_at", type="string", format="date-time"),
      *                 @OA\Property(property="updated_at", type="string", format="date-time")
      *             )
@@ -154,10 +158,18 @@ class FormController extends Controller
      */
     public function store(Request $request)
     {
+        // Get authenticated user
+        $user = JWTAuth::parseToken()->authenticate();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'created_by' => 'nullable|string|regex:/^[a-f0-9]{24}$/',
             'password' => 'nullable|string',
             'is_published' => 'nullable|boolean',
             'current_version' => 'nullable|integer',
@@ -171,7 +183,12 @@ class FormController extends Controller
             ], 422);
         }
 
-        $form = Form::create($request->all());
+        // Prepare data and automatically set created_by and updated_by
+        $formData = $request->except(['created_by', 'updated_by']); // Exclude if sent by frontend
+        $formData['created_by'] = $user->id;
+        $formData['updated_by'] = $user->id;
+
+        $form = Form::create($formData);
 
         return response()->json([
             'message' => 'Form created successfully',
@@ -183,7 +200,7 @@ class FormController extends Controller
      * @OA\Put(
      *     path="/api/v1/forms/{id}",
      *     summary="Update form",
-     *     description="Update an existing form",
+     *     description="Update an existing form (updated_by is automatically set from authenticated user)",
      *     tags={"Forms"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -228,6 +245,15 @@ class FormController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Get authenticated user
+        $user = JWTAuth::parseToken()->authenticate();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
         $form = Form::find($id);
 
         if (!$form) {
@@ -252,7 +278,11 @@ class FormController extends Controller
             ], 422);
         }
 
-        $form->update($request->all());
+        // Prepare data and automatically set updated_by
+        $formData = $request->except(['created_by', 'updated_by']); // Exclude if sent by frontend
+        $formData['updated_by'] = $user->id;
+
+        $form->update($formData);
 
         return response()->json([
             'message' => 'Form updated successfully',
