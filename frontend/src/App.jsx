@@ -12,22 +12,17 @@ const AboutPage = lazy(() => import("./pages/guest/About"));
 const DocumentValidationPage = lazy(() => import("./pages/guest/DocumentValidation"));
 const LoginPage = lazy(() => import("./pages/auth/Login"));
 
-// FormBuilder Page Component
-const FormBuilderPage = () => {
-  return (
-    <div className="form-builder-container p-6">
-      <h1 className="text-3xl font-bold mb-6">Form Builder</h1>
-      <FormBuilder />
-    </div>
-  );
-};
+// Authenticated Pages
+const DashboardPage = lazy(() => import("./pages/authenticated/Dashboard"));
+const FormBuilderPage = lazy(() => import("./pages/authenticated/FormBuilderPage"));
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
   
   return children;
@@ -72,10 +67,10 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        {/* Dashboard Home dengan FormBuilder */}
-        <Route path="/dashboard" element={<FormBuilderPage />} />
-        {/* Atau jika ingin route terpisah */}
-        <Route path="/dashboard/form-builder" element={<FormBuilderPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/create-form" element={<FormBuilderPage />} />
+
+
       </Route>
 
       {/* 404 Not Found */}
