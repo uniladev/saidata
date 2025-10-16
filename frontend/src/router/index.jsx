@@ -4,6 +4,8 @@ import SurveyTest from '../js/components/SurveyTest';
 import { Home, Login, NotFound, About } from '../pages';
 import FormBuilderPage from '../pages/FormBuilderPage'; // ← Import actual component
 import FormTakerPage from '../pages/FormTakerPage'; // ← Import actual component
+import DashboardLayout from '../components/layout/AuthenticatedLayout';
+import Dashboard from '../pages/authenticated/Dashboard';
 
 export const router = createBrowserRouter([
   {
@@ -21,5 +23,16 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />
-  }
+  },
+  // Authenticated (Dashboard) routes
+  {
+    path: '/',
+    element: <DashboardLayout />,
+    children: [
+      {
+        path: 'dashboard',
+        element: <Dashboard />
+      },
+    ]
+  },
 ]);

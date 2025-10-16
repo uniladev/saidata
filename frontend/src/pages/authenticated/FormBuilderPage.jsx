@@ -255,40 +255,9 @@ function FormBuilderPage() {
         id: `form_${Date.now()}`,
         ...formSettings,
         fields: formFields.map(field => {
-          const baseField = {
-            id: field.id,
-            type: field.type,
-            label: field.label,
-            name: field.name,
-            required: field.required,
-            placeholder: field.placeholder,
-            helpText: field.helpText,
-            validation: field.validation
-          };
-
-          if (field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') {
-            baseField.options = field.options;
-          }
-
-          if (field.type === 'file') {
-            baseField.fileOptions = field.fileOptions;
-          }
-
-          if (field.type === 'range' || field.type === 'number') {
-            baseField.min = field.min;
-            baseField.max = field.max;
-            if (field.type === 'range') baseField.step = field.step;
-          }
-
-          if (field.type === 'textarea') {
-            baseField.rows = field.rows;
-          }
-
-          if (field.type === 'rating') {
-            baseField.maxRating = field.maxRating;
-          }
-
-          return baseField;
+          // This creates a cleaner field object for export, removing unnecessary internal properties
+          const { id, type, label, name, required, placeholder, helpText, validation, options, fileOptions, min, max, step, rows, maxRating } = field;
+          return { id, type, label, name, required, placeholder, helpText, validation, options, fileOptions, min, max, step, rows, maxRating };
         })
       }
     };
