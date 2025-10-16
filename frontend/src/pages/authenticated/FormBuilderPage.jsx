@@ -141,29 +141,34 @@ function FormBuilderPage() {
     }
   };
 
-  const handleDragLeave = (e) => {
-    dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setDragOverIndex(null);
-    }
+  const handleDragLeave = () => {
+    // Reset the visual indicator when you're no longer hovering over any item
+    setDragOverIndex(null);
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault();
+    // This is crucial. It prevents the browser's default "no-drop" behavior.
+    e.preventDefault(); 
+    if (draggedItem === index) return;
+    setDragOverIndex(index);
   };
 
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
-    if (draggedItem !== null && draggedItem !== dropIndex) {
-      const draggedField = formFields[draggedItem];
-      const newFields = [...formFields];
-      newFields.splice(draggedItem, 1);
-      newFields.splice(dropIndex, 0, draggedField);
-      setFormFields(newFields);
-    }
+    
+    // Get the field that was being dragged
+    const draggedField = formFields[draggedItem];
+    
+    // Create a new, reordered array
+    const newFields = [...formFields];
+    newFields.splice(draggedItem, 1); // Remove the item from its original position
+    newFields.splice(dropIndex, 0, draggedField); // Insert it at the new position
+    
+    setFormFields(newFields);
+    
+    // Reset all drag-and-drop states
     setDraggedItem(null);
     setDragOverIndex(null);
-    dragCounter.current = 0;
   };
 
   // Add option to select/radio/checkbox
@@ -661,13 +666,12 @@ function FormBuilderPage() {
                       key={field.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, index)}
-                      onDragEnter={(e) => handleDragEnter(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
                       onDragLeave={handleDragLeave}
-                      onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
                       className={`bg-white border rounded-lg p-4 cursor-move transition-all ${
                         selectedField === field.id ? 'border-blue-500 shadow-lg' : 'border-gray-200'
-                      } ${dragOverIndex === index ? 'border-t-4 border-t-blue-500' : ''}`}
+                      } ${dragOverIndex === index ? 'opacity-50' : ''}`} // Using opacity is often clearer than a border
                       onClick={() => setSelectedField(field.id)}
                     >
                       <div className="flex items-start justify-between">
