@@ -47,7 +47,8 @@ function FormBuilderPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [showJson, setShowJson] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [dragOverInfo, setDragOverInfo] = useState(null); // Will store { index, position: 'top' | 'bottom' }
+  const [dragAction, setDragAction] = useState(null); // <-- ADD THIS LINE
   const dragCounter = useRef(0);
   const fieldComponentMap = {
   text: TextInput,
@@ -69,7 +70,7 @@ function FormBuilderPage() {
   const generateFieldId = () => `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Add new field
-  const addField = (type) => {
+  const addField = (type, index = null) => {
     const newField = {
       id: generateFieldId(),
       type: type,
@@ -93,7 +94,18 @@ function FormBuilderPage() {
       rows: type === 'textarea' ? 4 : null,
       maxRating: type === 'rating' ? 5 : null,
     };
-    setFormFields([...formFields, newField]);
+
+    const newFields = [...formFields];
+    if (index === null || index >= formFields.length) {
+      // If no index is provided (from a click), add to the end
+      newFields.push(newField);
+    } else {
+      // If an index is provided (from a drop), insert at that position
+      newFields.splice(index, 0, newField);
+    }
+    
+    // Use the correctly modified 'newFields' array
+    setFormFields(newFields);
     setSelectedField(newField.id);
   };
 
@@ -131,39 +143,78 @@ function FormBuilderPage() {
   const handleDragStart = (e, index) => {
     setDraggedItem(index);
     e.dataTransfer.effectAllowed = 'move';
+    setDragAction('reorder'); // <-- Add this line
   };
 
-  const handleDragEnter = (e, index) => {
+  // This is the core logic for detecting drop position
+  const handleDragOver = (e, index) => {
+    e.preventDefault(); // This is crucial for onDrop to work
+    if (draggedItem === index) return;
+
+    // Get the position of the element being hovered over
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Find the vertical midpoint of the element
+    const midpoint = rect.top + rect.height / 2;
+
+    // Determine if the mouse is in the top or bottom half
+    const position = e.clientY < midpoint ? 'top' : 'bottom';
+
+    setDragOverInfo({ index, position });
+  };
+
+  const handleDragLeave = () => {
+    // Clear the indicator when the mouse leaves the component area
+    setDragOverInfo(null);
+  };
+
+  const handleDrop = (e) => {
     e.preventDefault();
-    dragCounter.current++;
-    if (draggedItem !== null && draggedItem !== index) {
-      setDragOverIndex(index);
-    }
-  };
 
-  const handleDragLeave = (e) => {
-    dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setDragOverIndex(null);
-    }
-  };
+    // The index of the element we are dropping on
+    const dropTargetIndex = dragOverInfo?.index;
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+    if (dragAction === 'add') {
+      const type = e.dataTransfer.getData('newFieldType');
+      if (type) {
+        // If dropping on the bottom half, place it after the element
+        const insertAtIndex = dragOverInfo?.position === 'bottom' ? dropTargetIndex + 1 : dropTargetIndex;
+        addField(type, insertAtIndex);
+      }
+    } else if (dragAction === 'reorder') {
+      if (draggedItem !== null && dropTargetIndex !== null) {
+        // Get the field that was being dragged
+        const draggedField = formFields[draggedItem];
+        
+        const newFields = [...formFields];
+        // Remove the item from its original position
+        newFields.splice(draggedItem, 1);
+        
+        // Calculate the correct insertion index
+        let insertAtIndex = dropTargetIndex;
+        if (draggedItem < dropTargetIndex) {
+            // If moving down, the target index shifts
+            insertAtIndex = dragOverInfo.position === 'top' ? dropTargetIndex - 1 : dropTargetIndex;
+        } else {
+            // If moving up
+            insertAtIndex = dragOverInfo.position === 'top' ? dropTargetIndex : dropTargetIndex + 1;
+        }
 
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault();
-    if (draggedItem !== null && draggedItem !== dropIndex) {
-      const draggedField = formFields[draggedItem];
-      const newFields = [...formFields];
-      newFields.splice(draggedItem, 1);
-      newFields.splice(dropIndex, 0, draggedField);
-      setFormFields(newFields);
+        newFields.splice(insertAtIndex, 0, draggedField);
+        setFormFields(newFields);
+      }
     }
+
+    // Reset all drag states
     setDraggedItem(null);
-    setDragOverIndex(null);
-    dragCounter.current = 0;
+    setDragOverInfo(null);
+    setDragAction(null);
+  };
+
+  // When dragging a NEW field from the sidebar
+  const handleSidebarDragStart = (e, type) => {
+    e.dataTransfer.setData('newFieldType', type);
+    e.dataTransfer.effectAllowed = 'copy';
+    setDragAction('add');
   };
 
   // Add option to select/radio/checkbox
@@ -622,14 +673,16 @@ function FormBuilderPage() {
           <h2 className="font-semibold mb-4">Field Types</h2>
           <div className="space-y-2">
             {FIELD_TYPES.map((fieldType) => (
-              <button
+              <div
                 key={fieldType.type}
-                onClick={() => addField(fieldType.type)}
-                className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center space-x-2 transition-colors"
+                draggable="true"
+                onDragStart={(e) => handleSidebarDragStart(e, fieldType.type)}
+                onClick={() => addField(fieldType.type)} // Keep onClick as a fallback
+                className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center space-x-2 transition-colors cursor-grab"
               >
                 <span className="text-xl">{fieldType.icon}</span>
                 <span className="text-sm">{fieldType.label}</span>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -647,12 +700,31 @@ function FormBuilderPage() {
               <FormPreview />
             </div>
           ) : (
-            <div className="flex-1 p-6 overflow-auto">
+            <div 
+              className="flex-1 p-6 overflow-auto"
+              // Add these two handlers to the container
+              onDragOver={(e) => {
+                e.preventDefault();
+                // Optional: add a visual style for the drop zone
+                e.currentTarget.style.backgroundColor = '#f9fafb'; 
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '';
+              }}
+              onDrop={(e) => {
+                if (formFields.length === 0) {
+                  // We manually set the drop info for an empty area
+                  setDragOverInfo({ index: 0, position: 'top' }); 
+                  handleDrop(e); // CORRECTED: Now calls handleDrop correctly
+                  e.currentTarget.style.backgroundColor = '';
+                }
+              }}
+            >
               {formFields.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 pointer-events-none">
                   <div className="text-6xl mb-4">📝</div>
-                  <h3 className="text-xl font-medium mb-2">No fields added yet</h3>
-                  <p>Click on a field type from the left sidebar to add it to your form</p>
+                  <h3 className="text-xl font-medium mb-2">Drag and drop a field here</h3>
+                  <p>Or click one from the sidebar to get started</p>
                 </div>
               ) : (
                 <div className="max-w-3xl mx-auto space-y-4">
@@ -661,13 +733,14 @@ function FormBuilderPage() {
                       key={field.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, index)}
-                      onDragEnter={(e) => handleDragEnter(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)} // CORRECTED: Now passes the index
                       onDragLeave={handleDragLeave}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, index)}
-                      className={`bg-white border rounded-lg p-4 cursor-move transition-all ${
-                        selectedField === field.id ? 'border-blue-500 shadow-lg' : 'border-gray-200'
-                      } ${dragOverIndex === index ? 'border-t-4 border-t-blue-500' : ''}`}
+                      onDrop={(e) => handleDrop(e)} // CORRECTED: No longer passes index
+                      className={`bg-white border rounded-lg p-4 cursor-move transition-all duration-150
+                        ${selectedField === field.id ? 'border-blue-500 shadow-lg' : 'border-gray-200'}
+                        ${dragOverInfo?.index === index && dragOverInfo?.position === 'top' ? 'border-t-4 border-t-blue-500' : ''}
+                        ${dragOverInfo?.index === index && dragOverInfo?.position === 'bottom' ? 'border-b-4 border-b-blue-500' : ''}
+                      `}
                       onClick={() => setSelectedField(field.id)}
                     >
                       <div className="flex items-start justify-between">
