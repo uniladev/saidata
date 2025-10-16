@@ -1,5 +1,19 @@
+//fronted/src/pages/authenticated/FormBuilderPage.jsx
 import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronUp, Copy, Trash2, GripVertical, Plus, X, Settings, Eye, Save, Code, Play } from 'lucide-react';
+import TextInput from '../../components/ui/formFields/TextInput';
+import TextAreaInput from '../../components/ui/formFields/TextAreaInput';
+import SelectInput from '../../components/ui/formFields/SelectInput';
+import RadioInput from '../../components/ui/formFields/RadioInput';
+import CheckboxInput from '../../components/ui/formFields/CheckboxInput';
+import EmailInput from '../../components/ui/formFields/EmailInput';
+import NumberInput from '../../components/ui/formFields/NumberInput';
+import DateInput from '../../components/ui/formFields/DateInput';
+import FileInput from '../../components/ui/formFields/FileInput';
+import SectionHeader from '../../components/ui/formFields/SectionHeader';
+import PhoneInput from '../../components/ui/formFields/PhoneInput';
+import UrlInput from '../../components/ui/formFields/UrlInput';
+import TimeInput from '../../components/ui/formFields/TimeInput';
 
 // Field type definitions
 const FIELD_TYPES = [
@@ -35,6 +49,21 @@ function FormBuilderPage() {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const dragCounter = useRef(0);
+  const fieldComponentMap = {
+  text: TextInput,
+  textarea: TextAreaInput,
+  select: SelectInput,
+  radio: RadioInput,
+  checkbox: CheckboxInput,
+  email: EmailInput,
+  number: NumberInput,
+  date: DateInput,
+  file: FileInput,
+  section: SectionHeader,
+  phone: PhoneInput,
+  url: UrlInput,
+  time: TimeInput,
+};
 
   // Generate unique field ID
   const generateFieldId = () => `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -426,6 +455,7 @@ function FormBuilderPage() {
   };
 
   // Form Preview Component
+  // Form Preview Component
   const FormPreview = () => {
     const [formData, setFormData] = useState({});
 
@@ -447,228 +477,84 @@ function FormBuilderPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {formFields.map((field) => (
-            <div key={field.id} className="space-y-2">
-              {field.type === 'section' ? (
-                <h3 className="text-xl font-semibold border-b pb-2">{field.label}</h3>
-              ) : (
-                <>
-                  <label className="block text-sm font-medium">
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </label>
+          {formFields.map((field) => {
+            // Look up the component from the map based on the field's type
+            const FieldComponent = fieldComponentMap[field.type];
 
-                  {field.type === 'text' && (
-                    <input
-                      type="text"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
+            // If a dedicated component exists, render it
+            if (FieldComponent) {
+              return (
+                <div key={field.id}>
+                  <FieldComponent
+                    field={field}
+                    value={formData[field.name]}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              );
+            }
+            
+            // --- Fallback for types NOT in the map (range, rating, color) ---
+            // This logic will only run for the fields you haven't componentized
+            return (
+              <div key={field.id} className="space-y-2">
+                <label className="block text-sm font-medium">
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                
+                {field.type === 'color' && (
+                  <input
+                    type="color"
+                    name={field.name}
+                    required={field.required}
+                    onChange={(e) => handleInputChange(field.name, e.target.value)}
+                    className="w-full h-10"
+                  />
+                )}
 
-                  {field.type === 'email' && (
+                {field.type === 'range' && (
+                  <div>
                     <input
-                      type="email"
+                      type="range"
                       name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'number' && (
-                    <input
-                      type="number"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
                       min={field.min}
                       max={field.max}
+                      step={field.step}
                       onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
+                      className="w-full"
                     />
-                  )}
-
-                  {field.type === 'phone' && (
-                    <input
-                      type="tel"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'url' && (
-                    <input
-                      type="url"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'date' && (
-                    <input
-                      type="date"
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'time' && (
-                    <input
-                      type="time"
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'color' && (
-                    <input
-                      type="color"
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full h-10"
-                    />
-                  )}
-
-                  {field.type === 'textarea' && (
-                    <textarea
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      rows={field.rows}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'select' && (
-                    <select
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    >
-                      <option value="">Select an option</option>
-                      {field.options.map((option, index) => (
-                        <option key={index} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {field.type === 'radio' && (
-                    <div className="space-y-2">
-                      {field.options.map((option, index) => (
-                        <label key={index} className="flex items-center">
-                          <input
-                            type="radio"
-                            name={field.name}
-                            value={option.value}
-                            required={field.required}
-                            onChange={(e) => handleInputChange(field.name, e.target.value)}
-                            className="mr-2"
-                          />
-                          {option.label}
-                        </label>
-                      ))}
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{field.min}</span>
+                      <span>{formData[field.name] || Math.floor((field.min + field.max) / 2)}</span>
+                      <span>{field.max}</span>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {field.type === 'checkbox' && (
-                    <div className="space-y-2">
-                      {field.options.map((option, index) => (
-                        <label key={index} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            name={`${field.name}[]`}
-                            value={option.value}
-                            onChange={(e) => {
-                              const current = formData[field.name] || [];
-                              if (e.target.checked) {
-                                handleInputChange(field.name, [...current, e.target.value]);
-                              } else {
-                                handleInputChange(field.name, current.filter(v => v !== e.target.value));
-                              }
-                            }}
-                            className="mr-2"
-                          />
-                          {option.label}
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                {field.type === 'rating' && (
+                  <div className="flex space-x-2">
+                    {[...Array(field.maxRating)].map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleInputChange(field.name, i + 1)}
+                        className={`text-2xl ${
+                          (formData[field.name] || 0) > i ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                  {field.type === 'file' && (
-                    <input
-                      type="file"
-                      name={field.name}
-                      required={field.required}
-                      accept={field.fileOptions.accept}
-                      multiple={field.fileOptions.multiple}
-                      onChange={(e) => handleInputChange(field.name, e.target.files)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'range' && (
-                    <div>
-                      <input
-                        type="range"
-                        name={field.name}
-                        min={field.min}
-                        max={field.max}
-                        step={field.step}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>{field.min}</span>
-                        <span>{formData[field.name] || Math.floor((field.min + field.max) / 2)}</span>
-                        <span>{field.max}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {field.type === 'rating' && (
-                    <div className="flex space-x-2">
-                      {[...Array(field.maxRating)].map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleInputChange(field.name, i + 1)}
-                          className={`text-2xl ${
-                            (formData[field.name] || 0) > i ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          ★
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {field.helpText && (
-                    <p className="text-sm text-gray-500">{field.helpText}</p>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+                {field.helpText && (
+                  <p className="text-sm text-gray-500">{field.helpText}</p>
+                )}
+              </div>
+            );
+          })}
 
           {formFields.length > 0 && (
             <button
