@@ -4,6 +4,7 @@ import { GuestLayout, AuthenticatedLayout } from "./components/layout";
 import { useAuth } from "./context/AuthContext";
 import { lazy } from "react";
 
+
 // Guest Pages
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
 const HomePage = lazy(() => import("./pages/guest/Home"));
@@ -14,6 +15,7 @@ const LoginPage = lazy(() => import("./pages/auth/Login"));
 // Authenticated Pages
 const DashboardPage = lazy(() => import("./pages/authenticated/Dashboard"));
 const FormBuilderPage = lazy(() => import("./pages/authenticated/FormBuilderPage"));
+const FormTakerPage = lazy(() => import("./pages/authenticated/FormTakerPage")); // <-- ADD THIS LINE
 
 
 // Protected Route Component
@@ -46,6 +48,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/validasi" element={<DocumentValidationPage />} />
+        <Route path="/form/:formId" element={<FormTakerPage />} />
       </Route>
 
       {/* Auth Routes */}

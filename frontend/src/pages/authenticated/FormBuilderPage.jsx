@@ -1,5 +1,22 @@
+//fronted/src/pages/authenticated/FormBuilderPage.jsx
 import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronUp, Copy, Trash2, GripVertical, Plus, X, Settings, Eye, Save, Code, Play } from 'lucide-react';
+import {
+  TextInput,
+  TextAreaInput,
+  SelectInput,
+  RadioInput,
+  CheckboxInput,
+  EmailInput,
+  NumberInput,
+  DateInput,
+  FileInput,
+  SectionHeader,
+  PhoneInput,
+  UrlInput,
+  TimeInput,
+} from '../../components/ui/formFields';
+import { useNavigate } from 'react-router-dom';
 
 // Field type definitions
 const FIELD_TYPES = [
@@ -33,14 +50,31 @@ function FormBuilderPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [showJson, setShowJson] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [dragOverInfo, setDragOverInfo] = useState(null); // Will store { index, position: 'top' | 'bottom' }
+  const [dragAction, setDragAction] = useState(null); // <-- ADD THIS LINE
   const dragCounter = useRef(0);
+  const navigate = useNavigate(); // <-- Add this line
+  const fieldComponentMap = {
+  text: TextInput,
+  textarea: TextAreaInput,
+  select: SelectInput,
+  radio: RadioInput,
+  checkbox: CheckboxInput,
+  email: EmailInput,
+  number: NumberInput,
+  date: DateInput,
+  file: FileInput,
+  section: SectionHeader,
+  phone: PhoneInput,
+  url: UrlInput,
+  time: TimeInput,
+};
 
   // Generate unique field ID
   const generateFieldId = () => `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Add new field
-  const addField = (type) => {
+  const addField = (type, index = null) => {
     const newField = {
       id: generateFieldId(),
       type: type,
@@ -64,7 +98,18 @@ function FormBuilderPage() {
       rows: type === 'textarea' ? 4 : null,
       maxRating: type === 'rating' ? 5 : null,
     };
-    setFormFields([...formFields, newField]);
+
+    const newFields = [...formFields];
+    if (index === null || index >= formFields.length) {
+      // If no index is provided (from a click), add to the end
+      newFields.push(newField);
+    } else {
+      // If an index is provided (from a drop), insert at that position
+      newFields.splice(index, 0, newField);
+    }
+    
+    // Use the correctly modified 'newFields' array
+    setFormFields(newFields);
     setSelectedField(newField.id);
   };
 
@@ -102,39 +147,78 @@ function FormBuilderPage() {
   const handleDragStart = (e, index) => {
     setDraggedItem(index);
     e.dataTransfer.effectAllowed = 'move';
+    setDragAction('reorder'); // <-- Add this line
   };
 
-  const handleDragEnter = (e, index) => {
+  // This is the core logic for detecting drop position
+  const handleDragOver = (e, index) => {
+    e.preventDefault(); // This is crucial for onDrop to work
+    if (draggedItem === index) return;
+
+    // Get the position of the element being hovered over
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Find the vertical midpoint of the element
+    const midpoint = rect.top + rect.height / 2;
+
+    // Determine if the mouse is in the top or bottom half
+    const position = e.clientY < midpoint ? 'top' : 'bottom';
+
+    setDragOverInfo({ index, position });
+  };
+
+  const handleDragLeave = () => {
+    // Clear the indicator when the mouse leaves the component area
+    setDragOverInfo(null);
+  };
+
+  const handleDrop = (e) => {
     e.preventDefault();
-    dragCounter.current++;
-    if (draggedItem !== null && draggedItem !== index) {
-      setDragOverIndex(index);
-    }
-  };
 
-  const handleDragLeave = (e) => {
-    dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setDragOverIndex(null);
-    }
-  };
+    // The index of the element we are dropping on
+    const dropTargetIndex = dragOverInfo?.index;
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+    if (dragAction === 'add') {
+      const type = e.dataTransfer.getData('newFieldType');
+      if (type) {
+        // If dropping on the bottom half, place it after the element
+        const insertAtIndex = dragOverInfo?.position === 'bottom' ? dropTargetIndex + 1 : dropTargetIndex;
+        addField(type, insertAtIndex);
+      }
+    } else if (dragAction === 'reorder') {
+      if (draggedItem !== null && dropTargetIndex !== null) {
+        // Get the field that was being dragged
+        const draggedField = formFields[draggedItem];
+        
+        const newFields = [...formFields];
+        // Remove the item from its original position
+        newFields.splice(draggedItem, 1);
+        
+        // Calculate the correct insertion index
+        let insertAtIndex = dropTargetIndex;
+        if (draggedItem < dropTargetIndex) {
+            // If moving down, the target index shifts
+            insertAtIndex = dragOverInfo.position === 'top' ? dropTargetIndex - 1 : dropTargetIndex;
+        } else {
+            // If moving up
+            insertAtIndex = dragOverInfo.position === 'top' ? dropTargetIndex : dropTargetIndex + 1;
+        }
 
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault();
-    if (draggedItem !== null && draggedItem !== dropIndex) {
-      const draggedField = formFields[draggedItem];
-      const newFields = [...formFields];
-      newFields.splice(draggedItem, 1);
-      newFields.splice(dropIndex, 0, draggedField);
-      setFormFields(newFields);
+        newFields.splice(insertAtIndex, 0, draggedField);
+        setFormFields(newFields);
+      }
     }
+
+    // Reset all drag states
     setDraggedItem(null);
-    setDragOverIndex(null);
-    dragCounter.current = 0;
+    setDragOverInfo(null);
+    setDragAction(null);
+  };
+
+  // When dragging a NEW field from the sidebar
+  const handleSidebarDragStart = (e, type) => {
+    e.dataTransfer.setData('newFieldType', type);
+    e.dataTransfer.effectAllowed = 'copy';
+    setDragAction('add');
   };
 
   // Add option to select/radio/checkbox
@@ -175,43 +259,29 @@ function FormBuilderPage() {
         id: `form_${Date.now()}`,
         ...formSettings,
         fields: formFields.map(field => {
-          const baseField = {
-            id: field.id,
-            type: field.type,
-            label: field.label,
-            name: field.name,
-            required: field.required,
-            placeholder: field.placeholder,
-            helpText: field.helpText,
-            validation: field.validation
-          };
-
-          if (field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') {
-            baseField.options = field.options;
-          }
-
-          if (field.type === 'file') {
-            baseField.fileOptions = field.fileOptions;
-          }
-
-          if (field.type === 'range' || field.type === 'number') {
-            baseField.min = field.min;
-            baseField.max = field.max;
-            if (field.type === 'range') baseField.step = field.step;
-          }
-
-          if (field.type === 'textarea') {
-            baseField.rows = field.rows;
-          }
-
-          if (field.type === 'rating') {
-            baseField.maxRating = field.maxRating;
-          }
-
-          return baseField;
+          // This creates a cleaner field object for export, removing unnecessary internal properties
+          const { id, type, label, name, required, placeholder, helpText, validation, options, fileOptions, min, max, step, rows, maxRating } = field;
+          return { id, type, label, name, required, placeholder, helpText, validation, options, fileOptions, min, max, step, rows, maxRating };
         })
       }
     };
+  };
+
+  const handleSaveForm = () => {
+    const formJson = generateJson();
+    
+    // Get existing forms from localStorage or start with an empty array
+    const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
+    
+    // Add the new form to the array
+    savedForms.push(formJson);
+    
+    // Save the updated array back to localStorage
+    localStorage.setItem('myForms', JSON.stringify(savedForms));
+    
+    // Notify the user and redirect to the dashboard
+    alert('Form saved successfully!');
+    navigate('/dashboard');
   };
 
   // Field Properties Panel
@@ -426,6 +496,7 @@ function FormBuilderPage() {
   };
 
   // Form Preview Component
+  // Form Preview Component
   const FormPreview = () => {
     const [formData, setFormData] = useState({});
 
@@ -447,228 +518,84 @@ function FormBuilderPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {formFields.map((field) => (
-            <div key={field.id} className="space-y-2">
-              {field.type === 'section' ? (
-                <h3 className="text-xl font-semibold border-b pb-2">{field.label}</h3>
-              ) : (
-                <>
-                  <label className="block text-sm font-medium">
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </label>
+          {formFields.map((field) => {
+            // Look up the component from the map based on the field's type
+            const FieldComponent = fieldComponentMap[field.type];
 
-                  {field.type === 'text' && (
-                    <input
-                      type="text"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
+            // If a dedicated component exists, render it
+            if (FieldComponent) {
+              return (
+                <div key={field.id}>
+                  <FieldComponent
+                    field={field}
+                    value={formData[field.name]}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              );
+            }
+            
+            // --- Fallback for types NOT in the map (range, rating, color) ---
+            // This logic will only run for the fields you haven't componentized
+            return (
+              <div key={field.id} className="space-y-2">
+                <label className="block text-sm font-medium">
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                
+                {field.type === 'color' && (
+                  <input
+                    type="color"
+                    name={field.name}
+                    required={field.required}
+                    onChange={(e) => handleInputChange(field.name, e.target.value)}
+                    className="w-full h-10"
+                  />
+                )}
 
-                  {field.type === 'email' && (
+                {field.type === 'range' && (
+                  <div>
                     <input
-                      type="email"
+                      type="range"
                       name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'number' && (
-                    <input
-                      type="number"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
                       min={field.min}
                       max={field.max}
+                      step={field.step}
                       onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
+                      className="w-full"
                     />
-                  )}
-
-                  {field.type === 'phone' && (
-                    <input
-                      type="tel"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'url' && (
-                    <input
-                      type="url"
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'date' && (
-                    <input
-                      type="date"
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'time' && (
-                    <input
-                      type="time"
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'color' && (
-                    <input
-                      type="color"
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full h-10"
-                    />
-                  )}
-
-                  {field.type === 'textarea' && (
-                    <textarea
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      rows={field.rows}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'select' && (
-                    <select
-                      name={field.name}
-                      required={field.required}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    >
-                      <option value="">Select an option</option>
-                      {field.options.map((option, index) => (
-                        <option key={index} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {field.type === 'radio' && (
-                    <div className="space-y-2">
-                      {field.options.map((option, index) => (
-                        <label key={index} className="flex items-center">
-                          <input
-                            type="radio"
-                            name={field.name}
-                            value={option.value}
-                            required={field.required}
-                            onChange={(e) => handleInputChange(field.name, e.target.value)}
-                            className="mr-2"
-                          />
-                          {option.label}
-                        </label>
-                      ))}
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{field.min}</span>
+                      <span>{formData[field.name] || Math.floor((field.min + field.max) / 2)}</span>
+                      <span>{field.max}</span>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {field.type === 'checkbox' && (
-                    <div className="space-y-2">
-                      {field.options.map((option, index) => (
-                        <label key={index} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            name={`${field.name}[]`}
-                            value={option.value}
-                            onChange={(e) => {
-                              const current = formData[field.name] || [];
-                              if (e.target.checked) {
-                                handleInputChange(field.name, [...current, e.target.value]);
-                              } else {
-                                handleInputChange(field.name, current.filter(v => v !== e.target.value));
-                              }
-                            }}
-                            className="mr-2"
-                          />
-                          {option.label}
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                {field.type === 'rating' && (
+                  <div className="flex space-x-2">
+                    {[...Array(field.maxRating)].map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleInputChange(field.name, i + 1)}
+                        className={`text-2xl ${
+                          (formData[field.name] || 0) > i ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                  {field.type === 'file' && (
-                    <input
-                      type="file"
-                      name={field.name}
-                      required={field.required}
-                      accept={field.fileOptions.accept}
-                      multiple={field.fileOptions.multiple}
-                      onChange={(e) => handleInputChange(field.name, e.target.files)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  )}
-
-                  {field.type === 'range' && (
-                    <div>
-                      <input
-                        type="range"
-                        name={field.name}
-                        min={field.min}
-                        max={field.max}
-                        step={field.step}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>{field.min}</span>
-                        <span>{formData[field.name] || Math.floor((field.min + field.max) / 2)}</span>
-                        <span>{field.max}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {field.type === 'rating' && (
-                    <div className="flex space-x-2">
-                      {[...Array(field.maxRating)].map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleInputChange(field.name, i + 1)}
-                          className={`text-2xl ${
-                            (formData[field.name] || 0) > i ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          ★
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {field.helpText && (
-                    <p className="text-sm text-gray-500">{field.helpText}</p>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+                {field.helpText && (
+                  <p className="text-sm text-gray-500">{field.helpText}</p>
+                )}
+              </div>
+            );
+          })}
 
           {formFields.length > 0 && (
             <button
@@ -717,15 +644,11 @@ function FormBuilderPage() {
             <span>JSON</span>
           </button>
           <button
-            onClick={() => {
-              const json = generateJson();
-              navigator.clipboard.writeText(JSON.stringify(json, null, 2));
-              alert('JSON copied to clipboard!');
-            }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg flex items-center space-x-2 hover:bg-gray-300"
+            onClick={handleSaveForm}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center space-x-2 hover:bg-green-700"
           >
             <Save className="w-4 h-4" />
-            <span>Export</span>
+            <span>Save Form</span>
           </button>
         </div>
       </div>
@@ -736,14 +659,16 @@ function FormBuilderPage() {
           <h2 className="font-semibold mb-4">Field Types</h2>
           <div className="space-y-2">
             {FIELD_TYPES.map((fieldType) => (
-              <button
+              <div
                 key={fieldType.type}
-                onClick={() => addField(fieldType.type)}
-                className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center space-x-2 transition-colors"
+                draggable="true"
+                onDragStart={(e) => handleSidebarDragStart(e, fieldType.type)}
+                onClick={() => addField(fieldType.type)} // Keep onClick as a fallback
+                className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center space-x-2 transition-colors cursor-grab"
               >
                 <span className="text-xl">{fieldType.icon}</span>
                 <span className="text-sm">{fieldType.label}</span>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -761,12 +686,31 @@ function FormBuilderPage() {
               <FormPreview />
             </div>
           ) : (
-            <div className="flex-1 p-6 overflow-auto">
+            <div 
+              className="flex-1 p-6 overflow-auto"
+              // Add these two handlers to the container
+              onDragOver={(e) => {
+                e.preventDefault();
+                // Optional: add a visual style for the drop zone
+                e.currentTarget.style.backgroundColor = '#f9fafb'; 
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '';
+              }}
+              onDrop={(e) => {
+                if (formFields.length === 0) {
+                  // We manually set the drop info for an empty area
+                  setDragOverInfo({ index: 0, position: 'top' }); 
+                  handleDrop(e); // CORRECTED: Now calls handleDrop correctly
+                  e.currentTarget.style.backgroundColor = '';
+                }
+              }}
+            >
               {formFields.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 pointer-events-none">
                   <div className="text-6xl mb-4">📝</div>
-                  <h3 className="text-xl font-medium mb-2">No fields added yet</h3>
-                  <p>Click on a field type from the left sidebar to add it to your form</p>
+                  <h3 className="text-xl font-medium mb-2">Drag and drop a field here</h3>
+                  <p>Or click one from the sidebar to get started</p>
                 </div>
               ) : (
                 <div className="max-w-3xl mx-auto space-y-4">
@@ -775,13 +719,14 @@ function FormBuilderPage() {
                       key={field.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, index)}
-                      onDragEnter={(e) => handleDragEnter(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)} // CORRECTED: Now passes the index
                       onDragLeave={handleDragLeave}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, index)}
-                      className={`bg-white border rounded-lg p-4 cursor-move transition-all ${
-                        selectedField === field.id ? 'border-blue-500 shadow-lg' : 'border-gray-200'
-                      } ${dragOverIndex === index ? 'border-t-4 border-t-blue-500' : ''}`}
+                      onDrop={(e) => handleDrop(e)} // CORRECTED: No longer passes index
+                      className={`bg-white border rounded-lg p-4 cursor-move transition-all duration-150
+                        ${selectedField === field.id ? 'border-blue-500 shadow-lg' : 'border-gray-200'}
+                        ${dragOverInfo?.index === index && dragOverInfo?.position === 'top' ? 'border-t-4 border-t-blue-500' : ''}
+                        ${dragOverInfo?.index === index && dragOverInfo?.position === 'bottom' ? 'border-b-4 border-b-blue-500' : ''}
+                      `}
                       onClick={() => setSelectedField(field.id)}
                     >
                       <div className="flex items-start justify-between">

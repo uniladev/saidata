@@ -1,0 +1,23 @@
+[
+  {
+    "id": "field_1760625161095_99t9a4idg",
+    "name": "field_1",
+    "label": "New Text Input",
+    "type": "text",
+    "value": "dsad"
+  },
+  {
+    "id": "field_1760625161589_0dr930fs5",
+    "name": "field_2",
+    "label": "New Text Area",
+    "type": "textarea",
+    "value": "dsadas"
+  },
+  {
+    "id": "field_1760625162005_s9lrdao90",
+    "name": "field_3",
+    "label": "New Number",
+    "type": "number",
+    "value": "3"
+  }
+]

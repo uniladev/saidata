@@ -12,6 +12,8 @@ import {
   Eye,
   MoreVertical
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FilePlus2 } from 'lucide-react'; // For the new action button
 
 // Stat Card Component
 const StatCard = ({ title, value, change, icon: Icon, trend, color }) => {
@@ -93,13 +95,25 @@ const ProductItem = ({ name, sales, revenue, trend }) => {
   );
 };
 
-// Quick Action Button
-const QuickAction = ({ icon: Icon, label, onClick, color }) => {
+// Upgraded QuickAction Component
+const QuickAction = ({ icon: Icon, label, color, to, ...props }) => {
+  // The props now include 'to' for navigation and '...props' for any other attributes like onClick
+
+  const classNames = `flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed ${color} hover:border-solid transition-all text-center`;
+
+  // If a 'to' prop is provided, render a Link component
+  if (to) {
+    return (
+      <Link to={to} className={classNames} {...props}>
+        <Icon className="w-8 h-8 mb-2" />
+        <span className="text-sm font-medium">{label}</span>
+      </Link>
+    );
+  }
+
+  // Otherwise, render a button as before
   return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed ${color} hover:border-solid transition-all`}
-    >
+    <button className={classNames} {...props}>
       <Icon className="w-8 h-8 mb-2" />
       <span className="text-sm font-medium">{label}</span>
     </button>
@@ -107,7 +121,9 @@ const QuickAction = ({ icon: Icon, label, onClick, color }) => {
 };
 
 const Dashboard = () => {
-  const [stats] = useState([
+  const [forms, setForms] = useState([]); // State for your forms, initialized as an empty array
+  
+  const [stats] = useState([ // State for your stats data
     {
       title: 'Total Revenue',
       value: '$45,231',
@@ -141,6 +157,12 @@ const Dashboard = () => {
       color: 'bg-orange-500'
     }
   ]);
+
+  useEffect(() => {
+    // Load saved forms from localStorage when the component mounts
+    const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
+    setForms(savedForms);
+  }, []);
 
   const [activities] = useState([
     {
@@ -199,65 +221,71 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Activity className="w-5 h-5 text-gray-500" />
-                <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-              </div>
-              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View All
-              </button>
-            </div>
-          </div>
-          <div className="p-6">
-            {activities.map((activity, index) => (
-              <ActivityItem key={index} {...activity} />
-            ))}
-          </div>
-        </div>
+      {/* DELETE the entire "Main Content Grid" div */}
+      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"> ... </div> */}
 
-        {/* Top Products */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5 text-gray-500" />
-                <h2 className="text-lg font-semibold text-gray-900">Top Products</h2>
+      {/* And ADD this new section in its place */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">My Forms</h2>
+        {forms.length > 0 ? (
+          <div className="space-y-4">
+            {forms.map((form) => (
+              <div key={form.form.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h3 className="font-semibold">{form.form.title}</h3>
+                  <p className="text-sm text-gray-500">{form.form.fields.length} fields</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Link 
+                    to={`/form/${form.form.id}`} 
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Take Survey
+                  </Link>
+                  <a 
+                    href={`/form/${form.form.id}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-gray-500 hover:text-blue-600"
+                  >
+                    (Open in new tab)
+                  </a>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="p-6">
-            {topProducts.map((product, index) => (
-              <ProductItem key={index} {...product} />
             ))}
           </div>
-        </div>
+        ) : (
+          <p className="text-gray-500">You haven't created any forms yet. Click "Create Form" to get started!</p>
+        )}
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* This one will now be a LINK because it has a 'to' prop */}
           <QuickAction
-            icon={ShoppingCart}
-            label="New Order"
+            to="/create-form"
+            icon={FilePlus2} // Make sure you've imported FilePlus2
+            label="Create Form"
             color="border-blue-300 text-blue-600 hover:bg-blue-50"
           />
+
+          {/* These remain as BUTTONS because they have an 'onClick' prop */}
           <QuickAction
-            icon={Package}
-            label="Add Product"
+            onClick={() => alert('New Order Clicked!')}
+            icon={ShoppingCart}
+            label="New Order"
             color="border-green-300 text-green-600 hover:bg-green-50"
           />
           <QuickAction
+            onClick={() => alert('Add User Clicked!')}
             icon={Users}
             label="Add User"
             color="border-purple-300 text-purple-600 hover:bg-purple-50"
           />
           <QuickAction
+            onClick={() => alert('View Reports Clicked!')}
             icon={Eye}
             label="View Reports"
             color="border-orange-300 text-orange-600 hover:bg-orange-50"
