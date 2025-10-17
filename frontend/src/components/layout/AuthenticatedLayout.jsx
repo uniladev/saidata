@@ -1,11 +1,11 @@
-// frontend/src/components/layout/DashboardLayout.jsx
+// ============================================
+// FILE: frontend/src/components/layout/DashboardLayout.jsx
+// ============================================
 import { useState, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import DashboardTopbar from './DashboardTopbar';
 import DashboardSidebar from './DashboardSidebar';
-import { ScrollToTop, ScrollToTopButton } from '../common';
 
-// Loading Component
 const DashboardLoading = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -33,27 +33,22 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ScrollToTop />
-      
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
       <DashboardSidebar isOpen={sidebarOpen} closeSidebar={closeSidebar} />
       
       {/* Main Content Area */}
-      <div className="lg:pl-64">
+      <div className="flex flex-col flex-1 w-full overflow-hidden">
         {/* Topbar */}
         <DashboardTopbar toggleSidebar={toggleSidebar} />
         
         {/* Page Content */}
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
           <Suspense fallback={<DashboardLoading />}>
             <Outlet />
           </Suspense>
         </main>
       </div>
-
-      {/* Scroll to Top Button */}
-      <ScrollToTopButton />
     </div>
   );
 };

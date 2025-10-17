@@ -1,0 +1,88 @@
+{
+  "form": {
+    "key": "kkn_proposal_2025",
+    "title": "Pengajuan KKN 2025",
+    "description": "Form pengajuan program KKN.",
+    "status": "draft",
+    "pages": [
+      {
+        "key": "identitas",
+        "title": "Identitas",
+        "elements": [
+          { "key": "npm", "type": "text", "title": "NPM", "required": true, "validation": { "pattern": "^[0-9]{10}$" } },
+          { "key": "nama", "type": "text", "title": "Nama Lengkap", "required": true },
+          {
+            "key": "prodi",
+            "type": "dropdown",
+            "title": "Program Studi",
+            "required": true,
+            "options": ["Matematika", "Fisika", "Kimia"]
+          }
+        ]
+      },
+      {
+        "key": "program",
+        "title": "Program KKN",
+        "elements": [
+          {
+            "key": "tema",
+            "type": "radio",
+            "title": "Tema KKN",
+            "required": true,
+            "options": ["Literasi", "Kesehatan", "Lingkungan", "Lainnya"]
+          },
+          {
+            "key": "tema_lainnya",
+            "type": "text",
+            "title": "Tema Lainnya",
+            "visibilityIf": { "question": "tema", "operator": "=", "value": "Lainnya" }
+          },
+          {
+            "key": "rencana_kegiatan",
+            "type": "textarea",
+            "title": "Rencana Kegiatan",
+            "required": true,
+            "validation": { "minLength": 50 }
+          },
+          {
+            "key": "anggota",
+            "type": "repeater",
+            "title": "Anggota Tim",
+            "itemSchema": [
+              { "key": "nama", "type": "text", "title": "Nama" },
+              { "key": "npm", "type": "text", "title": "NPM" },
+              { "key": "peran", "type": "dropdown", "title": "Peran", "options": ["Ketua", "Anggota"] }
+            ]
+          },
+          { "key": "tanggal_mulai", "type": "date", "title": "Tanggal Mulai" },
+          {
+            "key": "tanggal_selesai",
+            "type": "date",
+            "title": "Tanggal Selesai",
+            "validation": { "compareWith": "tanggal_mulai", "operator": "afterOrEqual" }
+          }
+        ]
+      },
+      {
+        "key": "persetujuan",
+        "title": "Persetujuan",
+        "elements": [
+          {
+            "key": "lampiran_proposal",
+            "type": "file",
+            "title": "Lampirkan Proposal (PDF)",
+            "required": true,
+            "properties": { "accept": [".pdf"], "maxSizeMB": 10 }
+          },
+          {
+            "key": "persetujuan",
+            "type": "checkbox",
+            "title": "Saya menyetujui syarat & ketentuan",
+            "options": ["Setuju"],
+            "required": true
+          }
+        ]
+      }
+    ]
+  }
+}

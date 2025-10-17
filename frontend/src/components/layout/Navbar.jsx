@@ -1,7 +1,8 @@
 // frontend/src/components/layout/Navbar.jsx
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Calendar, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Calendar, Phone, Mail, ChevronDown, ChevronUp, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 // ==================== NAVBAR CONFIGURATION ====================
 const navbarConfig = {
@@ -25,11 +26,6 @@ const navbarConfig = {
         text: '0721-704625',
         link: 'tel:+62721704625'
       },
-      // {
-      //   type: 'date',
-      //   icon: 'calendar',
-      //   showDate: true
-      // }
     ]
   },
   
@@ -56,7 +52,10 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const updateDate = () => {
@@ -132,6 +131,18 @@ const Navbar = () => {
   const closeMobileMenu = () => {
     setIsOpen(false);
     setOpenDropdown(null);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowProfileMenu(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/');
+    }
   };
 
   return (
@@ -224,13 +235,98 @@ const Navbar = () => {
               ))}
             </div>
 
+            {/* Desktop Auth Section */}
             <div className="hidden lg:block">
-              <Link
-                to={navbarConfig.authButton.link}
-                className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition inline-block"
-              >
-                {navbarConfig.authButton.text}
-              </Link>
+              {isAuthenticated() ? (
+                // User Profile Dropdown
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        {user?.avatar ? (
+                          <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
+                        ) : (
+                          <span className="text-sm">{user?.name?.charAt(0) || 'U'}</span>
+                        )}
+                      </div>
+                      
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{user?.role || 'Member'}</p>
+                      </div>
+                    </div>
+                    
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  </button>
+
+                  {showProfileMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowProfileMenu(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                        <div className="p-3 border-b border-gray-200">
+                          <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
+                          <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
+                        </div>
+                        <div className="py-2">
+                          <button 
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              navigate('/dashboard');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              navigate('/dashboard/profile');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                          >
+                            <User className="h-4 w-4" />
+                            Profil Saya
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              navigate('/dashboard/settings');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                          >
+                            <Settings className="h-4 w-4" />
+                            Pengaturan
+                          </button>
+                        </div>
+                        <div className="border-t border-gray-200 py-2">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Keluar
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                // Login Button
+                <Link
+                  to={navbarConfig.authButton.link}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition inline-block"
+                >
+                  {navbarConfig.authButton.text}
+                </Link>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -264,6 +360,54 @@ const Navbar = () => {
           `}
         >
           <div className="px-4 py-4 space-y-2">
+            {/* Mobile User Profile (if authenticated) */}
+            {isAuthenticated() && (
+              <div className="pb-4 mb-4 border-b border-gray-200">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      <span>{user?.name?.charAt(0) || 'U'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
+                    <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
+                  </div>
+                </div>
+                
+                {/* Quick Links for Authenticated Users */}
+                <div className="mt-3 space-y-1">
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+                    onClick={closeMobileMenu}
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/dashboard/profile"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+                    onClick={closeMobileMenu}
+                  >
+                    <User className="h-4 w-4" />
+                    Profil Saya
+                  </Link>
+                  <Link
+                    to="/dashboard/settings"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+                    onClick={closeMobileMenu}
+                  >
+                    <Settings className="h-4 w-4" />
+                    Pengaturan
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Menu Items */}
             {navbarConfig.menuItems.map((item, index) => (
               item.children ? (
                 <div key={index} className="border-b border-gray-100 pb-2">
@@ -324,15 +468,28 @@ const Navbar = () => {
               )
             ))}
             
-            {/* Mobile Login Button */}
+            {/* Mobile Auth Button */}
             <div className="pt-4">
-              <Link
-                to={navbarConfig.authButton.link}
-                className="block w-full bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition text-center shadow-md"
-                onClick={closeMobileMenu}
-              >
-                {navbarConfig.authButton.text}
-              </Link>
+              {isAuthenticated() ? (
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    closeMobileMenu();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full bg-red-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-red-700 transition shadow-md"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Keluar
+                </button>
+              ) : (
+                <Link
+                  to={navbarConfig.authButton.link}
+                  className="block w-full bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition text-center shadow-md"
+                  onClick={closeMobileMenu}
+                >
+                  {navbarConfig.authButton.text}
+                </Link>
+              )}
             </div>
           </div>
         </div>
