@@ -1,3 +1,5 @@
+// ===== Update the formFields index file to export all components =====
+// frontend/src/components/ui/formFields/index.js
 export { default as TextInput } from './TextInput';
 export { default as TextAreaInput } from './TextAreaInput';
 export { default as SelectInput } from './SelectInput';
@@ -11,3 +13,6 @@ export { default as SectionHeader } from './SectionHeader';
 export { default as PhoneInput } from './PhoneInput';
 export { default as UrlInput } from './UrlInput';
 export { default as TimeInput } from './TimeInput';
+export { default as RangeInput } from './RangeInput';
+export { default as ColorInput } from './ColorInput';
+export { default as RatingInput } from './RatingInput';
