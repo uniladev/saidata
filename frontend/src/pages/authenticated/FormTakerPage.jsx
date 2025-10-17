@@ -1,21 +1,20 @@
-import React, { useState } from 'react';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-
-// Import all your custom field components
-import TextInput from '../../components/ui/formFields/TextInput';
-import TextAreaInput from '../../components/ui/formFields/TextAreaInput';
-import SelectInput from '../../components/ui/formFields/SelectInput';
-import RadioInput from '../../components/ui/formFields/RadioInput';
-import CheckboxInput from '../../components/ui/formFields/CheckboxInput';
-import EmailInput from '../../components/ui/formFields/EmailInput';
-import NumberInput from '../../components/ui/formFields/NumberInput';
-import DateInput from '../../components/ui/formFields/DateInput';
-import FileInput from '../../components/ui/formFields/FileInput';
-import SectionHeader from '../../components/ui/formFields/SectionHeader';
-import PhoneInput from '../../components/ui/formFields/PhoneInput';
-import UrlInput from '../../components/ui/formFields/UrlInput';
-import TimeInput from '../../components/ui/formFields/TimeInput';
+import {
+  TextInput,
+  TextAreaInput,
+  SelectInput,
+  RadioInput,
+  CheckboxInput,
+  EmailInput,
+  NumberInput,
+  DateInput,
+  FileInput,
+  SectionHeader,
+  PhoneInput,
+  UrlInput,
+  TimeInput,
+} from '../../components/ui/formFields';
 
 // This map connects a field 'type' string to its React component
 const fieldComponentMap = {

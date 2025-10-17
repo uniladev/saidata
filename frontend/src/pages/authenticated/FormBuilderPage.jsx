@@ -1,19 +1,22 @@
 //fronted/src/pages/authenticated/FormBuilderPage.jsx
 import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronUp, Copy, Trash2, GripVertical, Plus, X, Settings, Eye, Save, Code, Play } from 'lucide-react';
-import TextInput from '../../components/ui/formFields/TextInput';
-import TextAreaInput from '../../components/ui/formFields/TextAreaInput';
-import SelectInput from '../../components/ui/formFields/SelectInput';
-import RadioInput from '../../components/ui/formFields/RadioInput';
-import CheckboxInput from '../../components/ui/formFields/CheckboxInput';
-import EmailInput from '../../components/ui/formFields/EmailInput';
-import NumberInput from '../../components/ui/formFields/NumberInput';
-import DateInput from '../../components/ui/formFields/DateInput';
-import FileInput from '../../components/ui/formFields/FileInput';
-import SectionHeader from '../../components/ui/formFields/SectionHeader';
-import PhoneInput from '../../components/ui/formFields/PhoneInput';
-import UrlInput from '../../components/ui/formFields/UrlInput';
-import TimeInput from '../../components/ui/formFields/TimeInput';
+import {
+  TextInput,
+  TextAreaInput,
+  SelectInput,
+  RadioInput,
+  CheckboxInput,
+  EmailInput,
+  NumberInput,
+  DateInput,
+  FileInput,
+  SectionHeader,
+  PhoneInput,
+  UrlInput,
+  TimeInput,
+} from '../../components/ui/formFields';
+import { useNavigate } from 'react-router-dom';
 
 // Field type definitions
 const FIELD_TYPES = [
@@ -50,6 +53,7 @@ function FormBuilderPage() {
   const [dragOverInfo, setDragOverInfo] = useState(null); // Will store { index, position: 'top' | 'bottom' }
   const [dragAction, setDragAction] = useState(null); // <-- ADD THIS LINE
   const dragCounter = useRef(0);
+  const navigate = useNavigate(); // <-- Add this line
   const fieldComponentMap = {
   text: TextInput,
   textarea: TextAreaInput,
@@ -261,6 +265,23 @@ function FormBuilderPage() {
         })
       }
     };
+  };
+
+  const handleSaveForm = () => {
+    const formJson = generateJson();
+    
+    // Get existing forms from localStorage or start with an empty array
+    const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
+    
+    // Add the new form to the array
+    savedForms.push(formJson);
+    
+    // Save the updated array back to localStorage
+    localStorage.setItem('myForms', JSON.stringify(savedForms));
+    
+    // Notify the user and redirect to the dashboard
+    alert('Form saved successfully!');
+    navigate('/dashboard');
   };
 
   // Field Properties Panel
@@ -623,15 +644,11 @@ function FormBuilderPage() {
             <span>JSON</span>
           </button>
           <button
-            onClick={() => {
-              const json = generateJson();
-              navigator.clipboard.writeText(JSON.stringify(json, null, 2));
-              alert('JSON copied to clipboard!');
-            }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg flex items-center space-x-2 hover:bg-gray-300"
+            onClick={handleSaveForm}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center space-x-2 hover:bg-green-700"
           >
             <Save className="w-4 h-4" />
-            <span>Export</span>
+            <span>Save Form</span>
           </button>
         </div>
       </div>
