@@ -37,6 +37,7 @@ const fieldComponentMap = {
 const FormTakerPage = () => {
   const { formId } = useParams(); // Gets the 'formId' from the URL
   const [formConfig, setFormConfig] = useState(null);
+  const [formData, setFormData] = useState({}); // <-- ADD THIS LINE
 
   useEffect(() => {
     const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
@@ -67,6 +68,39 @@ const FormTakerPage = () => {
     // In a real app, you would send `formData` to your backend API here
   };
 
+  // ... after your handleSubmit function
+
+  const exportJsonForDocs = () => {
+    if (Object.keys(formData).length === 0) {
+      alert("Please fill out the form with some sample data before exporting.");
+      return;
+    }
+
+    // Create the structured data by mapping over the form's fields
+    const structuredData = fields.map(field => {
+      return {
+        id: field.id, // <-- ADD THIS LINE
+        name: field.name,
+        label: field.label,
+        type: field.type,
+        // Look up the user's answer from the formData state
+        value: formData[field.name] || null 
+      };
+    });
+
+    // The rest of the download logic remains the same
+    const jsonString = JSON.stringify(structuredData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "structured_formData_example.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white shadow-lg rounded-lg my-12">
       <h1 className="text-3xl font-bold mb-2">{title}</h1>
@@ -93,12 +127,23 @@ const FormTakerPage = () => {
         })}
 
         {fields.length > 0 && (
-          <button 
-            type="submit" 
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {submitText || 'Submit'}
-          </button>
+          <>
+            <button 
+              type="submit" 
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {submitText || 'Submit'}
+            </button>
+            
+            {/* ADD THIS NEW BUTTON */}
+            <button 
+              type="button" // Important: type="button" prevents it from submitting the form
+              onClick={exportJsonForDocs}
+              className="w-full bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
+            >
+              Export JSON for Backend Docs
+            </button>
+          </>
         )}
       </form>
     </div>
