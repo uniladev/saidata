@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PrimaryButton, SecondaryButton } from '../../components/ui/Button';
+import QRScanner from '../../components/ui/QRScanner';
 
 const DocumentValidation = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const [formData, setFormData] = useState({
     ticketNumber: '',
     token: ''
@@ -27,6 +29,43 @@ const DocumentValidation = () => {
         ...prev,
         [name]: ''
       }));
+    }
+  };
+
+  const handleQRScan = (decodedText) => {
+    // Parse QR code data - assuming format: "TICKET:TKT-123|TOKEN:ABC123"
+    try {
+      const parts = decodedText.split('|');
+      const ticketPart = parts.find(p => p.startsWith('TICKET:'));
+      const tokenPart = parts.find(p => p.startsWith('TOKEN:'));
+
+      if (ticketPart && tokenPart) {
+        const ticket = ticketPart.replace('TICKET:', '');
+        const token = tokenPart.replace('TOKEN:', '');
+        
+        setFormData({
+          ticketNumber: ticket,
+          token: token
+        });
+        
+        // Clear errors
+        setErrors({ ticketNumber: '', token: '', status: '' });
+      } else {
+        // If format doesn't match, try to use the whole string as ticket number
+        setFormData(prev => ({
+          ...prev,
+          ticketNumber: decodedText
+        }));
+      }
+      
+      setShowQRScanner(false);
+    } catch (error) {
+      console.error('Error parsing QR code:', error);
+      setErrors(prev => ({
+        ...prev,
+        status: 'Format QR code tidak valid'
+      }));
+      setShowQRScanner(false);
     }
   };
 
@@ -94,6 +133,19 @@ const DocumentValidation = () => {
                 </div>
               )}
 
+              {/* QR Scanner Button */}
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => setShowQRScanner(true)}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
+                >
+                  <i className="fas fa-qrcode mr-2"></i>
+                  Scan QR Code
+                </button>
+                <p className="text-center text-sm text-gray-500 mt-2">atau masukkan secara manual</p>
+              </div>
+
               <form onSubmit={handleSubmit}>
                 {/* Ticket Number Input */}
                 <div className="mb-4">
@@ -160,6 +212,14 @@ const DocumentValidation = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <QRScanner
+          onScanSuccess={handleQRScan}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
     </div>
   );
 };
