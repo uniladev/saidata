@@ -31,7 +31,7 @@ const FormTakerPage = () => {
         // Use the 'api' client. It automatically adds the token!
         // Use the 'GET /api/v1/forms/{id}' endpoint.
         const response = await api.get(`/forms/${formId}`);
-        // Assuming backend sends { data: { formObject } }
+        console.log("RAW BACKEND RESPONSE:", response.data);
         setFormConfig(response.data.data); 
       } catch (err) {
         console.error("Error loading form:", err);
