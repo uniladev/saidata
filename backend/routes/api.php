@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FormController;
-use App\Http\Controllers\Api\FormVersionController;
 use App\Http\Controllers\Api\FormSubmissionController;
 use App\Http\Controllers\Api\FormSubmissionPayloadController;
 use App\Http\Controllers\Api\UserProfileController;
@@ -26,32 +25,15 @@ Route::prefix('v1')->group(function () {
     // Protected API routes
     Route::middleware('auth:api')->group(function () {
         
-        // Forms routes
+        // Forms routes - Only MongoDB ObjectId
         Route::prefix('forms')->group(function () {
             Route::get('/', [FormController::class, 'index']);
             Route::post('/', [FormController::class, 'store']);
-            
-            // Form versions nested route - MUST come before generic {id}
-            Route::get('/{formId}/versions', [FormVersionController::class, 'index'])
-                ->where('formId', '[a-f0-9]{24}');
-            
-            // Generic {id} routes
             Route::get('/{id}', [FormController::class, 'show'])
                 ->where('id', '[a-f0-9]{24}');
             Route::put('/{id}', [FormController::class, 'update'])
                 ->where('id', '[a-f0-9]{24}');
             Route::delete('/{id}', [FormController::class, 'destroy'])
-                ->where('id', '[a-f0-9]{24}');
-        });
-
-        // Form Versions routes
-        Route::prefix('form-versions')->group(function () {
-            Route::post('/', [FormVersionController::class, 'store']);
-            Route::get('/{id}', [FormVersionController::class, 'show'])
-                ->where('id', '[a-f0-9]{24}');
-            Route::put('/{id}', [FormVersionController::class, 'update'])
-                ->where('id', '[a-f0-9]{24}');
-            Route::delete('/{id}', [FormVersionController::class, 'destroy'])
                 ->where('id', '[a-f0-9]{24}');
         });
 
