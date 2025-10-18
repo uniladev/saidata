@@ -303,6 +303,9 @@ class FormController extends Controller
             // Create the form (MongoDB will auto-generate _id)
             $form = Form::create($formData);
 
+            // Refresh the model to ensure _id is loaded
+            $form->refresh();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Form created successfully',
@@ -485,10 +488,13 @@ class FormController extends Controller
             // Update the form (MongoDB document operations are atomic)
             $form->update($formData);
 
+            // Refresh the model to ensure _id and updated data are properly loaded
+            $form->refresh();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Form updated successfully',
-                'data' => $form->fresh(['creator:_id,name,email', 'updater:_id,name,email'])
+                'data' => $form->load(['creator:_id,name,email', 'updater:_id,name,email'])
             ], 200);
 
         } catch (\Exception $e) {

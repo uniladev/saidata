@@ -25,6 +25,13 @@ class Form extends Model
         'updated_at' => 'datetime',
     ];
 
+    protected $appends = ['_id'];
+
+    public function get_idAttribute()
+    {
+        return (string) $this->attributes['_id'];
+    }
+
     // Make sure _id is NOT in the $hidden array
     // Remove this if it exists:
     // protected $hidden = ['_id'];
