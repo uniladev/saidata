@@ -124,14 +124,14 @@ export const useFormBuilder = () => {
 
   const generateJson = () => {
     return {
-      form: {
-        id: `form_${Date.now()}`,
-        ...formSettings,
-        fields: formFields.map(field => {
-          const { id, type, label, name, required, placeholder, helpText, validation, options, fileOptions, min, max, step, rows, maxRating } = field;
-          return { id, type, label, name, required, placeholder, helpText, validation, options, fileOptions, min, max, step, rows, maxRating };
-        })
-      }
+      // The ...formSettings (title, description, etc.) are now at the top level
+      ...formSettings, 
+      
+      // The fields array is also at the top level
+      fields: formFields.map(field => {
+        const { id, ...fieldForBackend } = field;
+        return fieldForBackend;
+      })
     };
   };
 

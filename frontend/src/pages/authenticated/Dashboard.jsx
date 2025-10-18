@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { FilePlus2 } from 'lucide-react'; // For the new action button
+import api from '../../config/api';
 
 // Stat Card Component
 const StatCard = ({ title, value, change, icon: Icon, trend, color }) => {
@@ -159,10 +160,21 @@ const Dashboard = () => {
   ]);
 
   useEffect(() => {
-    // Load saved forms from localStorage when the component mounts
-    const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
-    setForms(savedForms);
-  }, []);
+  // This function will fetch forms from the Laravel backend
+  const fetchForms = async () => {
+    try {
+      // We use the 'api' client. It automatically adds the token.
+      const response = await api.get('/forms');
+
+      // Assuming the backend wraps the forms in a 'data' key
+      setForms(response.data); // <-- This is the fix to correctly set forms
+    } catch (error) {
+      console.error("Error fetching forms:", error);
+    }
+  };
+
+  fetchForms();
+}, []); // <-- Use an empty array so it runs once when the page loads
 
   const [activities] = useState([
     {
@@ -230,20 +242,23 @@ const Dashboard = () => {
         {forms.length > 0 ? (
           <div className="space-y-4">
             {forms.map((form) => (
-              <div key={form.form.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={form.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <h3 className="font-semibold">{form.form.title}</h3>
-                  <p className="text-sm text-gray-500">{form.form.fields.length} fields</p>
+                  <h3 className="font-semibold">{form.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    {/* The backend might not send the full fields array, so we check */}
+                    {form.fields ? `${form.fields.length} fields` : 'View Form'}
+                  </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Link 
-                    to={`/form/${form.form.id}`} 
+                    to={`/form/${form.id}`} 
                     className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     Take Survey
                   </Link>
                   <a 
-                    href={`/form/${form.form.id}`} 
+                    href={`/form/${form.id}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-sm text-gray-500 hover:text-blue-600"

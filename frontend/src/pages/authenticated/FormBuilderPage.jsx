@@ -9,9 +9,12 @@ import FormPreview from '../../components/formBuilder/FormPreview';
 import JsonViewer from '../../components/formBuilder/JsonViewer';
 import { useFormBuilder } from '../../hooks/useFormBuilder';
 import { FIELD_TYPES } from '../../constants/fieldTypes';
+import { useAuth } from '../../context/AuthContext'; // <-- ADD THIS LINE
+import api from '../../config/api'; // <-- ADD THIS LINE
 
 function FormBuilderPage() {
   const navigate = useNavigate();
+  const { token } = useAuth(); // <-- ADD THIS LINE
   const [showPreview, setShowPreview] = useState(false);
   const [showJson, setShowJson] = useState(false);
   const [selectedField, setSelectedField] = useState(null);
@@ -34,13 +37,39 @@ function FormBuilderPage() {
     generateJson,
   } = useFormBuilder();
 
-  const handleSaveForm = () => {
+  const handleSaveForm = async () => {
     const formJson = generateJson();
-    const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
-    savedForms.push(formJson);
-    localStorage.setItem('myForms', JSON.stringify(savedForms));
-    alert('Form saved successfully!');
-    navigate('/dashboard');
+
+    try {
+      // This part is correct
+      const response = await api.post('/forms', formJson);
+      
+      console.log('Server response:', response.data);
+      alert('Form saved successfully!');
+      navigate('/dashboard');
+
+    } catch (error) {
+      console.error("Error saving form:", error);
+
+      // --- THIS IS THE UPDATED CATCH BLOCK ---
+
+      if (error.response && error.response.status === 422) {
+        // This handles the validation error
+        const errors = error.response.data.errors;
+        let errorMessage = "Validation Failed:\n\n";
+        
+        // Loop through all the error messages from the backend
+        for (const key in errors) {
+          errorMessage += `- ${errors[key][0]}\n`; // Add the first error for each field
+        }
+        
+        alert(errorMessage);
+      } else {
+        // This handles other types of errors (network, server 500, etc.)
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to save form.';
+        alert(`Error: ${errorMessage}`);
+      }
+    }
   };
 
   const dragHandlers = {
