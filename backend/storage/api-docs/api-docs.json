@@ -448,54 +448,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "properties": {
-                                            "id": {
-                                                "type": "string",
-                                                "example": "68ee4fc2754f6e95b809e492"
-                                            },
-                                            "title": {
-                                                "type": "string",
-                                                "example": "Customer Satisfaction Survey"
-                                            },
-                                            "description": {
-                                                "type": "string",
-                                                "example": "Survey to measure customer satisfaction"
-                                            },
-                                            "created_by": {
-                                                "type": "string",
-                                                "example": "68ee3e2c5336195833053652"
-                                            },
-                                            "updated_by": {
-                                                "type": "string",
-                                                "example": "68ee3e2c5336195833053652"
-                                            },
-                                            "is_published": {
-                                                "type": "boolean",
-                                                "example": false
-                                            },
-                                            "current_version": {
-                                                "type": "integer",
-                                                "example": 1
-                                            },
-                                            "visibility": {
-                                                "type": "string",
-                                                "example": "public"
-                                            },
-                                            "created_at": {
-                                                "type": "string",
-                                                "format": "date-time",
-                                                "example": "2025-10-14T10:00:00.000000Z"
-                                            },
-                                            "updated_at": {
-                                                "type": "string",
-                                                "format": "date-time",
-                                                "example": "2025-10-14T10:00:00.000000Z"
-                                            }
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
                                         },
-                                        "type": "object"
-                                    }
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Form"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -515,7 +480,7 @@
                     "Forms"
                 ],
                 "summary": "Create new form",
-                "description": "Create a new form (created_by is automatically set from authenticated user)",
+                "description": "Create a new form with fields structure. Backend will generate MongoDB ObjectId and field IDs automatically.",
                 "operationId": "9c6257241b15498a5c9fbb8e36879f40",
                 "requestBody": {
                     "required": true,
@@ -523,37 +488,138 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "title"
+                                    "form"
                                 ],
                                 "properties": {
-                                    "title": {
-                                        "type": "string",
-                                        "example": "Customer Satisfaction Survey"
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "example": "Survey to measure customer satisfaction"
-                                    },
-                                    "password": {
-                                        "type": "string",
-                                        "example": "secret123"
-                                    },
-                                    "is_published": {
-                                        "type": "boolean",
-                                        "example": false
-                                    },
-                                    "current_version": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "visibility": {
-                                        "type": "string",
-                                        "enum": [
-                                            "public",
-                                            "private",
-                                            "restricted"
+                                    "form": {
+                                        "required": [
+                                            "title",
+                                            "fields"
                                         ],
-                                        "example": "public"
+                                        "properties": {
+                                            "title": {
+                                                "type": "string",
+                                                "maxLength": 255,
+                                                "example": "Untitled Form"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Form description"
+                                            },
+                                            "submitText": {
+                                                "description": "Submit button text",
+                                                "type": "string",
+                                                "example": "Submit"
+                                            },
+                                            "successMessage": {
+                                                "description": "Success message after submission",
+                                                "type": "string",
+                                                "example": "Thank you for your submission!"
+                                            },
+                                            "fields": {
+                                                "type": "array",
+                                                "items": {
+                                                    "required": [
+                                                        "type",
+                                                        "label",
+                                                        "name"
+                                                    ],
+                                                    "properties": {
+                                                        "type": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "text",
+                                                                "textarea",
+                                                                "number",
+                                                                "email",
+                                                                "date",
+                                                                "time",
+                                                                "datetime-local",
+                                                                "url",
+                                                                "tel",
+                                                                "password",
+                                                                "select",
+                                                                "radio",
+                                                                "checkbox",
+                                                                "file",
+                                                                "rating",
+                                                                "signature",
+                                                                "matrix",
+                                                                "repeater"
+                                                            ],
+                                                            "example": "text"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "example": "New Text Input"
+                                                        },
+                                                        "name": {
+                                                            "description": "Field name for form data",
+                                                            "type": "string",
+                                                            "example": "field_1"
+                                                        },
+                                                        "required": {
+                                                            "type": "boolean",
+                                                            "example": false
+                                                        },
+                                                        "placeholder": {
+                                                            "type": "string",
+                                                            "example": "Enter text here"
+                                                        },
+                                                        "helpText": {
+                                                            "type": "string",
+                                                            "example": "Help text for the field"
+                                                        },
+                                                        "validation": {
+                                                            "description": "Validation rules object",
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        },
+                                                        "options": {
+                                                            "description": "Options for select, radio, checkbox fields",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "fileOptions": {
+                                                            "description": "File upload options",
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        },
+                                                        "min": {
+                                                            "description": "Minimum value for number fields",
+                                                            "type": "number",
+                                                            "example": 0,
+                                                            "nullable": true
+                                                        },
+                                                        "max": {
+                                                            "description": "Maximum value for number fields",
+                                                            "type": "number",
+                                                            "example": 100,
+                                                            "nullable": true
+                                                        },
+                                                        "step": {
+                                                            "description": "Step value for number fields",
+                                                            "type": "number",
+                                                            "nullable": true
+                                                        },
+                                                        "rows": {
+                                                            "description": "Rows for textarea",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "maxRating": {
+                                                            "description": "Maximum rating value",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object"
@@ -568,41 +634,16 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "message": {
                                             "type": "string",
                                             "example": "Form created successfully"
                                         },
-                                        "form": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "string",
-                                                    "example": "68ee4fc2754f6e95b809e492"
-                                                },
-                                                "title": {
-                                                    "type": "string",
-                                                    "example": "Customer Satisfaction Survey"
-                                                },
-                                                "description": {
-                                                    "type": "string"
-                                                },
-                                                "created_by": {
-                                                    "type": "string",
-                                                    "example": "68ee3e2c5336195833053652"
-                                                },
-                                                "updated_by": {
-                                                    "type": "string",
-                                                    "example": "68ee3e2c5336195833053652"
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                },
-                                                "updated_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                }
-                                            },
-                                            "type": "object"
+                                        "data": {
+                                            "$ref": "#/components/schemas/Form"
                                         }
                                     },
                                     "type": "object"
@@ -611,7 +652,27 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation error"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -636,12 +697,12 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "MongoDB ObjectId",
+                        "description": "MongoDB ObjectId (24 character hex string)",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "pattern": "^[a-f0-9]{24}$",
-                            "example": "68ee4fc2754f6e95b809e492"
+                            "example": "671292eb4c6b7a0d4e0b1234"
                         }
                     }
                 ],
@@ -652,47 +713,12 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "id": {
-                                            "type": "string",
-                                            "example": "68ee4fc2754f6e95b809e492"
-                                        },
-                                        "title": {
-                                            "type": "string",
-                                            "example": "Customer Satisfaction Survey"
-                                        },
-                                        "description": {
-                                            "type": "string",
-                                            "example": "Survey to measure customer satisfaction"
-                                        },
-                                        "created_by": {
-                                            "type": "string",
-                                            "example": "68ee3e2c5336195833053652"
-                                        },
-                                        "updated_by": {
-                                            "type": "string",
-                                            "example": "68ee3e2c5336195833053652"
-                                        },
-                                        "is_published": {
+                                        "success": {
                                             "type": "boolean",
-                                            "example": false
+                                            "example": true
                                         },
-                                        "current_version": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "visibility": {
-                                            "type": "string",
-                                            "example": "public"
-                                        },
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time",
-                                            "example": "2025-10-14T10:00:00.000000Z"
-                                        },
-                                        "updated_at": {
-                                            "type": "string",
-                                            "format": "date-time",
-                                            "example": "2025-10-14T10:00:00.000000Z"
+                                        "data": {
+                                            "$ref": "#/components/schemas/Form"
                                         }
                                     },
                                     "type": "object"
@@ -718,18 +744,18 @@
                     "Forms"
                 ],
                 "summary": "Update form",
-                "description": "Update an existing form (updated_by is automatically set from authenticated user)",
+                "description": "Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields.",
                 "operationId": "cd7f11d5218d6865724c77f1ea25d841",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "MongoDB ObjectId",
+                        "description": "MongoDB ObjectId (24 character hex string)",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "pattern": "^[a-f0-9]{24}$",
-                            "example": "68ee4fc2754f6e95b809e492"
+                            "example": "671292eb4c6b7a0d4e0b1234"
                         }
                     }
                 ],
@@ -738,27 +764,56 @@
                     "content": {
                         "application/json": {
                             "schema": {
+                                "required": [
+                                    "form"
+                                ],
                                 "properties": {
-                                    "title": {
-                                        "type": "string",
-                                        "example": "Updated Survey Title"
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "example": "Updated description"
-                                    },
-                                    "is_published": {
-                                        "type": "boolean",
-                                        "example": true
-                                    },
-                                    "visibility": {
-                                        "type": "string",
-                                        "enum": [
-                                            "public",
-                                            "private",
-                                            "restricted"
-                                        ],
-                                        "example": "public"
+                                    "form": {
+                                        "properties": {
+                                            "title": {
+                                                "type": "string",
+                                                "example": "Updated Form Title"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Updated description"
+                                            },
+                                            "submitText": {
+                                                "type": "string",
+                                                "example": "Submit"
+                                            },
+                                            "successMessage": {
+                                                "type": "string",
+                                                "example": "Thank you!"
+                                            },
+                                            "fields": {
+                                                "description": "Fields array. Include 'id' for existing fields to preserve them, omit 'id' for new fields.",
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "Include this for existing fields",
+                                                            "type": "string",
+                                                            "example": "field_1760690243313_bhm124rg1"
+                                                        },
+                                                        "type": {
+                                                            "type": "string",
+                                                            "example": "text"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "example": "Updated Label"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "field_1"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object"
@@ -773,12 +828,16 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "message": {
                                             "type": "string",
                                             "example": "Form updated successfully"
                                         },
-                                        "form": {
-                                            "type": "object"
+                                        "data": {
+                                            "$ref": "#/components/schemas/Form"
                                         }
                                     },
                                     "type": "object"
@@ -788,6 +847,9 @@
                     },
                     "404": {
                         "description": "Form not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -804,18 +866,18 @@
                     "Forms"
                 ],
                 "summary": "Delete form",
-                "description": "Delete a form",
+                "description": "Delete a form permanently",
                 "operationId": "01f1be53256aaaaa8a2db6c2e9876bf8",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "MongoDB ObjectId",
+                        "description": "MongoDB ObjectId (24 character hex string)",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "pattern": "^[a-f0-9]{24}$",
-                            "example": "68ee4fc2754f6e95b809e492"
+                            "example": "671292eb4c6b7a0d4e0b1234"
                         }
                     }
                 ],
@@ -826,6 +888,10 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "message": {
                                             "type": "string",
                                             "example": "Form deleted successfully"
@@ -993,237 +1059,6 @@
                     },
                     "404": {
                         "description": "Payload not found"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/forms/{formId}/versions": {
-            "get": {
-                "tags": [
-                    "Form Versions"
-                ],
-                "summary": "Get all versions of a form",
-                "description": "Retrieve all versions for a specific form",
-                "operationId": "cf6157625d9d4c0e2642e9eb53d938aa",
-                "parameters": [
-                    {
-                        "name": "formId",
-                        "in": "path",
-                        "description": "MongoDB ObjectId of the form",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$",
-                            "example": "68ee4fc2754f6e95b809e492"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of form versions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/form-versions/{id}": {
-            "get": {
-                "tags": [
-                    "Form Versions"
-                ],
-                "summary": "Get form version by ID",
-                "description": "Retrieve a specific form version",
-                "operationId": "504e96836a2aab8493548f6f2cacc707",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Form version details"
-                    },
-                    "404": {
-                        "description": "Form version not found"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Form Versions"
-                ],
-                "summary": "Update form version",
-                "description": "Update an existing form version",
-                "operationId": "18cf806c971eb52190e5612023f01076",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "schema": {
-                                        "type": "object"
-                                    },
-                                    "version_number": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Form version updated successfully"
-                    },
-                    "404": {
-                        "description": "Form version not found"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Form Versions"
-                ],
-                "summary": "Delete form version",
-                "description": "Delete a form version",
-                "operationId": "e6d215020073dbf03d912faa77ede192",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Form version deleted successfully"
-                    },
-                    "404": {
-                        "description": "Form version not found"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/form-versions": {
-            "post": {
-                "tags": [
-                    "Form Versions"
-                ],
-                "summary": "Create new form version",
-                "description": "Create a new version for a form",
-                "operationId": "3fe59d2b293e24fa9621c41536b6b88f",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "form_id",
-                                    "version_number",
-                                    "schema"
-                                ],
-                                "properties": {
-                                    "form_id": {
-                                        "type": "string",
-                                        "example": "68ee4fc2754f6e95b809e492"
-                                    },
-                                    "version_number": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "schema": {
-                                        "type": "object"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Form version created successfully"
-                    },
-                    "422": {
-                        "description": "Validation error"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -1431,6 +1266,121 @@
         }
     },
     "components": {
+        "schemas": {
+            "Form": {
+                "properties": {
+                    "_id": {
+                        "description": "MongoDB ObjectId",
+                        "type": "string",
+                        "example": "671292eb4c6b7a0d4e0b1234"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Untitled Form"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Form description"
+                    },
+                    "submitText": {
+                        "type": "string",
+                        "example": "Submit"
+                    },
+                    "successMessage": {
+                        "type": "string",
+                        "example": "Thank you for your submission!"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Backend-generated unique field identifier",
+                                    "type": "string",
+                                    "example": "field_1760690243313_bhm124rg1"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "example": "text"
+                                },
+                                "label": {
+                                    "type": "string",
+                                    "example": "New Text Input"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "field_1"
+                                },
+                                "required": {
+                                    "type": "boolean",
+                                    "example": false
+                                },
+                                "placeholder": {
+                                    "type": "string",
+                                    "example": ""
+                                },
+                                "helpText": {
+                                    "type": "string",
+                                    "example": ""
+                                },
+                                "validation": {
+                                    "type": "object",
+                                    "nullable": true
+                                },
+                                "options": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "fileOptions": {
+                                    "type": "object",
+                                    "nullable": true
+                                },
+                                "min": {
+                                    "type": "number",
+                                    "nullable": true
+                                },
+                                "max": {
+                                    "type": "number",
+                                    "nullable": true
+                                },
+                                "step": {
+                                    "type": "number",
+                                    "nullable": true
+                                },
+                                "rows": {
+                                    "type": "integer",
+                                    "nullable": true
+                                },
+                                "maxRating": {
+                                    "type": "integer",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "created_by": {
+                        "type": "string",
+                        "example": "68ee3e2c533619c833053652"
+                    },
+                    "updated_by": {
+                        "type": "string",
+                        "example": "68ee3e2c533619c833053652"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        },
         "securitySchemes": {
             "bearerAuth": {
                 "type": "http",
@@ -1456,10 +1406,6 @@
         {
             "name": "Form Submission Payloads",
             "description": "Form Submission Payloads"
-        },
-        {
-            "name": "Form Versions",
-            "description": "Form Versions"
         },
         {
             "name": "User Profiles",
