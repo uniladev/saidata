@@ -48,7 +48,6 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/validasi" element={<DocumentValidationPage />} />
-        <Route path="/form/:formId" element={<FormTakerPage />} />
       </Route>
 
       {/* Auth Routes */}
@@ -71,7 +70,7 @@ export default function App() {
       >
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/create-form" element={<FormBuilderPage />} />
-
+        <Route path="/form/:formId" element={<FormTakerPage />} />
 
       </Route>
 

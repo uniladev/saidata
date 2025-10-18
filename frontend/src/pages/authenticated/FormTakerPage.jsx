@@ -8,6 +8,7 @@ import FormActions from '../../components/formTaker/FormActions';
 import LoadingState from '../../components/formTaker/LoadingState';
 import ErrorState from '../../components/formTaker/ErrorState';
 import { useFormData } from '../../hooks/useFormData';
+import api from '../../config/api'; // <-- ADD THIS LINE
 
 const FormTakerPage = () => {
   const { formId } = useParams();
@@ -18,40 +19,62 @@ const FormTakerPage = () => {
   const { formData, handleInputChange, resetForm, validateForm } = useFormData();
 
   useEffect(() => {
-    const loadForm = () => {
+    const loadForm = async () => {
+      if (!formId) { // Only check for formId now
+        setError('No form ID provided.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
-        const savedForms = JSON.parse(localStorage.getItem('myForms')) || [];
-        const currentForm = savedForms.find(form => form.form.id === formId);
-        
-        if (currentForm) {
-          setFormConfig(currentForm);
-        } else {
-          setError('Form not found');
-        }
+        // Use the 'api' client. It automatically adds the token!
+        // Use the 'GET /api/v1/forms/{id}' endpoint.
+        const response = await api.get(`/forms/${formId}`);
+        console.log("RAW BACKEND RESPONSE:", response.data);
+        setFormConfig(response.data.data); 
       } catch (err) {
-        setError('Error loading form');
+        console.error("Error loading form:", err);
+        setError('Form not found or an error occurred.');
       } finally {
         setLoading(false);
       }
     };
 
     loadForm();
-  }, [formId]);
+  }, [formId]); // Depend only on formId now
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const isValid = validateForm(formConfig?.form?.fields || []);
-    if (!isValid) {
-      alert('Please fill in all required fields');
+    if (!formConfig) {
+      alert('Form not loaded yet.');
       return;
     }
 
-    console.log('Form Submission:', formData);
-    alert('Form submitted successfully! Check the console for data.');
+    // Assuming your useFormData hook has a validate function
+    if (!validateForm(formConfig?.form?.fields || [])) {
+      alert('Please fill in all required fields.');
+      return;
+    }
     
-    // In production, send to API
-    // await api.submitForm(formId, formData);
+    const submissionData = {
+      form_version_id: formConfig.id, // Assuming the top-level form config has the ID
+      payload: formData // The user's answers from your useFormData hook
+    };
+
+    try {
+      // Use the 'api' client. It automatically adds the token.
+      // Use the 'POST /api/v1/survey' endpoint.
+      await api.post('/survey', submissionData);
+
+      alert(formConfig.successMessage || 'Thank you for your submission!');
+      navigate('/dashboard'); // Redirect after successful submission
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Submission failed.';
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   const exportFormData = () => {
@@ -82,9 +105,9 @@ const FormTakerPage = () => {
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState error={error} onRetry={() => navigate('/dashboard')} />;
-  if (!formConfig || !formConfig.form) return <ErrorState error="Invalid form configuration" />;
+  if (!formConfig || !formConfig.fields) return <ErrorState error="Invalid form configuration" />;
 
-  const { title, description, fields, submitText } = formConfig.form;
+  const { title, description, fields, submitText } = formConfig;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
