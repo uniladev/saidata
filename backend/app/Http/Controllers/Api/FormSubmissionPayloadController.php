@@ -12,63 +12,64 @@ class FormSubmissionPayloadController extends Controller
      * @OA\Get(
      *     path="/api/v1/submissions/{submissionId}/payload",
      *     summary="Get submission payload by submission ID",
-     *     description="Retrieve payload data for a specific submission",
      *     tags={"Form Submission Payloads"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="submissionId",
      *         in="path",
+     *         description="Submission ID (24-character hexadecimal MongoDB ObjectId)",
      *         required=true,
-     *         description="MongoDB ObjectId of the submission",
      *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
      *     ),
-     *     @OA\Response(response=200, description="Submission payload details"),
-     *     @OA\Response(response=404, description="Payload not found"),
-     *     @OA\Response(response=401, description="Unauthenticated")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid submission ID format",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Invalid submission ID format")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Payload not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Payload not found")
+     *         )
+     *     )
      * )
      */
     public function show($submissionId)
     {
-        $payload = FormSubmissionPayload::where('submission_id', $submissionId)->first();
+        if (!preg_match('/^[a-f0-9]{24}$/', $submissionId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid submission ID format'
+            ], 400);
+        }
+
+        $payload = FormSubmissionPayload::where('submission_id', $submissionId)
+            ->with('submission:_id,form_id,submitted_by,status')
+            ->first();
 
         if (!$payload) {
             return response()->json([
+                'success' => false,
                 'message' => 'Payload not found'
             ], 404);
         }
 
-        return response()->json($payload, 200);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/v1/payloads/{id}",
-     *     summary="Get payload by ID",
-     *     description="Retrieve a specific payload by its ID",
-     *     tags={"Form Submission Payloads"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="MongoDB ObjectId",
-     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
-     *     ),
-     *     @OA\Response(response=200, description="Payload details"),
-     *     @OA\Response(response=404, description="Payload not found"),
-     *     @OA\Response(response=401, description="Unauthenticated")
-     * )
-     */
-    public function showById($id)
-    {
-        $payload = FormSubmissionPayload::find($id);
-
-        if (!$payload) {
-            return response()->json([
-                'message' => 'Payload not found'
-            ], 404);
-        }
-
-        return response()->json($payload, 200);
+        return response()->json([
+            'success' => true,
+            'data' => $payload
+        ], 200);
     }
 }

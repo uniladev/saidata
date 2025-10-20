@@ -35,17 +35,31 @@ Route::prefix('v1')->group(function () {
                 ->where('id', '[a-f0-9]{24}');
             Route::delete('/{id}', [FormController::class, 'destroy'])
                 ->where('id', '[a-f0-9]{24}');
+            
+            // Form submissions by form ID
+            Route::get('/{formId}/submissions', [FormSubmissionController::class, 'index'])
+                ->where('formId', '[a-f0-9]{24}');
+            
+            // Submit form
+            Route::post('/{formId}/submit', [FormSubmissionController::class, 'store'])
+                ->where('formId', '[a-f0-9]{24}');
         });
 
-        // Survey submission route
-        Route::post('/survey', [FormSubmissionController::class, 'store']);
-
-        // Submission payloads routes
+        // Form Submissions routes
         Route::prefix('submissions')->group(function () {
+            Route::get('/{id}', [FormSubmissionController::class, 'show'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::put('/{id}', [FormSubmissionController::class, 'update'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::delete('/{id}', [FormSubmissionController::class, 'destroy'])
+                ->where('id', '[a-f0-9]{24}');
+            
+            // Get payload by submission ID
             Route::get('/{submissionId}/payload', [FormSubmissionPayloadController::class, 'show'])
                 ->where('submissionId', '[a-f0-9]{24}');
         });
 
+        // Submission payloads routes (direct access)
         Route::prefix('payloads')->group(function () {
             Route::get('/{id}', [FormSubmissionPayloadController::class, 'showById'])
                 ->where('id', '[a-f0-9]{24}');

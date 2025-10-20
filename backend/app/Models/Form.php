@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use MongoDB\Laravel\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Form extends Model
 {
@@ -11,6 +12,7 @@ class Form extends Model
 
     protected $fillable = [
         'title',
+        'slug',
         'description',
         'submitText',
         'successMessage',
@@ -40,6 +42,7 @@ class Form extends Model
     protected $visible = [
         '_id',
         'title',
+        'slug',
         'description',
         'submitText',
         'successMessage',
@@ -49,6 +52,38 @@ class Form extends Model
         'created_at',
         'updated_at',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($form) {
+            $form->slug = $form->generateUniqueSlug($form->title);
+        });
+
+        static::updating(function ($form) {
+            if ($form->isDirty('title')) {
+                $form->slug = $form->generateUniqueSlug($form->title, $form->_id);
+            }
+        });
+    }
+
+    public function generateUniqueSlug($title, $excludeId = null)
+    {
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (
+            static::where('slug', $slug)
+                ->when($excludeId, fn($q) => $q->where('_id', '!=', $excludeId))
+                ->exists()
+        ) {
+            $slug = $originalSlug . '-' . $counter++;
+        }
+
+        return $slug;
+    }
 
     public function creator()
     {

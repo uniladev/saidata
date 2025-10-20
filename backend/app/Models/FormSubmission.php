@@ -11,14 +11,16 @@ class FormSubmission extends Model
 
     protected $fillable = [
         'form_id',
-        'form_version_id',
-        'user_id',
+        'form_version', // Just the version number
+        'form_title',   // Snapshot of title (useful for display)
+        'submitted_by',
         'status',
-        'submitted_at',
     ];
 
     protected $casts = [
-        'submitted_at' => 'datetime',
+        'form_version' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function form()
@@ -26,14 +28,9 @@ class FormSubmission extends Model
         return $this->belongsTo(Form::class, 'form_id');
     }
 
-    public function version()
+    public function submitter()
     {
-        return $this->belongsTo(FormVersion::class, 'form_version_id');
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 
     public function payload()
