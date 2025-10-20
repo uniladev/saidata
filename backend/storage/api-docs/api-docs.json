@@ -916,38 +916,669 @@
                 ]
             }
         },
-        "/api/v1/survey": {
+        "/api/v1/forms/{formId}/submissions": {
+            "get": {
+                "tags": [
+                    "Form Submissions"
+                ],
+                "summary": "Get all submissions for a form",
+                "description": "Retrieve all submissions for a specific form with submitter details",
+                "operationId": "83d864e171784c14759cab954e147346",
+                "parameters": [
+                    {
+                        "name": "formId",
+                        "in": "path",
+                        "description": "MongoDB ObjectId of the form (24 character hex string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "671292eb4c6b7a0d4e0b1234"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of submissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "_id": {
+                                                        "type": "string",
+                                                        "example": "671292eb4c6b7a0d4e0b5678"
+                                                    },
+                                                    "form_id": {
+                                                        "type": "string",
+                                                        "example": "671292eb4c6b7a0d4e0b1234"
+                                                    },
+                                                    "form_version": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "form_title": {
+                                                        "type": "string",
+                                                        "example": "Customer Satisfaction Survey"
+                                                    },
+                                                    "submitted_by": {
+                                                        "type": "string",
+                                                        "example": "671292eb4c6b7a0d4e0b9999"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "completed",
+                                                            "draft"
+                                                        ],
+                                                        "example": "completed"
+                                                    },
+                                                    "submitter": {
+                                                        "properties": {
+                                                            "_id": {
+                                                                "type": "string",
+                                                                "example": "671292eb4c6b7a0d4e0b9999"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "John Doe"
+                                                            },
+                                                            "email": {
+                                                                "type": "string",
+                                                                "example": "john@example.com"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2024-10-20T10:30:00.000000Z"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2024-10-20T10:30:00.000000Z"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid form ID format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid form ID format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/submissions/{id}": {
+            "get": {
+                "tags": [
+                    "Form Submissions"
+                ],
+                "summary": "Get submission by ID with payload",
+                "description": "Retrieve a specific submission with its payload, form details, and submitter information",
+                "operationId": "6b0486e2f747bf2f082e69ad41f1971c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "MongoDB ObjectId of the submission (24 character hex string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "671292eb4c6b7a0d4e0b5678"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission details with payload",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string",
+                                                    "example": "671292eb4c6b7a0d4e0b5678"
+                                                },
+                                                "form_id": {
+                                                    "type": "string",
+                                                    "example": "671292eb4c6b7a0d4e0b1234"
+                                                },
+                                                "form_version": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "form_title": {
+                                                    "type": "string",
+                                                    "example": "Customer Satisfaction Survey"
+                                                },
+                                                "submitted_by": {
+                                                    "type": "string",
+                                                    "example": "671292eb4c6b7a0d4e0b9999"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "completed",
+                                                        "draft"
+                                                    ],
+                                                    "example": "completed"
+                                                },
+                                                "form": {
+                                                    "properties": {
+                                                        "_id": {
+                                                            "type": "string",
+                                                            "example": "671292eb4c6b7a0d4e0b1234"
+                                                        },
+                                                        "title": {
+                                                            "type": "string",
+                                                            "example": "Customer Satisfaction Survey"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string",
+                                                            "example": "customer-satisfaction-survey"
+                                                        },
+                                                        "version": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "submitter": {
+                                                    "properties": {
+                                                        "_id": {
+                                                            "type": "string",
+                                                            "example": "671292eb4c6b7a0d4e0b9999"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "John Doe"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "example": "john@example.com"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "payload": {
+                                                    "properties": {
+                                                        "_id": {
+                                                            "type": "string",
+                                                            "example": "671292eb4c6b7a0d4e0baaaa"
+                                                        },
+                                                        "submission_id": {
+                                                            "type": "string",
+                                                            "example": "671292eb4c6b7a0d4e0b5678"
+                                                        },
+                                                        "answers": {
+                                                            "type": "object",
+                                                            "example": {
+                                                                "question1": "Very satisfied",
+                                                                "question2": 5
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-10-20T10:30:00.000000Z"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-10-20T10:30:00.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid submission ID format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid submission ID format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Form Submissions"
+                ],
+                "summary": "Update submission (draft only)",
+                "description": "Update a draft submission. Completed submissions cannot be updated.",
+                "operationId": "0d026f919c936898c8dd3aa24de6530f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "MongoDB ObjectId of the submission (24 character hex string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "671292eb4c6b7a0d4e0b5678"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "answers": {
+                                        "description": "Updated answers (optional)",
+                                        "type": "object",
+                                        "example": {
+                                            "field_1": "Updated answer",
+                                            "field_2": 4
+                                        }
+                                    },
+                                    "status": {
+                                        "description": "Updated status (optional)",
+                                        "type": "string",
+                                        "enum": [
+                                            "completed",
+                                            "draft"
+                                        ],
+                                        "example": "completed"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Submission updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission updated successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string"
+                                                },
+                                                "form_id": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "submitter": {
+                                                    "type": "object"
+                                                },
+                                                "payload": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid submission ID format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid submission ID format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Cannot update completed submission",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cannot update completed submission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation error"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Form Submissions"
+                ],
+                "summary": "Delete submission",
+                "description": "Delete a submission and its associated payload",
+                "operationId": "6112a2e565010c5f1ec176f4397483e8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "MongoDB ObjectId of the submission (24 character hex string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "671292eb4c6b7a0d4e0b5678"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid submission ID format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid submission ID format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to delete submission"
+                                        },
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/forms/{formId}/submit": {
             "post": {
                 "tags": [
                     "Form Submissions"
                 ],
                 "summary": "Submit survey response",
-                "description": "Submit a response to a survey form",
-                "operationId": "b6957a616d66e3d73ab529ed5edcdd8c",
+                "description": "Submit a new response to a form. Creates both submission record and payload.",
+                "operationId": "eac47e5eb9b90878a86fb2c042273611",
+                "parameters": [
+                    {
+                        "name": "formId",
+                        "in": "path",
+                        "description": "MongoDB ObjectId of the form (24 character hex string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "671292eb4c6b7a0d4e0b1234"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "form_id",
-                                    "version_id",
-                                    "submitted_by"
+                                    "answers"
                                 ],
                                 "properties": {
-                                    "form_id": {
-                                        "type": "string",
-                                        "example": "68ee4fc2754f6e95b809e492"
-                                    },
-                                    "version_id": {
-                                        "type": "string",
-                                        "example": "68ee4fc2754f6e95b809e493"
-                                    },
-                                    "submitted_by": {
-                                        "type": "string",
-                                        "example": "68ee3e2c5336195833053652"
+                                    "answers": {
+                                        "description": "Key-value pairs of field IDs and their answers",
+                                        "type": "object",
+                                        "example": {
+                                            "field_1": "Very satisfied",
+                                            "field_2": 5,
+                                            "field_3": [
+                                                "option1",
+                                                "option2"
+                                            ]
+                                        }
                                     },
                                     "status": {
+                                        "description": "Submission status (default: completed)",
                                         "type": "string",
                                         "enum": [
                                             "completed",
@@ -963,16 +1594,74 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Survey submitted successfully",
+                        "description": "Form submitted successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
                                         "message": {
                                             "type": "string",
-                                            "example": "Survey submitted successfully"
+                                            "example": "Form submitted successfully"
                                         },
-                                        "submission": {
+                                        "data": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string",
+                                                    "example": "671292eb4c6b7a0d4e0b5678"
+                                                },
+                                                "form_id": {
+                                                    "type": "string",
+                                                    "example": "671292eb4c6b7a0d4e0b1234"
+                                                },
+                                                "form_version": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "form_title": {
+                                                    "type": "string",
+                                                    "example": "Customer Satisfaction Survey"
+                                                },
+                                                "submitted_by": {
+                                                    "type": "string",
+                                                    "example": "671292eb4c6b7a0d4e0b9999"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "completed"
+                                                },
+                                                "submitter": {
+                                                    "properties": {
+                                                        "_id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "email": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "payload": {
+                                                    "properties": {
+                                                        "_id": {
+                                                            "type": "string"
+                                                        },
+                                                        "submission_id": {
+                                                            "type": "string"
+                                                        },
+                                                        "answers": {
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
                                             "type": "object"
                                         }
                                     },
@@ -981,8 +1670,121 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Invalid form ID format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid form ID format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Form is no longer active",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "This form is no longer active"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "answers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The answers field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to submit form"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Database connection error"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -1001,13 +1803,12 @@
                     "Form Submission Payloads"
                 ],
                 "summary": "Get submission payload by submission ID",
-                "description": "Retrieve payload data for a specific submission",
                 "operationId": "27484e7cf3539113e224675d502305df",
                 "parameters": [
                     {
                         "name": "submissionId",
                         "in": "path",
-                        "description": "MongoDB ObjectId of the submission",
+                        "description": "Submission ID (24-character hexadecimal MongoDB ObjectId)",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -1017,51 +1818,63 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Submission payload details"
-                    },
-                    "404": {
-                        "description": "Payload not found"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/payloads/{id}": {
-            "get": {
-                "tags": [
-                    "Form Submission Payloads"
-                ],
-                "summary": "Get payload by ID",
-                "description": "Retrieve a specific payload by its ID",
-                "operationId": "9703347d049b0ec4130e3ce4cad7e3b4",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Payload details"
+                    },
+                    "400": {
+                        "description": "Invalid submission ID format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid submission ID format"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Payload not found"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
+                        "description": "Payload not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Payload not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
