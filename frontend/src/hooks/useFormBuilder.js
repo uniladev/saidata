@@ -123,15 +123,19 @@ export const useFormBuilder = () => {
   };
 
   const generateJson = () => {
-    return {
-      // The ...formSettings (title, description, etc.) are now at the top level
+    // This is the flat object we had before
+    const formData = {
       ...formSettings, 
-      
-      // The fields array is also at the top level
       fields: formFields.map(field => {
         const { id, ...fieldForBackend } = field;
         return fieldForBackend;
       })
+    };
+
+    // Now, we return that object wrapped inside a "form" key,
+    // just like the backend documentation specifies.
+    return {
+      form: formData
     };
   };
 
