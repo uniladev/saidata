@@ -43,6 +43,9 @@ Route::prefix('v1')->group(function () {
             // Submit form
             Route::post('/{formId}/submit', [FormSubmissionController::class, 'store'])
                 ->where('formId', '[a-f0-9]{24}');
+
+            // Get form by slug
+            Route::get('/slug/{slug}', [FormController::class, 'showBySlug']);
         });
 
         // Form Submissions routes

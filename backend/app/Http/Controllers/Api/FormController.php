@@ -551,4 +551,25 @@ class FormController extends Controller
             'message' => 'Form deleted successfully'
         ], 200);
     }
+
+    // Add this new method to FormController.php
+    public function showBySlug($slug)
+    {
+        // Find the form using the 'slug' column instead of the 'id'
+        $form = Form::where('slug', $slug) 
+                    ->with(['creator:_id,name,email', 'updater:_id,name,email'])
+                    ->first(); // Use first() to get a single result
+
+        if (!$form) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $form
+        ], 200);
+    }
 }
