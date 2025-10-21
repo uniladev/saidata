@@ -167,7 +167,7 @@ const Dashboard = () => {
       const response = await api.get('/forms');
 
       // Assuming the backend wraps the forms in a 'data' key
-      setForms(response.data); // <-- This is the fix to correctly set forms
+      setForms(response.data.data); // Get the array from the 'data' key// <-- This is the fix to correctly set forms
     } catch (error) {
       console.error("Error fetching forms:", error);
     }
@@ -242,23 +242,23 @@ const Dashboard = () => {
         {forms.length > 0 ? (
           <div className="space-y-4">
             {forms.map((form) => (
-              <div key={form.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={form._id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <h3 className="font-semibold">{form.title}</h3>
                   <p className="text-sm text-gray-500">
-                    {/* The backend might not send the full fields array, so we check */}
                     {form.fields ? `${form.fields.length} fields` : 'View Form'}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
+                  {/* Change this link to use form.slug instead of form.id */}
                   <Link 
-                    to={`/form/${form.id}`} 
+                    to={`/form/${form.slug}`} 
                     className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     Take Survey
                   </Link>
                   <a 
-                    href={`/form/${form.id}`} 
+                    href={`/form/${form.slug}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-sm text-gray-500 hover:text-blue-600"
