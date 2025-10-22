@@ -1,7 +1,5 @@
-// ===== 9. Custom Hook: useFormBuilder =====
 // frontend/src/hooks/useFormBuilder.js
 import { useState } from 'react';
-import { FIELD_TYPES } from '../constants/fieldTypes';
 
 export const useFormBuilder = () => {
   const [formFields, setFormFields] = useState([]);
@@ -12,47 +10,31 @@ export const useFormBuilder = () => {
     successMessage: 'Thank you for your submission!',
   });
 
-  const generateFieldId = () => `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  const addField = (type, index = null) => {
-    const fieldType = FIELD_TYPES.find(f => f.type === type);
+  const addField = (fieldType) => {
     const newField = {
-      id: generateFieldId(),
-      type: type,
-      label: `New ${fieldType.label}`,
-      name: `field_${formFields.length + 1}`,
+      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: fieldType.type,
+      label: fieldType.label,
+      name: `field_${Date.now()}`,
       required: false,
-      placeholder: '',
+      placeholder: fieldType.placeholder || '',
       helpText: '',
-      validation: {},
-      options: ['select', 'radio', 'checkbox'].includes(type)
-        ? [{ value: 'option1', label: 'Option 1' }]
-        : [],
-      fileOptions: type === 'file' ? {
-        accept: '',
-        maxSize: 5,
-        multiple: false
-      } : null,
-      min: ['range', 'number'].includes(type) ? 0 : null,
-      max: ['range', 'number'].includes(type) ? 100 : null,
-      step: type === 'range' ? 1 : null,
-      rows: type === 'textarea' ? 4 : null,
-      maxRating: type === 'rating' ? 5 : null,
+      validation: fieldType.validation || null,
+      options: fieldType.options || [],
+      fileOptions: fieldType.fileOptions || null,
+      min: fieldType.min || null,
+      max: fieldType.max || null,
+      step: fieldType.step || null,
+      rows: fieldType.rows || null,
+      maxRating: fieldType.maxRating || null,
     };
-
-    const newFields = [...formFields];
-    if (index === null || index >= formFields.length) {
-      newFields.push(newField);
-    } else {
-      newFields.splice(index, 0, newField);
-    }
     
-    setFormFields(newFields);
+    setFormFields([...formFields, newField]);
     return newField.id;
   };
 
   const updateField = (fieldId, property, value) => {
-    setFormFields(formFields.map(field =>
+    setFormFields(formFields.map(field => 
       field.id === fieldId ? { ...field, [property]: value } : field
     ));
   };
@@ -62,29 +44,34 @@ export const useFormBuilder = () => {
   };
 
   const duplicateField = (fieldId) => {
-    const fieldToDupe = formFields.find(f => f.id === fieldId);
-    if (fieldToDupe) {
-      const newField = {
-        ...fieldToDupe,
-        id: generateFieldId(),
-        name: `${fieldToDupe.name}_copy`,
-        label: `${fieldToDupe.label} (Copy)`
-      };
-      const index = formFields.findIndex(f => f.id === fieldId);
-      const newFields = [...formFields];
-      newFields.splice(index + 1, 0, newField);
-      setFormFields(newFields);
-    }
+    const fieldIndex = formFields.findIndex(f => f.id === fieldId);
+    if (fieldIndex === -1) return;
+
+    const originalField = formFields[fieldIndex];
+    const newField = {
+      ...originalField,
+      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: `${originalField.name}_copy_${Date.now()}`,
+      label: `${originalField.label} (Copy)`,
+    };
+
+    const newFields = [...formFields];
+    newFields.splice(fieldIndex + 1, 0, newField);
+    setFormFields(newFields);
   };
 
-  const reorderFields = (draggedIndex, dropIndex, position) => {
-    const draggedField = formFields[draggedIndex];
+  const reorderFields = (draggedFieldId, dropFieldId, position) => {
+    const dragIndex = formFields.findIndex(f => f.id === draggedFieldId);
+    const dropIndex = formFields.findIndex(f => f.id === dropFieldId);
+
+    if (dragIndex === -1 || dropIndex === -1) return;
+
     const newFields = [...formFields];
-    
-    newFields.splice(draggedIndex, 1);
-    
-    let insertAtIndex = dropIndex;
-    if (draggedIndex < dropIndex) {
+    const draggedField = newFields[dragIndex];
+    newFields.splice(dragIndex, 1);
+
+    let insertAtIndex;
+    if (dragIndex < dropIndex) {
       insertAtIndex = position === 'top' ? dropIndex - 1 : dropIndex;
     } else {
       insertAtIndex = position === 'top' ? dropIndex : dropIndex + 1;
@@ -143,6 +130,7 @@ export const useFormBuilder = () => {
     formFields,
     formSettings,
     setFormSettings,
+    setFormFields,  // Export this to allow loading existing forms
     addField,
     updateField,
     deleteField,

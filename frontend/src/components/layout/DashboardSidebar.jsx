@@ -57,7 +57,7 @@ const sampleMenuData = [
       { 
         id: 21, 
         name: 'Create Form', 
-        path: '/create-form',
+        path: '/forms/create',
         order: 1
       },
       { 

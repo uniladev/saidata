@@ -83,8 +83,8 @@ export default function App() {
       >
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/forms" element={<FormsListPage />} />
-        <Route path="/create-form" element={<FormBuilderPage />} />
-        <Route path="/edit-form/:formId" element={<FormBuilderPage />} />
+        <Route path="/forms/create" element={<FormBuilderPage />} />
+        <Route path="/forms/edit/:formId" element={<FormBuilderPage />} />
         <Route path="/form/:formId" element={<FormTakerPage />} />
       </Route>
 
