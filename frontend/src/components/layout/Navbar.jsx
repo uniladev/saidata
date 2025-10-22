@@ -147,7 +147,7 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Topbar */}
+      {/* Topbar - Desktop Only */}
       <div className="bg-blue-600 text-white hidden lg:block">
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
@@ -180,11 +180,12 @@ const Navbar = () => {
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
+            {/* Logo - Mobile */}
             <div className="flex items-center lg:hidden">
               <img 
                 src={navbarConfig.logo.color} 
                 alt={navbarConfig.logo.alt} 
-                className="h-12" 
+                className="h-10" 
               />
             </div>
 
@@ -238,102 +239,74 @@ const Navbar = () => {
             {/* Desktop Auth Section */}
             <div className="hidden lg:block">
               {isAuthenticated() ? (
-                // User Profile Dropdown
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {user?.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
-                        ) : (
-                          <span className="text-sm">{user?.name?.charAt(0) || 'U'}</span>
-                        )}
-                      </div>
-                      
-                      <div className="text-left">
-                        <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                        <p className="text-xs text-gray-500">{user?.role || 'Member'}</p>
-                      </div>
+                    <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center text-blue-600 font-semibold">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
+                      ) : (
+                        <span>{user?.name?.charAt(0) || 'U'}</span>
+                      )}
                     </div>
-                    
-                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                    <span className="font-medium">{user?.name || 'User'}</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showProfileMenu && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100"
                         onClick={() => setShowProfileMenu(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                        <div className="p-3 border-b border-gray-200">
-                          <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
-                          <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
-                        </div>
-                        <div className="py-2">
-                          <button 
-                            onClick={() => {
-                              setShowProfileMenu(false);
-                              navigate('/dashboard');
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-                          >
-                            <LayoutDashboard className="h-4 w-4" />
-                            Dashboard
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setShowProfileMenu(false);
-                              navigate('/dashboard/profile');
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-                          >
-                            <User className="h-4 w-4" />
-                            Profil Saya
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setShowProfileMenu(false);
-                              navigate('/dashboard/settings');
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-                          >
-                            <Settings className="h-4 w-4" />
-                            Pengaturan
-                          </button>
-                        </div>
-                        <div className="border-t border-gray-200 py-2">
-                          <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-                          >
-                            <LogOut className="h-4 w-4" />
-                            Keluar
-                          </button>
-                        </div>
-                      </div>
-                    </>
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        to="/dashboard/profile"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <User className="h-4 w-4" />
+                        Profil Saya
+                      </Link>
+                      <Link
+                        to="/dashboard/settings"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        Pengaturan
+                      </Link>
+                      <hr className="my-1" />
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Keluar
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (
-                // Login Button
                 <Link
                   to={navbarConfig.authButton.link}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition inline-block"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition"
                 >
                   {navbarConfig.authButton.text}
                 </Link>
               )}
             </div>
 
-            {/* Mobile menu button */}
+            {/* Mobile Menu Button */}
             <div className="lg:hidden">
-              <button 
-                onClick={() => setIsOpen(!isOpen)} 
-                className="text-gray-700 hover:text-blue-600 transition p-2"
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 focus:outline-none transition"
                 aria-label="Toggle menu"
               >
                 {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -342,65 +315,60 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
-        {isOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={closeMobileMenu}
-          />
-        )}
-
-        {/* Mobile Menu - Absolute Position */}
+        {/* Mobile Menu - IMPROVED VERSION */}
         <div 
           className={`
-            fixed top-16 left-0 right-0 bg-white shadow-lg z-50 lg:hidden
+            lg:hidden
+            fixed top-16 left-0 right-0 bottom-0
+            bg-white
             transform transition-transform duration-300 ease-in-out
-            max-h-[calc(100vh-4rem)] overflow-y-auto
-            ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+            ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+            overflow-y-auto
+            z-50
           `}
         >
-          <div className="px-4 py-4 space-y-2">
+          <div className="px-6 py-6 space-y-1">
             {/* Mobile User Profile (if authenticated) */}
             {isAuthenticated() && (
-              <div className="pb-4 mb-4 border-b border-gray-200">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="pb-6 mb-6 border-b-2 border-gray-100">
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                  <div className="h-14 w-14 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                     {user?.avatar ? (
                       <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
                     ) : (
                       <span>{user?.name?.charAt(0) || 'U'}</span>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
-                    <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-lg truncate">{user?.name || 'User'}</p>
+                    <p className="text-sm text-gray-600 truncate">{user?.email || 'user@example.com'}</p>
                   </div>
                 </div>
                 
                 {/* Quick Links for Authenticated Users */}
-                <div className="mt-3 space-y-1">
+                <div className="mt-4 space-y-1">
                   <Link
                     to="/dashboard"
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
                     onClick={closeMobileMenu}
                   >
-                    <LayoutDashboard className="h-4 w-4" />
+                    <LayoutDashboard className="h-5 w-5" />
                     Dashboard
                   </Link>
                   <Link
                     to="/dashboard/profile"
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
                     onClick={closeMobileMenu}
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-5 w-5" />
                     Profil Saya
                   </Link>
                   <Link
                     to="/dashboard/settings"
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
                     onClick={closeMobileMenu}
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-5 w-5" />
                     Pengaturan
                   </Link>
                 </div>
@@ -410,39 +378,39 @@ const Navbar = () => {
             {/* Menu Items */}
             {navbarConfig.menuItems.map((item, index) => (
               item.children ? (
-                <div key={index} className="border-b border-gray-100 pb-2">
+                <div key={index} className="pb-2">
                   <button
                     onClick={() => toggleDropdown(index)}
-                    className={`w-full flex items-center justify-between px-3 py-2 font-medium rounded-md transition ${
+                    className={`w-full flex items-center justify-between px-4 py-3 font-semibold rounded-lg transition-colors ${
                       hasActiveChild(item.children)
                         ? 'text-blue-600 bg-blue-50'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <span>{item.name}</span>
+                    <span className="text-base">{item.name}</span>
                     {openDropdown === index ? (
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="h-5 w-5" />
                     ) : (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="h-5 w-5" />
                     )}
                   </button>
                   
-                  {/* Dropdown Content */}
+                  {/* Dropdown Items */}
                   <div 
                     className={`
-                      overflow-hidden transition-all duration-300 ease-in-out
-                      ${openDropdown === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
+                      overflow-hidden transition-all duration-300
+                      ${openDropdown === index ? 'max-h-96 mt-1' : 'max-h-0'}
                     `}
                   >
-                    <div className="pl-6 py-2 space-y-1">
+                    <div className="pl-4 space-y-1">
                       {item.children.map((child, childIndex) => (
                         <Link
                           key={childIndex}
-                          to={child.path} 
-                          className={`block px-3 py-2 rounded-md transition ${
+                          to={child.path}
+                          className={`block px-4 py-3 rounded-lg transition-colors text-base ${
                             isActive(child.path)
                               ? 'text-blue-600 bg-blue-50 font-semibold'
-                              : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                           }`}
                           onClick={closeMobileMenu}
                         >
@@ -455,8 +423,8 @@ const Navbar = () => {
               ) : (
                 <Link
                   key={index}
-                  to={item.path} 
-                  className={`block px-3 py-2 font-medium rounded-md transition ${
+                  to={item.path}
+                  className={`block px-4 py-3 font-semibold rounded-lg transition-colors text-base ${
                     isActive(item.path)
                       ? 'text-blue-600 bg-blue-50'
                       : 'text-gray-700 hover:bg-gray-50'
@@ -469,22 +437,22 @@ const Navbar = () => {
             ))}
             
             {/* Mobile Auth Button */}
-            <div className="pt-4">
+            <div className="pt-6">
               {isAuthenticated() ? (
                 <button
                   onClick={() => {
                     handleLogout();
                     closeMobileMenu();
                   }}
-                  className="flex items-center justify-center gap-2 w-full bg-red-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-red-700 transition shadow-md"
+                  className="flex items-center justify-center gap-3 w-full bg-red-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30 text-base"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-5 w-5" />
                   Keluar
                 </button>
               ) : (
                 <Link
                   to={navbarConfig.authButton.link}
-                  className="block w-full bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition text-center shadow-md"
+                  className="block w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors text-center shadow-lg shadow-blue-600/30 text-base"
                   onClick={closeMobileMenu}
                 >
                   {navbarConfig.authButton.text}
