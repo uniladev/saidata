@@ -18,13 +18,15 @@ class User extends Authenticatable implements JWTSubject
         'username',
         'name',
         'email',
+
         'role',
         'refresh_token',
         'refresh_token_expires_at',
-        'profile',
+        'profile', // Embedded profile document
     ];
 
     protected $hidden = [
+
         'remember_token',
         'refresh_token',
         'refresh_token_expires_at',
@@ -32,7 +34,7 @@ class User extends Authenticatable implements JWTSubject
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'profile' => 'object',
+        'profile' => 'array', // Cast profile as array (MongoDB compatible)
     ];
 
     public function getJWTIdentifier()
@@ -65,91 +67,156 @@ class User extends Authenticatable implements JWTSubject
             && $this->refresh_token_expires_at->isFuture();
     }
 
+    /**
+     * Get profile attribute with default values
+     */
     public function getProfileAttribute($value)
     {
-        return $value ?? (object)[
-            'faculty_id' => null,
-            'department_id' => null,
-            'study_program_id' => null,
-            'student_id' => null,
-            'phone' => null,
-        ];
+        // If value is string (from database), decode it
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+
+        if (!$value || empty($value)) {
+            return (object)[
+                'faculty_code' => null,
+                'department_code' => null,
+                'study_program_code' => null,
+                'student_id' => null,
+                'phone' => null,
+            ];
+        }
+
+        // Convert array to object
+        return (object)$value;
     }
 
+    /**
+     * Update profile data
+     */
     public function updateProfile(array $profileData): bool
     {
-        $allowedFields = ['faculty_id', 'department_id', 'study_program_id', 'student_id', 'phone'];
+        $allowedFields = ['faculty_code', 'department_code', 'study_program_code', 'student_id', 'phone'];
         $filteredData = array_intersect_key($profileData, array_flip($allowedFields));
         
-        return $this->update(['profile' => array_merge((array)$this->profile, $filteredData)]);
+        $currentProfile = (array)$this->profile;
+        $newProfile = array_merge($currentProfile, $filteredData);
+        
+        return $this->update(['profile' => $newProfile]);
     }
 
     /**
-     * Relasi ke fakultas menggunakan embedded faculty_id
-     */
-    public function faculty()
-    {
-        return $this->belongsTo(Faculty::class, 'profile.faculty_id');
-    }
-
-    /**
-     * Relasi ke jurusan menggunakan embedded department_id
-     */
-    public function department()
-    {
-        return $this->belongsTo(Department::class, 'profile.department_id');
-    }
-
-    /**
-     * Relasi ke program studi menggunakan embedded study_program_id
-     */
-    public function studyProgram()
-    {
-        return $this->belongsTo(StudyProgram::class, 'profile.study_program_id');
-    }
-
-    /**
-     * REMOVE OR COMMENT OUT the $appends property
-     * These attributes require database queries, so they shouldn't be auto-appended
-     */
-    // protected $appends = ['faculty_code', 'department_code', 'study_program_code'];
-
-    /**
-     * Get faculty code from profile - FIXED VERSION
+     * Get faculty code from embedded profile
      */
     public function getFacultyCodeAttribute()
     {
-        if (!$this->profile || !isset($this->profile->faculty_id)) {
-            return null;
-        }
-        
-        $faculty = Faculty::find($this->profile->faculty_id);
-        return $faculty?->code;
+        return $this->profile->faculty_code ?? null;
     }
 
     /**
-     * Get department code from profile - FIXED VERSION
+     * Get department code from embedded profile
      */
     public function getDepartmentCodeAttribute()
     {
-        if (!$this->profile || !isset($this->profile->department_id)) {
-            return null;
-        }
-        
-        $department = Department::find($this->profile->department_id);
-        return $department?->code;
+        return $this->profile->department_code ?? null;
     }
 
     /**
-     * Get study program code from profile - FIXED VERSION
+     * Get study program code from embedded profile
      */
     public function getStudyProgramCodeAttribute()
     {
-        if (!$this->profile || !isset($this->profile->study_program_id)) {
+        return $this->profile->study_program_code ?? null;
+    }
+
+    /**
+     * Get faculty data from Faculty collection
+     */
+    public function getFacultyAttribute()
+    {
+        $facultyCode = $this->profile->faculty_code ?? null;
+        
+        if (!$facultyCode) {
             return null;
         }
+
+        $faculty = Faculty::where('code', $facultyCode)->first();
         
-        $studyProgram = StudyProgram::find($this->profile->study_program_id);
-        return $studyProgram?->code;
+        if (!$faculty) {
+            return null;
+        }
+
+        return (object)[
+            'code' => $faculty->code,
+            'name' => $faculty->name,
+        ];
     }
+
+    /**
+     * Get department data from embedded Faculty structure
+     */
+    public function getDepartmentAttribute()
+    {
+        $facultyCode = $this->profile->faculty_code ?? null;
+        $departmentCode = $this->profile->department_code ?? null;
+        
+        if (!$facultyCode || !$departmentCode) {
+            return null;
+        }
+
+        $faculty = Faculty::where('code', $facultyCode)->first();
+        
+        if (!$faculty) {
+            return null;
+        }
+
+        $department = $faculty->getDepartmentByCode($departmentCode);
+        
+        if (!$department) {
+            return null;
+        }
+
+        return (object)[
+            'code' => $department['code'],
+            'name' => $department['name'],
+        ];
+    }
+
+    /**
+     * Get study program data from embedded Faculty structure
+     */
+    public function getStudyProgramAttribute()
+    {
+        $facultyCode = $this->profile->faculty_code ?? null;
+        $departmentCode = $this->profile->department_code ?? null;
+        $studyProgramCode = $this->profile->study_program_code ?? null;
+        
+        if (!$facultyCode || !$departmentCode || !$studyProgramCode) {
+            return null;
+        }
+
+        $faculty = Faculty::where('code', $facultyCode)->first();
+        
+        if (!$faculty) {
+            return null;
+        }
+
+        $studyProgram = $faculty->getStudyProgramByCode($departmentCode, $studyProgramCode);
+        
+        if (!$studyProgram) {
+            return null;
+        }
+
+        return (object)[
+            'code' => $studyProgram['code'],
+            'name' => $studyProgram['name'],
+            'degree' => $studyProgram['degree'] ?? null,
+            'duration_years' => $studyProgram['duration_years'] ?? null,
+        ];
+    }
+
+    /**
+     * Append attributes to model
+     */
+    protected $appends = ['faculty_code', 'department_code', 'study_program_code'];
 }

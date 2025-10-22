@@ -3,223 +3,249 @@
 namespace Database\Seeders;
 
 use App\Models\Faculty;
-use App\Models\Department;
-use App\Models\StudyProgram;
 use App\Models\User;
-use App\Models\UserProfile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class UniversityDataSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Run the database seeds with SIMPLIFIED EMBEDDED structure
      */
     public function run(): void
     {
-        // ============================================
-        // 1. CREATE FACULTIES
-        // ============================================
-        $fmipa = Faculty::create([
-            'code' => 'FMIPA',
-            'name' => 'Fakultas Matematika dan Ilmu Pengetahuan Alam',
-            'description' => 'FMIPA Universitas Lampung'
-        ]);
+        // Clear existing data
+        Faculty::query()->delete();
+        User::whereIn('username', ['2267051001', '2267051002', '2267011001', '2267051003', 'admin'])->delete();
 
-        $fk = Faculty::create([
-            'code' => 'FK',
-            'name' => 'Fakultas Kedokteran',
-            'description' => 'FK Universitas Lampung'
-        ]);
-
-        $feb = Faculty::create([
-            'code' => 'FEB',
-            'name' => 'Fakultas Ekonomi dan Bisnis',
-            'description' => 'FEB Universitas Lampung'
-        ]);
+        echo "🗑️  Cleared existing data\n";
 
         // ============================================
-        // 2. CREATE DEPARTMENTS FOR FMIPA
-        // ============================================
-        $biologi = Department::create([
-            'faculty_id' => $fmipa->id,
-            'code' => 'BIO',
-            'name' => 'Biologi',
-            'description' => 'Jurusan Biologi'
-        ]);
-
-        $ilkom = Department::create([
-            'faculty_id' => $fmipa->id,
-            'code' => 'ILKOM',
-            'name' => 'Ilmu Komputer',
-            'description' => 'Jurusan Ilmu Komputer'
-        ]);
-
-        $matematika = Department::create([
-            'faculty_id' => $fmipa->id,
-            'code' => 'MAT',
-            'name' => 'Matematika',
-            'description' => 'Jurusan Matematika'
-        ]);
-
-        $kimia = Department::create([
-            'faculty_id' => $fmipa->id,
-            'code' => 'KIM',
-            'name' => 'Kimia',
-            'description' => 'Jurusan Kimia'
-        ]);
-
-        $fisika = Department::create([
-            'faculty_id' => $fmipa->id,
-            'code' => 'FIS',
-            'name' => 'Fisika',
-            'description' => 'Jurusan Fisika'
-        ]);
-
-        // ============================================
-        // 3. CREATE DEPARTMENTS FOR FK
-        // ============================================
-        $pendidikanDokter = Department::create([
-            'faculty_id' => $fk->id,
-            'code' => 'DOKTER',
-            'name' => 'Pendidikan Dokter',
-            'description' => 'Program Studi Pendidikan Dokter'
-        ]);
-
-        $farmasi = Department::create([
-            'faculty_id' => $fk->id,
-            'code' => 'FARM',
-            'name' => 'Farmasi',
-            'description' => 'Program Studi Farmasi'
-        ]);
-
-        // ============================================
-        // 4. CREATE STUDY PROGRAMS
+        // 1. CREATE FACULTIES WITH EMBEDDED DEPARTMENTS & STUDY PROGRAMS
         // ============================================
         
-        // FMIPA - Biologi
-        $biologiS1 = StudyProgram::create([
-            'department_id' => $biologi->id,
-            'code' => 'BIO-S1',
-            'name' => 'Biologi',
-            'degree' => 'S1',
-            'description' => 'Program Studi S1 Biologi'
+        // FMIPA dengan embedded departments
+        Faculty::create([
+            'code' => 'FMIPA',
+            'name' => 'Fakultas Matematika dan Ilmu Pengetahuan Alam',
+            'departments' => [
+                [
+                    'code' => 'BIO',
+                    'name' => 'Biologi',
+                    'study_programs' => [
+                        [
+                            'code' => 'BIO-S1',
+                            'name' => 'Biologi',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ],
+                        [
+                            'code' => 'BIO-S2',
+                            'name' => 'Biologi',
+                            'degree' => 'S2',
+                            'duration_years' => 2
+                        ]
+                    ]
+                ],
+                [
+                    'code' => 'ILKOM',
+                    'name' => 'Ilmu Komputer',
+                    'study_programs' => [
+                        [
+                            'code' => 'ILKOM-S1',
+                            'name' => 'Ilmu Komputer',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ],
+                        [
+                            'code' => 'ILKOM-S2',
+                            'name' => 'Ilmu Komputer',
+                            'degree' => 'S2',
+                            'duration_years' => 2
+                        ]
+                    ]
+                ],
+                [
+                    'code' => 'MAT',
+                    'name' => 'Matematika',
+                    'study_programs' => [
+                        [
+                            'code' => 'MAT-S1',
+                            'name' => 'Matematika',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ]
+                    ]
+                ],
+                [
+                    'code' => 'KIM',
+                    'name' => 'Kimia',
+                    'study_programs' => [
+                        [
+                            'code' => 'KIM-S1',
+                            'name' => 'Kimia',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ]
+                    ]
+                ],
+                [
+                    'code' => 'FIS',
+                    'name' => 'Fisika',
+                    'study_programs' => [
+                        [
+                            'code' => 'FIS-S1',
+                            'name' => 'Fisika',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ]
+                    ]
+                ]
+            ]
         ]);
 
-        // FMIPA - Ilmu Komputer
-        $ilkomS1 = StudyProgram::create([
-            'department_id' => $ilkom->id,
-            'code' => 'ILKOM-S1',
-            'name' => 'Ilmu Komputer',
-            'degree' => 'S1',
-            'description' => 'Program Studi S1 Ilmu Komputer'
+        // FK dengan embedded departments
+        Faculty::create([
+            'code' => 'FK',
+            'name' => 'Fakultas Kedokteran',
+            'departments' => [
+                [
+                    'code' => 'DOKTER',
+                    'name' => 'Pendidikan Dokter',
+                    'study_programs' => [
+                        [
+                            'code' => 'DOKTER-PROFESI',
+                            'name' => 'Pendidikan Dokter',
+                            'degree' => 'Profesi',
+                            'duration_years' => 6
+                        ]
+                    ]
+                ],
+                [
+                    'code' => 'FARM',
+                    'name' => 'Farmasi',
+                    'study_programs' => [
+                        [
+                            'code' => 'FARM-S1',
+                            'name' => 'Farmasi',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ],
+                        [
+                            'code' => 'FARM-PROFESI',
+                            'name' => 'Apoteker',
+                            'degree' => 'Profesi',
+                            'duration_years' => 1
+                        ]
+                    ]
+                ]
+            ]
         ]);
 
-        // FMIPA - Matematika
-        $matS1 = StudyProgram::create([
-            'department_id' => $matematika->id,
-            'code' => 'MAT-S1',
-            'name' => 'Matematika',
-            'degree' => 'S1',
-            'description' => 'Program Studi S1 Matematika'
+        // FEB dengan embedded departments
+        Faculty::create([
+            'code' => 'FEB',
+            'name' => 'Fakultas Ekonomi dan Bisnis',
+            'departments' => [
+                [
+                    'code' => 'AKUN',
+                    'name' => 'Akuntansi',
+                    'study_programs' => [
+                        [
+                            'code' => 'AKUN-S1',
+                            'name' => 'Akuntansi',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ]
+                    ]
+                ],
+                [
+                    'code' => 'MAN',
+                    'name' => 'Manajemen',
+                    'study_programs' => [
+                        [
+                            'code' => 'MAN-S1',
+                            'name' => 'Manajemen',
+                            'degree' => 'S1',
+                            'duration_years' => 4
+                        ]
+                    ]
+                ]
+            ]
         ]);
 
-        // FK - Farmasi
-        $farmasiS1 = StudyProgram::create([
-            'department_id' => $farmasi->id,
-            'code' => 'FARM-S1',
-            'name' => 'Farmasi',
-            'degree' => 'S1',
-            'description' => 'Program Studi S1 Farmasi'
-        ]);
-
-        // FK - Pendidikan Dokter
-        $dokterProfesi = StudyProgram::create([
-            'department_id' => $pendidikanDokter->id,
-            'code' => 'DOKTER-PROFESI',
-            'name' => 'Pendidikan Dokter',
-            'degree' => 'Profesi',
-            'description' => 'Program Profesi Dokter'
-        ]);
+        echo "✅ Faculties with embedded departments created\n";
 
         // ============================================
-        // 5. CREATE DUMMY USERS (MAHASISWA)
+        // 2. CREATE USERS WITH EMBEDDED PROFILE
         // ============================================
 
         // Mahasiswa 1: Biologi FMIPA
-        $userBio = User::create([
+        User::create([
             'username' => '2267051001',
             'name' => 'Budi Santoso',
             'email' => 'budi.santoso@students.unila.ac.id',
             'role' => 'user',
-            'password' => Hash::make('password123'), // Untuk development saja
-        ]);
-
-        UserProfile::create([
-            'user_id' => $userBio->id,
-            'faculty_id' => $fmipa->id,
-            'department_id' => $biologi->id,
-            'study_program_id' => $biologiS1->id,
-            'student_id' => '2267051001',
-            'phone' => '081234567890',
+            'password' => Hash::make('password123'),
+            'profile' => [
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'BIO',
+                'study_program_code' => 'BIO-S1',
+                'student_id' => '2267051001',
+                'phone' => '081234567890',
+            ]
         ]);
 
         // Mahasiswa 2: Ilmu Komputer FMIPA
-        $userIlkom = User::create([
+        User::create([
             'username' => '2267051002',
             'name' => 'Siti Rahma',
             'email' => 'siti.rahma@students.unila.ac.id',
             'role' => 'user',
             'password' => Hash::make('password123'),
-        ]);
-
-        UserProfile::create([
-            'user_id' => $userIlkom->id,
-            'faculty_id' => $fmipa->id,
-            'department_id' => $ilkom->id,
-            'study_program_id' => $ilkomS1->id,
-            'student_id' => '2267051002',
-            'phone' => '081234567891',
+            'profile' => [
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'ILKOM',
+                'study_program_code' => 'ILKOM-S1',
+                'student_id' => '2267051002',
+                'phone' => '081234567891',
+            ]
         ]);
 
         // Mahasiswa 3: Farmasi FK
-        $userFarmasi = User::create([
+        User::create([
             'username' => '2267011001',
             'name' => 'Andi Wijaya',
             'email' => 'andi.wijaya@students.unila.ac.id',
             'role' => 'user',
             'password' => Hash::make('password123'),
-        ]);
-
-        UserProfile::create([
-            'user_id' => $userFarmasi->id,
-            'faculty_id' => $fk->id,
-            'department_id' => $farmasi->id,
-            'study_program_id' => $farmasiS1->id,
-            'student_id' => '2267011001',
-            'phone' => '081234567892',
+            'profile' => [
+                'faculty_code' => 'FK',
+                'department_code' => 'FARM',
+                'study_program_code' => 'FARM-S1',
+                'student_id' => '2267011001',
+                'phone' => '081234567892',
+            ]
         ]);
 
         // Mahasiswa 4: Matematika FMIPA
-        $userMat = User::create([
+        User::create([
             'username' => '2267051003',
             'name' => 'Dewi Lestari',
             'email' => 'dewi.lestari@students.unila.ac.id',
             'role' => 'user',
             'password' => Hash::make('password123'),
+            'profile' => [
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'MAT',
+                'study_program_code' => 'MAT-S1',
+                'student_id' => '2267051003',
+                'phone' => '081234567893',
+            ]
         ]);
 
-        UserProfile::create([
-            'user_id' => $userMat->id,
-            'faculty_id' => $fmipa->id,
-            'department_id' => $matematika->id,
-            'study_program_id' => $matS1->id,
-            'student_id' => '2267051003',
-            'phone' => '081234567893',
-        ]);
-
-        // Admin user
-        $admin = User::create([
+        // Admin user (no profile needed)
+        User::create([
             'username' => 'admin',
             'name' => 'Administrator',
             'email' => 'admin@unila.ac.id',
@@ -227,17 +253,24 @@ class UniversityDataSeeder extends Seeder
             'password' => Hash::make('admin123'),
         ]);
 
-        $this->command->info('✅ University data seeded successfully!');
-        $this->command->info('');
-        $this->command->info('📚 Created Faculties:');
-        $this->command->info('  - FMIPA (Fakultas MIPA)');
-        $this->command->info('  - FK (Fakultas Kedokteran)');
-        $this->command->info('');
-        $this->command->info('👥 Dummy Users Created:');
-        $this->command->info('  1. Username: 2267051001 | Password: password123 | Biologi FMIPA');
-        $this->command->info('  2. Username: 2267051002 | Password: password123 | Ilmu Komputer FMIPA');
-        $this->command->info('  3. Username: 2267011001 | Password: password123 | Farmasi FK');
-        $this->command->info('  4. Username: 2267051003 | Password: password123 | Matematika FMIPA');
-        $this->command->info('  5. Username: admin       | Password: admin123    | Administrator');
+        echo "✅ Users with embedded profile created\n";
+        echo "\n";
+        echo "📚 Faculties (simplified structure):\n";
+        echo "  - FMIPA: 5 departments (BIO, ILKOM, MAT, KIM, FIS)\n";
+        echo "  - FK: 2 departments (DOKTER, FARM)\n";
+        echo "  - FEB: 2 departments (AKUN, MAN)\n";
+        echo "\n";
+        echo "👥 Users:\n";
+        echo "  1. 2267051001 / password123 - Budi Santoso (Biologi FMIPA)\n";
+        echo "  2. 2267051002 / password123 - Siti Rahma (Ilmu Komputer FMIPA)\n";
+        echo "  3. 2267011001 / password123 - Andi Wijaya (Farmasi FK)\n";
+        echo "  4. 2267051003 / password123 - Dewi Lestari (Matematika FMIPA)\n";
+        echo "  5. admin / admin123 - Administrator\n";
+        echo "\n";
+        echo "📝 Structure:\n";
+        echo "  - Faculty: {code, name, departments[]}\n";
+        echo "  - Department: {code, name, study_programs[]}\n";
+        echo "  - Study Program: {code, name, degree, duration_years}\n";
+        echo "  - User: {username, name, email, role, profile{faculty_code, department_code, study_program_code, student_id, phone}}\n";
     }
 }
