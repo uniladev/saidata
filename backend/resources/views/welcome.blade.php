@@ -89,6 +89,17 @@
             transition: all 0.2s ease;
             border: 1px solid #0000FF;
         }
+        .button-green{
+            background: #10b981;
+            padding: 14px 32px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            border: 1px solid #10b981;
+        }
         
         .button:hover {
             background: #0000CC;
@@ -133,6 +144,9 @@
         
         <a href="http://localhost:5173" class="button">
             Open Application
+        </a>
+         <a href="http://127.0.0.1:8000/api/documentation#/" class="button-green">
+            Open Documentation
         </a>
         
         <div class="footer">
