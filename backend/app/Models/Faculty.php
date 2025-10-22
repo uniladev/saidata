@@ -15,22 +15,48 @@ class Faculty extends Model
     protected $fillable = [
         'code',
         'name',
-        'description',
+        'departments', // Array of embedded department documents
+    ];
+
+    protected $casts = [
+        'departments' => 'array',
     ];
 
     /**
-     * Relasi ke user profiles
+     * Get department by code from embedded array
      */
-    public function userProfiles()
+    public function getDepartmentByCode($code)
     {
-        return $this->hasMany(UserProfile::class);
+        if (!$this->departments) {
+            return null;
+        }
+
+        foreach ($this->departments as $dept) {
+            if ($dept['code'] === $code) {
+                return $dept;
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Relasi ke departments
+     * Get study program by code from embedded structure
      */
-    public function departments()
+    public function getStudyProgramByCode($deptCode, $progCode)
     {
-        return $this->hasMany(Department::class);
+        $department = $this->getDepartmentByCode($deptCode);
+        
+        if (!$department || !isset($department['study_programs'])) {
+            return null;
+        }
+
+        foreach ($department['study_programs'] as $program) {
+            if ($program['code'] === $progCode) {
+                return $program;
+            }
+        }
+
+        return null;
     }
 }
