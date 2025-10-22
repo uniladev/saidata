@@ -24,8 +24,8 @@ const {
   DocumentValidationPage: lazy(() => import("./pages/guest/DocumentValidation")),
   LoginPage: lazy(() => import("./pages/auth/Login")),
   DashboardPage: lazy(() => import("./pages/authenticated/User/Dashboard")),
-  FormBuilderPage: lazy(() => import("./pages/authenticated/User/FormBuilderPage")),
-  FormTakerPage: lazy(() => import("./pages/authenticated/User/FormTakerPage")),
+  FormBuilderPage: lazy(() => import("./pages/authenticated/Admin/FormBuilderPage")),
+  FormTakerPage: lazy(() => import("./pages/authenticated/Admin/FormTakerPage")),
   NotFoundPage: lazy(() => import("./pages/NotFound"))
 };
 

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { FilePlus2 } from 'lucide-react'; // For the new action button
-import api from '../../config/api';
+import api from '../../../config/api';
 
 // Stat Card Component
 const StatCard = ({ title, value, change, icon: Icon, trend, color }) => {

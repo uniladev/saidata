@@ -37,297 +37,163 @@ const iconMap = {
   'Building2': Building, // Alias untuk Building
 };
 
-// Sample API response - Replace with actual API call
-const sampleMenuData = {
-  admin: [
-    {
-      id: 1,
-      name: 'Dashboard',
-      icon: 'LayoutDashboard',
-      path: '/dashboard',
-      order: 1,
-      roles: ['admin', 'user']
-    },
-    {
-      id: 2,
-      name: 'Layanan Universitas',
-      icon: 'Building',
-      order: 2,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 21, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/university/academic',
-          order: 1
-        },
-        { 
-          id: 22, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/university/finance',
-          order: 2
-        },
-        { 
-          id: 23, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/university/general',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Layanan Fakultas',
-      icon: 'GraduationCap',
-      order: 3,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 31, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/faculty/general',
-          order: 1
-        },
-        { 
-          id: 32, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/faculty/academic',
-          order: 2
-        },
-        { 
-          id: 33, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/faculty/finance',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 4,
-      name: 'Layanan Jurusan',
-      icon: 'Building2',
-      order: 4,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 41, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/department/academic',
-          order: 1
-        },
-        { 
-          id: 42, 
-          name: 'Layanan Laboratorium', 
-          path: '/dashboard/department/laboratory',
-          order: 2
-        },
-        { 
-          id: 43, 
-          name: 'Layanan IT & Server', 
-          path: '/dashboard/department/it-services',
-          order: 3
-        },
-        { 
-          id: 44, 
-          name: 'Layanan Administrasi', 
-          path: '/dashboard/department/administration',
-          order: 4
-        },
-        { 
-          id: 45, 
-          name: 'Layanan Penelitian', 
-          path: '/dashboard/department/research',
-          order: 5
-        },
-      ]
-    },
-    {
-      id: 5,
-      name: 'Riwayat Permohonan',
-      icon: 'ClipboardList',
-      order: 5,
-      roles: ['admin', 'user'],
-      submenu: [
-        { id: 51, name: 'Semua Permohonan', path: '/dashboard/requests', order: 1 },
-        { id: 52, name: 'Permohonan Pending', path: '/dashboard/requests/pending', order: 2 },
-        { id: 53, name: 'Permohonan Disetujui', path: '/dashboard/requests/approved', order: 3 },
-        { id: 54, name: 'Permohonan Ditolak', path: '/dashboard/requests/rejected', order: 4 },
-      ]
-    },
-    {
-      id: 6,
-      name: 'Validasi Permohonan',
-      icon: 'CheckCircle',
-      path: '/dashboard/validation',
-      order: 6,
-      roles: ['admin', 'validator']
-    },
-    {
-      id: 7,
-      name: 'Users',
-      icon: 'Users',
-      path: '/dashboard/users',
-      order: 7,
-      roles: ['admin']
-    },
-    {
-      id: 8,
-      name: 'Reports',
-      icon: 'BarChart',
-      path: '/dashboard/reports',
-      order: 8,
-      roles: ['admin']
-    },
-    {
-      id: 9,
-      name: 'Pengaturan',
-      icon: 'Settings',
-      path: '/dashboard/settings',
-      order: 9,
-      roles: ['admin', 'user']
-    },
-    {
-      id: 10,
-      name: 'Bantuan',
-      icon: 'HelpCircle',
-      path: '/dashboard/help',
-      order: 10,
-      roles: ['admin', 'user']
-    },
-  ],
-  user: [
-    {
-      id: 1,
-      name: 'Dashboard',
-      icon: 'LayoutDashboard',
-      path: '/dashboard',
-      order: 1,
-      roles: ['admin', 'user']
-    },
-    {
-      id: 2,
-      name: 'Layanan Universitas',
-      icon: 'Building',
-      order: 2,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 21, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/university/academic',
-          order: 1
-        },
-        { 
-          id: 22, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/university/finance',
-          order: 2
-        },
-        { 
-          id: 23, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/university/general',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Layanan Fakultas',
-      icon: 'GraduationCap',
-      order: 3,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 31, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/faculty/general',
-          order: 1
-        },
-        { 
-          id: 32, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/faculty/academic',
-          order: 2
-        },
-        { 
-          id: 33, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/faculty/finance',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 4,
-      name: 'Layanan Jurusan',
-      icon: 'BookOpen',
-      order: 4,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 41, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/department/academic',
-          order: 1
-        },
-        { 
-          id: 42, 
-          name: 'Layanan Laboratorium', 
-          path: '/dashboard/department/laboratory',
-          order: 2
-        },
-        { 
-          id: 43, 
-          name: 'Layanan IT & Server', 
-          path: '/dashboard/department/it-services',
-          order: 3
-        },
-        { 
-          id: 44, 
-          name: 'Layanan Administrasi', 
-          path: '/dashboard/department/administration',
-          order: 4
-        },
-        { 
-          id: 45, 
-          name: 'Layanan Penelitian', 
-          path: '/dashboard/department/research',
-          order: 5
-        }
-      ]
-    },
-    {
-      id: 5,
-      name: 'Riwayat Permohonan',
-      icon: 'ClipboardList',
-      order: 5,
-      roles: ['admin', 'user'],
-      submenu: [
-        { id: 51, name: 'Semua Permohonan', path: '/dashboard/requests', order: 1 },
-        { id: 52, name: 'Permohonan Pending', path: '/dashboard/requests/pending', order: 2 },
-        { id: 53, name: 'Permohonan Disetujui', path: '/dashboard/requests/approved', order: 3 },
-        { id: 54, name: 'Permohonan Ditolak', path: '/dashboard/requests/rejected', order: 4 },
-      ]
-    },
-    {
-      id: 6,
-      name: 'Pengaturan',
-      icon: 'Settings',
-      path: '/dashboard/settings',
-      order: 6,
-      roles: ['admin', 'user']
-    },
-    {
-      id: 7,
-      name: 'Bantuan',
-      icon: 'HelpCircle',
-      path: '/dashboard/help',
-      order: 7,
-      roles: ['admin', 'user']
-    },
-  ]
-};
+// Sample Menu Data - Consolidated structure (role filtering happens elsewhere)
+const sampleMenuData = [
+  {
+    id: 1,
+    name: 'Dashboard',
+    icon: 'LayoutDashboard',
+    path: '/dashboard',
+    order: 1,
+    roles: ['admin', 'user']
+  },
+  {
+    id: 2,
+    name: 'Development Test (jgn diganti)',
+    icon: 'Building',
+    order: 2,
+    roles: ['admin', 'user'],
+    submenu: [
+      { 
+        id: 21, 
+        name: 'Create Form', 
+        path: '/create-form',
+        order: 1
+      },
+      { 
+        id: 22, 
+        name: 'Layanan Keuangan', 
+        path: '/dashboard/university/finance',
+        order: 2
+      },
+      { 
+        id: 23, 
+        name: 'Layanan Umum', 
+        path: '/dashboard/university/general',
+        order: 3
+      },
+    ]
+  },
+  {
+    id: 3,
+    name: 'Layanan Fakultas',
+    icon: 'GraduationCap',
+    order: 3,
+    roles: ['admin', 'user'],
+    submenu: [
+      { 
+        id: 31, 
+        name: 'Layanan Umum', 
+        path: '/dashboard/faculty/general',
+        order: 1
+      },
+      { 
+        id: 32, 
+        name: 'Layanan Akademik', 
+        path: '/dashboard/faculty/academic',
+        order: 2
+      },
+      { 
+        id: 33, 
+        name: 'Layanan Keuangan', 
+        path: '/dashboard/faculty/finance',
+        order: 3
+      },
+    ]
+  },
+  {
+    id: 4,
+    name: 'Layanan Jurusan',
+    icon: 'BookOpen',
+    order: 4,
+    roles: ['admin', 'user'],
+    submenu: [
+      { 
+        id: 41, 
+        name: 'Layanan Akademik', 
+        path: '/dashboard/department/academic',
+        order: 1
+      },
+      { 
+        id: 42, 
+        name: 'Layanan Laboratorium', 
+        path: '/dashboard/department/laboratory',
+        order: 2
+      },
+      { 
+        id: 43, 
+        name: 'Layanan IT & Server', 
+        path: '/dashboard/department/it-services',
+        order: 3
+      },
+      { 
+        id: 44, 
+        name: 'Layanan Administrasi', 
+        path: '/dashboard/department/administration',
+        order: 4
+      },
+      { 
+        id: 45, 
+        name: 'Layanan Penelitian', 
+        path: '/dashboard/department/research',
+        order: 5
+      }
+    ]
+  },
+  {
+    id: 5,
+    name: 'Riwayat Permohonan',
+    icon: 'ClipboardList',
+    order: 5,
+    roles: ['admin', 'user'],
+    submenu: [
+      { id: 51, name: 'Semua Permohonan', path: '/dashboard/requests', order: 1 },
+      { id: 52, name: 'Permohonan Pending', path: '/dashboard/requests/pending', order: 2 },
+      { id: 53, name: 'Permohonan Disetujui', path: '/dashboard/requests/approved', order: 3 },
+      { id: 54, name: 'Permohonan Ditolak', path: '/dashboard/requests/rejected', order: 4 },
+    ]
+  },
+  {
+    id: 6,
+    name: 'Validasi Permohonan',
+    icon: 'CheckCircle',
+    path: '/dashboard/validation',
+    order: 6,
+    roles: ['admin', 'validator']
+  },
+  {
+    id: 7,
+    name: 'Users',
+    icon: 'Users',
+    path: '/dashboard/users',
+    order: 7,
+    roles: ['admin']
+  },
+  {
+    id: 8,
+    name: 'Reports',
+    icon: 'BarChart',
+    path: '/dashboard/reports',
+    order: 8,
+    roles: ['admin']
+  },
+  {
+    id: 9,
+    name: 'Pengaturan',
+    icon: 'Settings',
+    path: '/dashboard/settings',
+    order: 9,
+    roles: ['admin', 'user']
+  },
+  {
+    id: 10,
+    name: 'Bantuan',
+    icon: 'HelpCircle',
+    path: '/dashboard/help',
+    order: 10,
+    roles: ['admin', 'user']
+  },
+];
 
 const DashboardSidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
@@ -366,13 +232,13 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
         console.error('❌ Error fetching menu items:', error);
         console.log('⚠️ Using fallback menu');
         
-        // Fallback to basic menu if API fails
+        // Fallback: Filter menu based on user role
         const userRole = user?.role?.toLowerCase() || 'user';
-        const roleMenus = sampleMenuData[userRole] || sampleMenuData.user;
-        const filteredMenus = roleMenus
+        const filteredMenus = sampleMenuData
           .filter(item => item.roles?.includes(userRole))
           .sort((a, b) => a.order - b.order);
         
+        console.log('📋 Fallback menu items:', filteredMenus.length, 'items for role:', userRole);
         setMenuItems(filteredMenus);
       } finally {
         setLoading(false);
@@ -472,6 +338,11 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
                 <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
               ))}
             </div>
+          ) : menuItems.length === 0 ? (
+            // No menu items
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-sm">Tidak ada menu tersedia</p>
+            </div>
           ) : (
             // Dynamic menu items
             menuItems.map((item, index) => {
@@ -485,7 +356,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
                       <button
                         onClick={() => toggleSubmenu(index)}
                         className={`
-                          w-full flex items-center justify-between px-2 py-3 rounded-lg transition
+                          w-full flex items-center justify-between px-4 py-3 rounded-lg transition
                           ${hasActiveSubmenu(item.submenu)
                             ? 'bg-blue-50 text-blue-600'
                             : 'text-gray-700 hover:bg-gray-100'
