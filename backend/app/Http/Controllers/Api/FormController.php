@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\FormHistory;
+use Illuminate\Support\Facades\DB;
+
 
 class FormController extends Controller
 {
@@ -107,6 +110,7 @@ class FormController extends Controller
      *                 @OA\Property(property="description", type="string", example="Form description"),
      *                 @OA\Property(property="submitText", type="string", example="Submit", description="Submit button text"),
      *                 @OA\Property(property="successMessage", type="string", example="Thank you for your submission!", description="Success message after submission"),
+     *                 @OA\Property(property="is_active", type="boolean", example=true, description="Form active status"),
      *                 @OA\Property(
      *                     property="fields",
      *                     type="array",
@@ -163,6 +167,7 @@ class FormController extends Controller
      *     @OA\Property(property="description", type="string", example="Form description"),
      *     @OA\Property(property="submitText", type="string", example="Submit"),
      *     @OA\Property(property="successMessage", type="string", example="Thank you for your submission!"),
+     *     @OA\Property(property="is_active", type="boolean", example=true),
      *     @OA\Property(
      *         property="fields",
      *         type="array",
@@ -210,6 +215,7 @@ class FormController extends Controller
             'form.description' => 'nullable|string',
             'form.submitText' => 'nullable|string|max:100',
             'form.successMessage' => 'nullable|string|max:500',
+            'form.is_active' => 'nullable|boolean',
             'form.fields' => 'required|array|min:1',
             'form.fields.*.type' => 'required|in:text,textarea,number,email,date,time,datetime-local,url,tel,password,select,radio,checkbox,file,rating,signature,matrix,repeater',
             'form.fields.*.label' => 'required|string|max:255',
@@ -294,7 +300,8 @@ class FormController extends Controller
             // Prepare form data
             $formData['created_by'] = (string) $user->_id;
             $formData['updated_by'] = (string) $user->_id;
-            
+            $formData['version'] = 1;
+            $formData['is_active'] = $formData['is_active'] ?? true;
             // Set default values if not provided
             $formData['submitText'] = $formData['submitText'] ?? 'Submit';
             $formData['successMessage'] = $formData['successMessage'] ?? 'Thank you for your submission!';
@@ -305,6 +312,20 @@ class FormController extends Controller
 
             // Refresh the model to ensure _id is loaded
             $form->refresh();
+
+             // Create initial history record
+            FormHistory::create([
+                'form_id' => $form->_id,
+                'version' => 1,
+                'title' => $form->title,
+                'slug' => $form->slug,
+                'description' => $form->description,
+                'submitText' => $form->submitText,
+                'successMessage' => $form->successMessage,
+                'fields' => $form->fields,
+                'changed_by' => (string) $user->_id,
+                'change_summary' => 'Initial form creation',
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -347,6 +368,7 @@ class FormController extends Controller
      *                 @OA\Property(property="description", type="string", example="Updated description"),
      *                 @OA\Property(property="submitText", type="string", example="Submit"),
      *                 @OA\Property(property="successMessage", type="string", example="Thank you!"),
+     *                 @OA\Property(property="is_active", type="boolean"),
      *                 @OA\Property(
      *                     property="fields",
      *                     type="array",
@@ -359,6 +381,18 @@ class FormController extends Controller
      *                         @OA\Property(property="name", type="string", example="field_1")
      *                     )
      *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="increment_version",
+     *                 type="boolean",
+     *                 example=true,
+     *                 description="Set to true to create new version (recommended when changing fields structure)"
+     *             ),
+     *             @OA\Property(
+     *                 property="change_summary",
+     *                 type="string",
+     *                 example="Updated question 3, added new email field",
+     *                 description="Summary of changes made"
      *             )
      *         )
      *     ),
@@ -369,7 +403,13 @@ class FormController extends Controller
      *             type="object",
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Form updated successfully"),
-     *             @OA\Property(property="data", ref="#/components/schemas/Form")
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="form", ref="#/components/schemas/Form"),
+     *                 @OA\Property(property="version_incremented", type="boolean", example=true),
+     *                 @OA\Property(property="previous_version", type="integer", example=1)
+     *             )
      *         )
      *     ),
      *     @OA\Response(response=404, description="Form not found"),
@@ -405,7 +445,10 @@ class FormController extends Controller
             'form.description' => 'nullable|string',
             'form.submitText' => 'nullable|string|max:100',
             'form.successMessage' => 'nullable|string|max:500',
+            'form.is_active' => 'nullable|boolean',
             'form.fields' => 'sometimes|required|array|min:1',
+            'increment_version' => 'nullable|boolean',
+            'change_summary' => 'nullable|string|max:500',
             'form.fields.*.id' => 'nullable|string|max:255',
             'form.fields.*.type' => 'required|in:text,textarea,number,email,date,time,datetime-local,url,tel,password,select,radio,checkbox,file,rating,signature,matrix,repeater',
             'form.fields.*.label' => 'required|string|max:255',
@@ -433,6 +476,14 @@ class FormController extends Controller
 
         try {
             $formData = $request->input('form');
+            $incrementVersion = $request->input('increment_version', false);
+            $changeSummary = $request->input('change_summary', 'Form updated');
+            
+            $previousVersion = $form->version;
+            $versionIncremented = false;
+
+            // Check if structure changed
+            $structureChanged = false;
             
             // Validate uniqueness if fields are being updated
             if (isset($formData['fields'])) {
@@ -477,16 +528,38 @@ class FormController extends Controller
                         $field['fileOptions'] = null;
                     }
                 }
+                $structureChanged = $this->hasStructureChanged($form->fields, $formData['fields']);
             }
+            // Use transaction for atomicity
+        
+                // Save current version to history if structure changed or version increment requested
+                if ($structureChanged || $incrementVersion) {
+                    FormHistory::create([
+                        'form_id' => $form->_id,
+                        'version' => $form->version,
+                        'title' => $form->title,
+                        'slug' => $form->slug,
+                        'description' => $form->description,
+                        'submitText' => $form->submitText,
+                        'successMessage' => $form->successMessage,
+                        'fields' => $form->fields,
+                        'changed_by' => (string) $user->_id,
+                        'change_summary' => $changeSummary,
+                    ]);
 
-            // Update timestamp and user
-            $formData['updated_by'] = (string) $user->_id;
+                    // Increment version
+                    $formData['version'] = $form->version + 1;
+                    $versionIncremented = true;
+                }
+                // Update timestamp and user
+                $formData['updated_by'] = (string) $user->_id;
 
-            // Exclude sensitive fields from update
-            unset($formData['created_by'], $formData['created_at'], $formData['_id']);
+                // Exclude sensitive fields from update
+                unset($formData['created_by'], $formData['created_at'], $formData['_id']);
 
-            // Update the form (MongoDB document operations are atomic)
-            $form->update($formData);
+                // Update the form (MongoDB document operations are atomic)
+                $form->update($formData);
+            
 
             // Refresh the model to ensure _id and updated data are properly loaded
             $form->refresh();
@@ -544,11 +617,121 @@ class FormController extends Controller
             ], 404);
         }
 
-        $form->delete();
+        // Soft delete by setting is_active to false
+        $form->update(['is_active' => false]);
 
         return response()->json([
             'success' => true,
             'message' => 'Form deleted successfully'
+        ], 200);
+    }
+      /**
+     * @OA\Get(
+     *     path="/api/v1/forms/{id}/history",
+     *     summary="Get form version history",
+     *     description="Retrieve all version history of a form",
+     *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="string", example="671292eb4c6b7a0d4e0b1234")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Form version history",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="_id", type="string"),
+     *                     @OA\Property(property="form_id", type="string"),
+     *                     @OA\Property(property="version", type="integer", example=1),
+     *                     @OA\Property(property="title", type="string"),
+     *                     @OA\Property(property="fields", type="array", @OA\Items(type="object")),
+     *                     @OA\Property(property="change_summary", type="string"),
+     *                     @OA\Property(property="changed_by", type="object"),
+     *                     @OA\Property(property="created_at", type="string", format="date-time")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Form not found")
+     * )
+     */
+    public function history($id)
+    {
+        $form = Form::find($id);
+
+        if (!$form) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form not found'
+            ], 404);
+        }
+
+        $history = FormHistory::where('form_id', $id)
+            ->with('changedBy:_id,name,email')
+            ->orderBy('version', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $history
+        ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/forms/{id}/version/{version}",
+     *     summary="Get specific form version",
+     *     description="Retrieve a specific version of a form from history",
+     *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="string", example="671292eb4c6b7a0d4e0b1234")
+     *     ),
+     *     @OA\Parameter(
+     *         name="version",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Form version details",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Version not found")
+     * )
+     */
+    public function showVersion($id, $version)
+    {
+        $formVersion = FormHistory::where('form_id', $id)
+            ->where('version', $version)
+            ->with('changedBy:_id,name,email')
+            ->first();
+
+        if (!$formVersion) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form version not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $formVersion
         ], 200);
     }
 
@@ -571,5 +754,31 @@ class FormController extends Controller
             'success' => true,
             'data' => $form
         ], 200);
+    }
+     /**
+     * Helper method to detect structure changes
+     */
+    private function hasStructureChanged($oldFields, $newFields)
+    {
+        // Simple comparison - you can make this more sophisticated
+        if (count($oldFields) !== count($newFields)) {
+            return true;
+        }
+
+        // Check if field types or names changed
+        foreach ($newFields as $index => $newField) {
+            if (!isset($oldFields[$index])) {
+                return true;
+            }
+
+            $oldField = $oldFields[$index];
+            
+            if ($oldField['type'] !== $newField['type'] || 
+                $oldField['name'] !== $newField['name']) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

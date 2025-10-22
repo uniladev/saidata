@@ -516,6 +516,11 @@
                                                 "type": "string",
                                                 "example": "Thank you for your submission!"
                                             },
+                                            "is_active": {
+                                                "description": "Form active status",
+                                                "type": "boolean",
+                                                "example": true
+                                            },
                                             "fields": {
                                                 "type": "array",
                                                 "items": {
@@ -786,6 +791,9 @@
                                                 "type": "string",
                                                 "example": "Thank you!"
                                             },
+                                            "is_active": {
+                                                "type": "boolean"
+                                            },
                                             "fields": {
                                                 "description": "Fields array. Include 'id' for existing fields to preserve them, omit 'id' for new fields.",
                                                 "type": "array",
@@ -814,6 +822,16 @@
                                             }
                                         },
                                         "type": "object"
+                                    },
+                                    "increment_version": {
+                                        "description": "Set to true to create new version (recommended when changing fields structure)",
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "change_summary": {
+                                        "description": "Summary of changes made",
+                                        "type": "string",
+                                        "example": "Updated question 3, added new email field"
                                     }
                                 },
                                 "type": "object"
@@ -837,7 +855,20 @@
                                             "example": "Form updated successfully"
                                         },
                                         "data": {
-                                            "$ref": "#/components/schemas/Form"
+                                            "properties": {
+                                                "form": {
+                                                    "$ref": "#/components/schemas/Form"
+                                                },
+                                                "version_incremented": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "previous_version": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -907,6 +938,149 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/forms/{id}/history": {
+            "get": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get form version history",
+                "description": "Retrieve all version history of a form",
+                "operationId": "bede2b04b91dfe541a7f79a1a522a7db",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "671292eb4c6b7a0d4e0b1234"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form version history",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "form_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "version": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "fields": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "change_summary": {
+                                                        "type": "string"
+                                                    },
+                                                    "changed_by": {
+                                                        "type": "object"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/forms/{id}/version/{version}": {
+            "get": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get specific form version",
+                "description": "Retrieve a specific version of a form from history",
+                "operationId": "a43ee49a3f631cec5f2b519af72b35a9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "671292eb4c6b7a0d4e0b1234"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form version details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Version not found"
                     }
                 },
                 "security": [
@@ -2102,6 +2276,10 @@
                     "successMessage": {
                         "type": "string",
                         "example": "Thank you for your submission!"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
                     },
                     "fields": {
                         "type": "array",

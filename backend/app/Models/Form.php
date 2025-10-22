@@ -17,14 +17,23 @@ class Form extends Model
         'submitText',
         'successMessage',
         'fields',
+        'version',
+        'is_active',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
         'fields' => 'array',
+        'version' => 'integer',
+        'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+    ];
+
+    protected $attributes = [
+        'version' => 1,
+        'is_active' => true,
     ];
 
     protected $appends = ['_id'];
@@ -34,11 +43,6 @@ class Form extends Model
         return (string) $this->attributes['_id'];
     }
 
-    // Make sure _id is NOT in the $hidden array
-    // Remove this if it exists:
-    // protected $hidden = ['_id'];
-
-    // Add this to ensure _id is always visible
     protected $visible = [
         '_id',
         'title',
@@ -47,6 +51,8 @@ class Form extends Model
         'submitText',
         'successMessage',
         'fields',
+        'version',
+        'is_active',
         'created_by',
         'updated_by',
         'created_at',
@@ -59,6 +65,7 @@ class Form extends Model
 
         static::creating(function ($form) {
             $form->slug = $form->generateUniqueSlug($form->title);
+            $form->version = 1;
         });
 
         static::updating(function ($form) {
@@ -98,5 +105,10 @@ class Form extends Model
     public function submissions()
     {
         return $this->hasMany(FormSubmission::class, 'form_id');
+    }
+
+    public function history()
+    {
+        return $this->hasMany(FormHistory::class, 'form_id')->orderBy('version', 'desc');
     }
 }

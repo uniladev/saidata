@@ -85,5 +85,11 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [UserProfileController::class, 'destroy'])
                 ->where('id', '[a-f0-9]{24}');
         });
+
+        // Form versioning routes
+        Route::group(['prefix' => 'forms', 'middleware' => 'auth:api'], function () {
+            Route::get('/{id}/history', [FormController::class, 'history']);
+            Route::get('/{id}/version/{version}', [FormController::class, 'showVersion']);
+        });
     });
 });
