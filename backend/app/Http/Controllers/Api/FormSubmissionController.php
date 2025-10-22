@@ -200,7 +200,7 @@ class FormSubmissionController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/forms/{formId}/submit",
-     *     summary="Submit survey response",
+     *     summary="Submit Form response",
      *     description="Submit a new response to a form. Creates both submission record and payload.",
      *     tags={"Form Submissions"},
      *     security={{"bearerAuth":{}}},
