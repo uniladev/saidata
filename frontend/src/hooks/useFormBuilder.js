@@ -1,4 +1,5 @@
 // frontend/src/hooks/useFormBuilder.js
+// CORRECTED VERSION - Properly handles options as objects {value, label}
 import { useState } from 'react';
 
 export const useFormBuilder = () => {
@@ -109,18 +110,67 @@ export const useFormBuilder = () => {
     }
   };
 
-  const generateJson = () => {
-    // This is the flat object we had before
-    const formData = {
-      ...formSettings, 
-      fields: formFields.map(field => {
-        const { id, ...fieldForBackend } = field;
-        return fieldForBackend;
-      })
+  // Helper function to clean field data for backend
+  const cleanFieldForBackend = (field) => {
+    // Create a plain object with only serializable data
+    const cleanField = {
+      type: field.type,
+      label: field.label,
+      name: field.name,
+      required: field.required || false,
+      placeholder: field.placeholder || '',
+      helpText: field.helpText || '',
+      validation: field.validation || null,
+      options: [], // Will be set below
+      fileOptions: field.fileOptions || null,
+      min: field.min !== undefined && field.min !== null ? field.min : null,
+      max: field.max !== undefined && field.max !== null ? field.max : null,
+      step: field.step !== undefined && field.step !== null ? field.step : null,
+      rows: field.rows !== undefined && field.rows !== null ? field.rows : null,
+      maxRating: field.maxRating !== undefined && field.maxRating !== null ? field.maxRating : null,
     };
 
-    // Now, we return that object wrapped inside a "form" key,
-    // just like the backend documentation specifies.
+    // Handle options carefully - convert to plain objects
+    if (Array.isArray(field.options)) {
+      cleanField.options = field.options.map(option => {
+        // If option is already a plain object with value and label
+        if (option && typeof option === 'object') {
+          return {
+            value: String(option.value || ''),
+            label: String(option.label || '')
+          };
+        }
+        // If option is a string, convert to object
+        return {
+          value: String(option),
+          label: String(option)
+        };
+      });
+    }
+
+    // Handle fileOptions carefully
+    if (cleanField.fileOptions && typeof cleanField.fileOptions === 'object') {
+      cleanField.fileOptions = {
+        accept: String(cleanField.fileOptions.accept || ''),
+        maxSize: Number(cleanField.fileOptions.maxSize || 5),
+        multiple: Boolean(cleanField.fileOptions.multiple)
+      };
+    }
+
+    return cleanField;
+  };
+
+  const generateJson = () => {
+    // Create clean form data
+    const formData = {
+      title: String(formSettings.title || 'Untitled Form'),
+      description: String(formSettings.description || ''),
+      submitText: String(formSettings.submitText || 'Submit'),
+      successMessage: String(formSettings.successMessage || 'Thank you for your submission!'),
+      fields: formFields.map(field => cleanFieldForBackend(field))
+    };
+
+    // Wrap in "form" key as backend expects
     return {
       form: formData
     };

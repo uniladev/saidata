@@ -89,7 +89,29 @@ function FormBuilderPage() {
   };
 
   const handleSaveForm = async (forceVersionIncrement = false) => {
+    // Ensure forceVersionIncrement is always a boolean (in case an event is passed)
+    const shouldIncrementVersion = forceVersionIncrement === true;
+    
+    // Get the generated JSON
     const formJson = generateJson();
+    
+    // DEBUG: Log the form structure
+    console.log('=== FORM BUILDER DEBUG ===');
+    console.log('Form Fields:', formFields);
+    console.log('Form Settings:', formSettings);
+    console.log('Generated JSON:', formJson);
+    console.log('forceVersionIncrement:', forceVersionIncrement, 'shouldIncrementVersion:', shouldIncrementVersion);
+    
+    // Try to convert to JSON string to catch circular references early
+    try {
+      const jsonString = JSON.stringify(formJson, null, 2);
+      console.log('JSON String (first 500 chars):', jsonString.substring(0, 500));
+      console.log('✓ JSON is valid - No circular references');
+    } catch (jsonError) {
+      console.error('❌ JSON stringify error:', jsonError);
+      alert('Error: Cannot serialize form data to JSON. This usually means there are circular references. Check the console for details.');
+      return;
+    }
 
     // If editing and structure changed, show version dialog
     if (isEditMode && !showVersionDialog && hasStructureChanged()) {
@@ -104,12 +126,13 @@ function FormBuilderPage() {
         // Update existing form
         const payload = {
           form: formJson.form,
-          increment_version: forceVersionIncrement || incrementVersion,
+          increment_version: shouldIncrementVersion || incrementVersion,
           change_summary: changeSummary || 'Form updated'
         };
 
+        console.log('Sending UPDATE request with payload:', payload);
         const response = await api.put(`/forms/${formId}`, payload);
-        console.log('Form updated:', response.data);
+        console.log('✓ Form updated successfully:', response.data);
         alert('Form updated successfully!');
         
         // Reset version dialog states
@@ -122,14 +145,15 @@ function FormBuilderPage() {
         
       } else {
         // Create new form
+        console.log('Sending CREATE request with payload:', formJson);
         const response = await api.post('/forms', formJson);
-        console.log('Form created:', response.data);
+        console.log('✓ Form created successfully:', response.data);
         alert('Form created successfully!');
         navigate('/forms');
       }
 
     } catch (error) {
-      console.error('Error saving form:', error);
+      console.error('❌ Error saving form:', error);
 
       if (error.response && error.response.status === 422) {
         const errors = error.response.data.errors;
@@ -139,9 +163,11 @@ function FormBuilderPage() {
           errorMessage += `- ${errors[key][0]}\n`;
         }
         
+        console.error('Validation errors:', errors);
         alert(errorMessage);
       } else {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to save form.';
+        console.error('Save error details:', error.response?.data);
         alert(`Error: ${errorMessage}`);
       }
     } finally {
@@ -327,7 +353,10 @@ function FormBuilderPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleSaveForm(true)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSaveForm(true);
+                  }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Save Changes
