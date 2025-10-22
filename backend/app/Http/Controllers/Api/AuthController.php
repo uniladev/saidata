@@ -115,27 +115,21 @@ class AuthController extends Controller
         $password = $request->password;
 
         try {
-            // Verify credentials with campus SSO
-            //$ssoResponse = $this->ssoService->verifyCredentials($username, $password);
-            $ssoResponse = [
-                'success' => true,
-                'data' => [
-                    'username'=>'2267051001',
-                    'name' => 'Dafahan',
-                    'email' => 'dafahan@example.com',
-                    'role' => 'user'
-                ]
-            ];
-
-            if (!$ssoResponse['success']) {
+            // FOR DEVELOPMENT: Bypass SSO and authenticate directly
+            // In production, use: $ssoResponse = $this->ssoService->verifyCredentials($username, $password);
+            
+            // Try to find user in database
+            $user = User::where('username', $username)->first();
+            
+            if (!$user || !\Hash::check($password, $user->password)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Username atau password salah'
                 ], 401);
             }
-
-            // Get or create user from SSO data
-            $user = $this->getOrCreateUser($ssoResponse['data']);
+            
+            // User found and password correct - no need to call getOrCreateUser
+            // $user is already loaded with profile (via $with in User model)
             
             // Generate JWT access token
             $token = JWTAuth::fromUser($user);
@@ -154,9 +148,14 @@ class AuthController extends Controller
                 'token' => $token,
                 'user' => [
                     'id' => $user->id,
+                    'username' => $user->username,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role
+                    'role' => $user->role,
+                    'profile' => $user->profile,
+                    'faculty_code' => $user->faculty_code,
+                    'department_code' => $user->department_code,
+                    'study_program_code' => $user->study_program_code
                 ]
             ])->cookie(
                 'refresh_token',
@@ -235,9 +234,14 @@ class AuthController extends Controller
                 'success' => true,
                 'data' => [
                     'id' => $user->id,
+                    'username' => $user->username,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role
+                    'role' => $user->role,
+                    'profile' => $user->profile,
+                    'faculty_code' => $user->faculty_code,
+                    'department_code' => $user->department_code,
+                    'study_program_code' => $user->study_program_code
                 ]
             ]);
 
