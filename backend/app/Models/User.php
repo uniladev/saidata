@@ -163,7 +163,7 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Append profile data to user array
      */
-    protected $with = ['profile'];
+   // protected $with = ['profile'];
 
     /**
      * Append additional attributes
