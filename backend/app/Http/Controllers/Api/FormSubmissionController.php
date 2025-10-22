@@ -357,8 +357,6 @@ class FormSubmissionController extends Controller
         }
 
         try {
-            // Use transaction for atomic operation
-            DB::connection('mongodb')->transaction(function () use ($request, $formId, $form, &$submission) {
                 $user = JWTAuth::parseToken()->authenticate();
 
                 // Create submission with minimal snapshot
@@ -375,7 +373,7 @@ class FormSubmissionController extends Controller
                     'submission_id' => $submission->_id,
                     'answers' => $request->input('answers'),
                 ]);
-            });
+            
 
             // Load relationships for response
             $submission->load(['submitter:_id,name,email', 'payload']);
@@ -387,6 +385,9 @@ class FormSubmissionController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            if (isset($submission)) {
+                $submission->delete();
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to submit form',
@@ -521,7 +522,6 @@ class FormSubmissionController extends Controller
         }
 
         try {
-            DB::connection('mongodb')->transaction(function () use ($request, $submission) {
                 $submission->update([
                     'status' => $request->input('status', $submission->status),
                 ]);
@@ -532,7 +532,6 @@ class FormSubmissionController extends Controller
                         $payload->update(['answers' => $request->input('answers')]);
                     }
                 }
-            });
 
             $submission->load(['submitter:_id,name,email', 'payload']);
 
@@ -621,12 +620,10 @@ class FormSubmissionController extends Controller
         }
 
         try {
-            DB::connection('mongodb')->transaction(function () use ($submission) {
                 // Delete payload first
                 FormSubmissionPayload::where('submission_id', $submission->_id)->delete();
                 // Delete submission
                 $submission->delete();
-            });
 
             return response()->json([
                 'success' => true,
