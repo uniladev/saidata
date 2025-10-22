@@ -1,5 +1,8 @@
-import { lazy } from "react";
-export const Home = lazy(() => import("./guest/Home.jsx"));
-export const Login = lazy(() => import("./auth/Login.jsx"));
-export const About = lazy(() => import("./guest/About.jsx"));
+// frontend/src/pages/index.js
+// Export all pages from subdirectories
+export * from './auth';
+export * from './guest';
+export * from './authenticated';
 
+// Export NotFound page
+export { default as NotFoundPage } from './NotFound';
