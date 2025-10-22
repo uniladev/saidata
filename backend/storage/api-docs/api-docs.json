@@ -1714,7 +1714,7 @@
                 "tags": [
                     "Form Submissions"
                 ],
-                "summary": "Submit survey response",
+                "summary": "Submit Form response",
                 "description": "Submit a new response to a form. Creates both submission record and payload.",
                 "operationId": "eac47e5eb9b90878a86fb2c042273611",
                 "parameters": [
