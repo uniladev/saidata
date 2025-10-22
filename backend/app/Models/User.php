@@ -159,4 +159,38 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(StudyProgram::class, 'profile.study_program_id');
     }
+
+    /**
+     * Append profile data to user array
+     */
+    protected $with = ['profile'];
+
+    /**
+     * Append additional attributes
+     */
+    protected $appends = ['faculty_code', 'department_code', 'study_program_code'];
+
+    /**
+     * Get faculty code from profile
+     */
+    public function getFacultyCodeAttribute()
+    {
+        return $this->profile?->faculty?->code;
+    }
+
+    /**
+     * Get department code from profile
+     */
+    public function getDepartmentCodeAttribute()
+    {
+        return $this->profile?->department?->code;
+    }
+
+    /**
+     * Get study program code from profile
+     */
+    public function getStudyProgramCodeAttribute()
+    {
+        return $this->profile?->studyProgram?->code;
+    }
 }
