@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\FormSubmissionController;
 use App\Http\Controllers\Api\FormSubmissionPayloadController;
 use App\Http\Controllers\Api\UserProfileController;
-use App\Http\Controllers\Api\MenuController;
 
 Route::prefix('v1')->group(function () {
     
@@ -25,9 +24,6 @@ Route::prefix('v1')->group(function () {
 
     // Protected API routes
     Route::middleware('auth:api')->group(function () {
-        
-        // Menu routes
-        Route::get('/menu', [MenuController::class, 'index']);
         
         // Forms routes - Only MongoDB ObjectId
         Route::prefix('forms')->group(function () {

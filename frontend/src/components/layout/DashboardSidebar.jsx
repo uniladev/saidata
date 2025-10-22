@@ -11,15 +11,13 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  FolderOpen,
+  UserCheck,
   BarChart,
-  Building,
-  GraduationCap,
-  BookOpen,
-  ClipboardList
+  Shield
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import api from '@/config/api';
 
 // Icon mapping for dynamic menu items
 const iconMap = {
@@ -29,12 +27,10 @@ const iconMap = {
   'Users': Users,
   'Settings': Settings,
   'HelpCircle': HelpCircle,
+  'FolderOpen': FolderOpen,
+  'UserCheck': UserCheck,
   'BarChart': BarChart,
-  'Building': Building,
-  'GraduationCap': GraduationCap,
-  'BookOpen': BookOpen,
-  'ClipboardList': ClipboardList,
-  'Building2': Building, // Alias untuk Building
+  'Shield': Shield,
 };
 
 // Sample API response - Replace with actual API call
@@ -50,148 +46,54 @@ const sampleMenuData = {
     },
     {
       id: 2,
-      name: 'Layanan Universitas',
-      icon: 'Building',
+      name: 'Dokumen',
+      icon: 'FileText',
       order: 2,
       roles: ['admin', 'user'],
       submenu: [
-        { 
-          id: 21, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/university/academic',
-          order: 1
-        },
-        { 
-          id: 22, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/university/finance',
-          order: 2
-        },
-        { 
-          id: 23, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/university/general',
-          order: 3
-        },
+        { id: 21, name: 'Semua Dokumen', path: '/dashboard/documents', order: 1 },
+        { id: 22, name: 'Upload Dokumen', path: '/dashboard/documents/upload', order: 2 },
+        { id: 23, name: 'Validasi Dokumen', path: '/dashboard/documents/validation', order: 3 },
       ]
     },
     {
       id: 3,
-      name: 'Layanan Fakultas',
-      icon: 'GraduationCap',
-      order: 3,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 31, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/faculty/general',
-          order: 1
-        },
-        { 
-          id: 32, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/faculty/academic',
-          order: 2
-        },
-        { 
-          id: 33, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/faculty/finance',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 4,
-      name: 'Layanan Jurusan',
-      icon: 'Building2',
-      order: 4,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 41, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/department/academic',
-          order: 1
-        },
-        { 
-          id: 42, 
-          name: 'Layanan Laboratorium', 
-          path: '/dashboard/department/laboratory',
-          order: 2
-        },
-        { 
-          id: 43, 
-          name: 'Layanan IT & Server', 
-          path: '/dashboard/department/it-services',
-          order: 3
-        },
-        { 
-          id: 44, 
-          name: 'Layanan Administrasi', 
-          path: '/dashboard/department/administration',
-          order: 4
-        },
-        { 
-          id: 45, 
-          name: 'Layanan Penelitian', 
-          path: '/dashboard/department/research',
-          order: 5
-        },
-      ]
-    },
-    {
-      id: 5,
-      name: 'Riwayat Permohonan',
-      icon: 'ClipboardList',
-      order: 5,
-      roles: ['admin', 'user'],
-      submenu: [
-        { id: 51, name: 'Semua Permohonan', path: '/dashboard/requests', order: 1 },
-        { id: 52, name: 'Permohonan Pending', path: '/dashboard/requests/pending', order: 2 },
-        { id: 53, name: 'Permohonan Disetujui', path: '/dashboard/requests/approved', order: 3 },
-        { id: 54, name: 'Permohonan Ditolak', path: '/dashboard/requests/rejected', order: 4 },
-      ]
-    },
-    {
-      id: 6,
-      name: 'Validasi Permohonan',
+      name: 'Validasi',
       icon: 'CheckCircle',
       path: '/dashboard/validation',
-      order: 6,
+      order: 3,
       roles: ['admin', 'validator']
     },
     {
-      id: 7,
+      id: 4,
       name: 'Users',
       icon: 'Users',
       path: '/dashboard/users',
-      order: 7,
+      order: 4,
       roles: ['admin']
     },
     {
-      id: 8,
+      id: 5,
       name: 'Reports',
       icon: 'BarChart',
       path: '/dashboard/reports',
-      order: 8,
+      order: 5,
       roles: ['admin']
     },
     {
-      id: 9,
+      id: 6,
       name: 'Pengaturan',
       icon: 'Settings',
       path: '/dashboard/settings',
-      order: 9,
+      order: 6,
       roles: ['admin', 'user']
     },
     {
-      id: 10,
+      id: 7,
       name: 'Bantuan',
       icon: 'HelpCircle',
       path: '/dashboard/help',
-      order: 10,
+      order: 7,
       roles: ['admin', 'user']
     },
   ],
@@ -206,108 +108,13 @@ const sampleMenuData = {
     },
     {
       id: 2,
-      name: 'Layanan Universitas',
-      icon: 'Building',
+      name: 'Dokumen',
+      icon: 'FileText',
       order: 2,
       roles: ['admin', 'user'],
       submenu: [
-        { 
-          id: 21, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/university/academic',
-          order: 1
-        },
-        { 
-          id: 22, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/university/finance',
-          order: 2
-        },
-        { 
-          id: 23, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/university/general',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Layanan Fakultas',
-      icon: 'GraduationCap',
-      order: 3,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 31, 
-          name: 'Layanan Umum', 
-          path: '/dashboard/faculty/general',
-          order: 1
-        },
-        { 
-          id: 32, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/faculty/academic',
-          order: 2
-        },
-        { 
-          id: 33, 
-          name: 'Layanan Keuangan', 
-          path: '/dashboard/faculty/finance',
-          order: 3
-        },
-      ]
-    },
-    {
-      id: 4,
-      name: 'Layanan Jurusan',
-      icon: 'BookOpen',
-      order: 4,
-      roles: ['admin', 'user'],
-      submenu: [
-        { 
-          id: 41, 
-          name: 'Layanan Akademik', 
-          path: '/dashboard/department/academic',
-          order: 1
-        },
-        { 
-          id: 42, 
-          name: 'Layanan Laboratorium', 
-          path: '/dashboard/department/laboratory',
-          order: 2
-        },
-        { 
-          id: 43, 
-          name: 'Layanan IT & Server', 
-          path: '/dashboard/department/it-services',
-          order: 3
-        },
-        { 
-          id: 44, 
-          name: 'Layanan Administrasi', 
-          path: '/dashboard/department/administration',
-          order: 4
-        },
-        { 
-          id: 45, 
-          name: 'Layanan Penelitian', 
-          path: '/dashboard/department/research',
-          order: 5
-        }
-      ]
-    },
-    {
-      id: 5,
-      name: 'Riwayat Permohonan',
-      icon: 'ClipboardList',
-      order: 5,
-      roles: ['admin', 'user'],
-      submenu: [
-        { id: 51, name: 'Semua Permohonan', path: '/dashboard/requests', order: 1 },
-        { id: 52, name: 'Permohonan Pending', path: '/dashboard/requests/pending', order: 2 },
-        { id: 53, name: 'Permohonan Disetujui', path: '/dashboard/requests/approved', order: 3 },
-        { id: 54, name: 'Permohonan Ditolak', path: '/dashboard/requests/rejected', order: 4 },
+        { id: 21, name: 'Semua Dokumen', path: '/dashboard/documents', order: 1 },
+        { id: 22, name: 'Upload Dokumen', path: '/dashboard/documents/upload', order: 2 },
       ]
     },
     {
@@ -337,55 +144,44 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch menu items from API
+  // Fetch menu items based on user role
   useEffect(() => {
     const fetchMenuItems = async () => {
       try {
         setLoading(true);
         
-        console.log('🔄 Fetching menu for user:', user?.username, user?.name);
+        // TODO: Replace with actual API call
+        // const response = await fetch('/api/v1/menu', {
+        //   headers: {
+        //     'Authorization': `Bearer ${token}`
+        //   }
+        // });
+        // const data = await response.json();
         
-        // Call API to get dynamic menu
-        const response = await api.get('/menu');
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        console.log('📡 API Response:', response.data);
-        
-        if (response.data.success) {
-          const menuData = response.data.data.menu || [];
-          console.log('✅ Setting menu items:', menuData.length, 'items');
-          setMenuItems(menuData);
-          
-          // Log user info for debugging
-          if (response.data.data.user_info) {
-            console.log('👤 User Menu Info:', response.data.data.user_info);
-          }
-        } else {
-          throw new Error('Failed to fetch menu');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching menu items:', error);
-        console.log('⚠️ Using fallback menu');
-        
-        // Fallback to basic menu if API fails
+        // Get menu based on user role
         const userRole = user?.role?.toLowerCase() || 'user';
         const roleMenus = sampleMenuData[userRole] || sampleMenuData.user;
+        
+        // Filter menu items based on user's role
         const filteredMenus = roleMenus
           .filter(item => item.roles?.includes(userRole))
           .sort((a, b) => a.order - b.order);
         
         setMenuItems(filteredMenus);
+      } catch (error) {
+        console.error('Error fetching menu items:', error);
+        // Fallback to basic menu
+        setMenuItems(sampleMenuData.user);
       } finally {
         setLoading(false);
       }
     };
 
     if (user) {
-      // Reset menu items before fetching
-      setMenuItems([]);
       fetchMenuItems();
-    } else {
-      // Clear menu if no user
-      setMenuItems([]);
     }
   }, [user]);
 
@@ -461,10 +257,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
         </div>
 
         {/* Navigation Menu - Scrollable */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1" style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#CBD5E1 #F1F5F9'
-        }}>
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {loading ? (
             // Loading skeleton
             <div className="space-y-2">
@@ -485,7 +278,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
                       <button
                         onClick={() => toggleSubmenu(index)}
                         className={`
-                          w-full flex items-center justify-between px-2 py-3 rounded-lg transition
+                          w-full flex items-center justify-between px-4 py-3 rounded-lg transition
                           ${hasActiveSubmenu(item.submenu)
                             ? 'bg-blue-50 text-blue-600'
                             : 'text-gray-700 hover:bg-gray-100'
@@ -507,7 +300,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
                       <div
                         className={`
                           overflow-hidden transition-all duration-300
-                          ${openSubmenu === index ? 'max-h-[800px] mt-1' : 'max-h-0'}
+                          ${openSubmenu === index ? 'max-h-96 mt-1' : 'max-h-0'}
                         `}
                       >
                         <div className="ml-4 pl-4 border-l-2 border-gray-200 space-y-1">
@@ -519,14 +312,14 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
                                 to={subitem.path}
                                 onClick={closeSidebar}
                                 className={`
-                                  flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm
+                                  block px-4 py-2 rounded-lg transition text-sm
                                   ${isActive(subitem.path)
                                     ? 'bg-blue-50 text-blue-600 font-medium'
                                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                   }
                                 `}
                               >
-                                <span>{subitem.name}</span>
+                                {subitem.name}
                               </Link>
                             ))}
                         </div>
@@ -538,7 +331,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
                       to={item.path}
                       onClick={closeSidebar}
                       className={`
-                        flex items-center gap-3 px-4 py-3 rounded-lg transition justify-start
+                        flex items-center gap-3 px-4 py-3 rounded-lg transition
                         ${isActive(item.path)
                           ? 'bg-blue-50 text-blue-600 font-medium'
                           : 'text-gray-700 hover:bg-gray-100'

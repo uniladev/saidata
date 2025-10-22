@@ -54,9 +54,4 @@ class UserProfile extends Model
     {
         return $this->belongsTo(StudyProgram::class);
     }
-
-    /**
-     * Eager load relationships by default
-     */
-    protected $with = ['faculty', 'department', 'studyProgram'];
 }
