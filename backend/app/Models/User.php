@@ -14,58 +14,32 @@ class User extends Authenticatable implements JWTSubject
     protected $connection = 'mongodb';
     protected $collection = 'users';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'username', // NPM is the username from SSO
+        'username',
         'name',
         'email',
         'role',
         'refresh_token',
         'refresh_token_expires_at',
-        // Embedded profile fields
         'profile',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'remember_token',
         'refresh_token',
         'refresh_token_expires_at',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'profile' => 'object', // Cast profile as object
+        'profile' => 'object',
     ];
 
-    /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
-     */
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
-     */
     public function getJWTCustomClaims()
     {
         return [
@@ -74,33 +48,16 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    /**
-     * Check if user has a specific role
-     *
-     * @param string $role
-     * @return bool
-     */
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
     }
 
-    /**
-     * Check if user has any of the given roles
-     *
-     * @param array $roles
-     * @return bool
-     */
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role, $roles);
     }
 
-    /**
-     * Check if refresh token is valid
-     *
-     * @return bool
-     */
     public function hasValidRefreshToken(): bool
     {
         return $this->refresh_token !== null 
@@ -108,9 +65,6 @@ class User extends Authenticatable implements JWTSubject
             && $this->refresh_token_expires_at->isFuture();
     }
 
-    /**
-     * Get profile attribute with default values
-     */
     public function getProfileAttribute($value)
     {
         return $value ?? (object)[
@@ -122,12 +76,6 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-    /**
-     * Update user profile data
-     *
-     * @param array $profileData
-     * @return bool
-     */
     public function updateProfile(array $profileData): bool
     {
         $allowedFields = ['faculty_id', 'department_id', 'study_program_id', 'student_id', 'phone'];
@@ -161,36 +109,47 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Append profile data to user array
+     * REMOVE OR COMMENT OUT the $appends property
+     * These attributes require database queries, so they shouldn't be auto-appended
      */
-   // protected $with = ['profile'];
+    // protected $appends = ['faculty_code', 'department_code', 'study_program_code'];
 
     /**
-     * Append additional attributes
-     */
-    protected $appends = ['faculty_code', 'department_code', 'study_program_code'];
-
-    /**
-     * Get faculty code from profile
+     * Get faculty code from profile - FIXED VERSION
      */
     public function getFacultyCodeAttribute()
     {
-        return $this->profile?->faculty?->code;
+        if (!$this->profile || !isset($this->profile->faculty_id)) {
+            return null;
+        }
+        
+        $faculty = Faculty::find($this->profile->faculty_id);
+        return $faculty?->code;
     }
 
     /**
-     * Get department code from profile
+     * Get department code from profile - FIXED VERSION
      */
     public function getDepartmentCodeAttribute()
     {
-        return $this->profile?->department?->code;
+        if (!$this->profile || !isset($this->profile->department_id)) {
+            return null;
+        }
+        
+        $department = Department::find($this->profile->department_id);
+        return $department?->code;
     }
 
     /**
-     * Get study program code from profile
+     * Get study program code from profile - FIXED VERSION
      */
     public function getStudyProgramCodeAttribute()
     {
-        return $this->profile?->studyProgram?->code;
+        if (!$this->profile || !isset($this->profile->study_program_id)) {
+            return null;
+        }
+        
+        $studyProgram = StudyProgram::find($this->profile->study_program_id);
+        return $studyProgram?->code;
     }
 }
