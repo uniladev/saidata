@@ -26,6 +26,8 @@ class User extends Authenticatable implements JWTSubject
         'role',
         'refresh_token',
         'refresh_token_expires_at',
+        // Embedded profile fields
+        'profile',
     ];
 
     /**
@@ -36,7 +38,7 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'remember_token',
         'refresh_token',
-        'refresh_token_expires_at', // Add this
+        'refresh_token_expires_at',
     ];
 
     /**
@@ -46,8 +48,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        // Don't cast this - MongoDB handles it natively
-        // 'refresh_token_expires_at' => 'datetime',
+        'profile' => 'object', // Cast profile as object
     ];
 
     /**
@@ -108,11 +109,55 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Relasi ke user profile
+     * Get profile attribute with default values
      */
-    public function profile()
+    public function getProfileAttribute($value)
     {
-        return $this->hasOne(UserProfile::class);
+        return $value ?? (object)[
+            'faculty_id' => null,
+            'department_id' => null,
+            'study_program_id' => null,
+            'student_id' => null,
+            'phone' => null,
+        ];
+    }
+
+    /**
+     * Update user profile data
+     *
+     * @param array $profileData
+     * @return bool
+     */
+    public function updateProfile(array $profileData): bool
+    {
+        $allowedFields = ['faculty_id', 'department_id', 'study_program_id', 'student_id', 'phone'];
+        $filteredData = array_intersect_key($profileData, array_flip($allowedFields));
+        
+        return $this->update(['profile' => array_merge((array)$this->profile, $filteredData)]);
+    }
+
+    /**
+     * Relasi ke fakultas menggunakan embedded faculty_id
+     */
+    public function faculty()
+    {
+        return $this->belongsTo(Faculty::class, 'profile.faculty_id');
+    }
+
+    /**
+     * Relasi ke jurusan menggunakan embedded department_id
+     */
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'profile.department_id');
+    }
+
+    /**
+     * Relasi ke program studi menggunakan embedded study_program_id
+     */
+    public function studyProgram()
+    {
+        return $this->belongsTo(StudyProgram::class, 'profile.study_program_id');
     }
 
     /**

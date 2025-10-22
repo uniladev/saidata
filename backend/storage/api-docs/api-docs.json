@@ -1971,93 +1971,6 @@
                 ]
             }
         },
-        "/api/v1/submissions/{submissionId}/payload": {
-            "get": {
-                "tags": [
-                    "Form Submission Payloads"
-                ],
-                "summary": "Get submission payload by submission ID",
-                "operationId": "27484e7cf3539113e224675d502305df",
-                "parameters": [
-                    {
-                        "name": "submissionId",
-                        "in": "path",
-                        "description": "Submission ID (24-character hexadecimal MongoDB ObjectId)",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid submission ID format",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Invalid submission ID format"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Payload not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Payload not found"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/api/v1/users/{userId}/profile": {
             "get": {
                 "tags": [
@@ -2393,10 +2306,6 @@
         {
             "name": "Form Submissions",
             "description": "Form Submissions"
-        },
-        {
-            "name": "Form Submission Payloads",
-            "description": "Form Submission Payloads"
         },
         {
             "name": "User Profiles",
