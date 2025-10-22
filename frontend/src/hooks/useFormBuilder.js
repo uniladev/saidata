@@ -167,6 +167,7 @@ export const useFormBuilder = () => {
       description: String(formSettings.description || ''),
       submitText: String(formSettings.submitText || 'Submit'),
       successMessage: String(formSettings.successMessage || 'Thank you for your submission!'),
+      is_active: true,
       fields: formFields.map(field => cleanFieldForBackend(field))
     };
 

@@ -47,29 +47,30 @@ const FormTakerPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formConfig) {
-      alert('Form not loaded yet.');
+    if (!formConfig || !formConfig.fields) {
+      alert('Form data is not valid.');
       return;
     }
 
-    // Assuming your useFormData hook has a validate function
-    if (!validateForm(formConfig?.form?.fields || [])) {
-      alert('Please fill in all required fields.');
+    if (!validateForm(formConfig.fields)) {
+      alert('Please fill in all required fields correctly.');
       return;
     }
     
+    // --- FIX #1: Define the correct payload ---
+    // The backend expects the answers directly under the 'answers' key
     const submissionData = {
-      form_version_id: formConfig.id, // Assuming the top-level form config has the ID
-      payload: formData // The user's answers from your useFormData hook
+      answers: formData // Use the formData object directly
+      // status: 'completed' // This is optional, backend defaults to completed
     };
 
     try {
-      // Use the 'api' client. It automatically adds the token.
-      // Use the 'POST /api/v1/survey' endpoint.
-      await api.post('/survey', submissionData);
+      // --- FIX #2: Use the correct ID in the URL ---
+      // We need the MongoDB _id from the formConfig, not the slug from useParams
+      await api.post(`/forms/${formConfig._id}/submit`, submissionData);
 
       alert(formConfig.successMessage || 'Thank you for your submission!');
-      navigate('/dashboard'); // Redirect after successful submission
+      navigate('/dashboard'); 
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error.response?.data?.message || error.message || 'Submission failed.';
