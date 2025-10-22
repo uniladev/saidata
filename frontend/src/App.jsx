@@ -16,6 +16,7 @@ const {
   DashboardPage,
   FormBuilderPage,
   FormTakerPage,
+  FormsListPage,
   // Other pages
   NotFoundPage
 } = {
@@ -26,6 +27,7 @@ const {
   DashboardPage: lazy(() => import("./pages/authenticated/User/Dashboard")),
   FormBuilderPage: lazy(() => import("./pages/authenticated/Admin/FormBuilderPage")),
   FormTakerPage: lazy(() => import("./pages/authenticated/Admin/FormTakerPage")),
+  FormsListPage: lazy(() => import("./pages/authenticated/Admin/FormsListPage")),
   NotFoundPage: lazy(() => import("./pages/NotFound"))
 };
 
@@ -80,7 +82,9 @@ export default function App() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/forms" element={<FormsListPage />} />
         <Route path="/create-form" element={<FormBuilderPage />} />
+        <Route path="/edit-form/:formId" element={<FormBuilderPage />} />
         <Route path="/form/:formId" element={<FormTakerPage />} />
       </Route>
 

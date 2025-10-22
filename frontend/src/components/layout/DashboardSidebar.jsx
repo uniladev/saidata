@@ -62,8 +62,8 @@ const sampleMenuData = [
       },
       { 
         id: 22, 
-        name: 'Layanan Keuangan', 
-        path: '/dashboard/university/finance',
+        name: 'Forms', 
+        path: '/forms',
         order: 2
       },
       { 
