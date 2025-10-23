@@ -1714,7 +1714,7 @@
                 "tags": [
                     "Form Submissions"
                 ],
-                "summary": "Submit survey response",
+                "summary": "Submit Form response",
                 "description": "Submit a new response to a form. Creates both submission record and payload.",
                 "operationId": "eac47e5eb9b90878a86fb2c042273611",
                 "parameters": [
@@ -1962,6 +1962,152 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/menu": {
+            "get": {
+                "tags": [
+                    "Menu"
+                ],
+                "summary": "Get dynamic menu based on user's faculty, department, and study program",
+                "description": "Mengambil data menu dinamis berdasarkan fakultas, jurusan, dan program studi pengguna yang sedang login.",
+                "operationId": "getDynamicMenu",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data menu",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "menu": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Dashboard"
+                                                            },
+                                                            "icon": {
+                                                                "type": "string",
+                                                                "example": "LayoutDashboard"
+                                                            },
+                                                            "path": {
+                                                                "type": "string",
+                                                                "example": "/dashboard"
+                                                            },
+                                                            "order": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "roles": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string",
+                                                                    "example": "user"
+                                                                }
+                                                            },
+                                                            "submenu": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 2001
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string",
+                                                                            "example": "Create Form"
+                                                                        },
+                                                                        "path": {
+                                                                            "type": "string",
+                                                                            "example": "/forms/create"
+                                                                        },
+                                                                        "order": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "user_info": {
+                                                    "properties": {
+                                                        "faculty": {
+                                                            "type": "string",
+                                                            "example": "FMIPA"
+                                                        },
+                                                        "faculty_code": {
+                                                            "type": "string",
+                                                            "example": "FMIPA"
+                                                        },
+                                                        "department": {
+                                                            "type": "string",
+                                                            "example": "ILKOM"
+                                                        },
+                                                        "department_code": {
+                                                            "type": "string",
+                                                            "example": "ILKOM"
+                                                        },
+                                                        "study_program": {
+                                                            "type": "string",
+                                                            "example": "S1 Ilmu Komputer"
+                                                        },
+                                                        "study_program_code": {
+                                                            "type": "string",
+                                                            "example": "ILKOM01"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -2306,6 +2452,10 @@
         {
             "name": "Form Submissions",
             "description": "Form Submissions"
+        },
+        {
+            "name": "Menu",
+            "description": "Menu"
         },
         {
             "name": "User Profiles",

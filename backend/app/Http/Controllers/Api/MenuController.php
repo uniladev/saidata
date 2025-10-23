@@ -9,7 +9,73 @@ use Illuminate\Support\Facades\Auth;
 class MenuController extends Controller
 {
     /**
-     * Get dynamic menu based on user's faculty and department
+     * @OA\Get(
+     *     path="/api/v1/menu",
+     *     tags={"Menu"},
+     *     summary="Get dynamic menu based on user's faculty, department, and study program",
+     *     description="Mengambil data menu dinamis berdasarkan fakultas, jurusan, dan program studi pengguna yang sedang login.",
+     *     operationId="getDynamicMenu",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Berhasil mengambil data menu",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="menu",
+     *                     type="array",
+     *                     @OA\Items(
+     *                         type="object",
+     *                         @OA\Property(property="id", type="integer", example=1),
+     *                         @OA\Property(property="name", type="string", example="Dashboard"),
+     *                         @OA\Property(property="icon", type="string", example="LayoutDashboard"),
+     *                         @OA\Property(property="path", type="string", example="/dashboard"),
+     *                         @OA\Property(property="order", type="integer", example=1),
+     *                         @OA\Property(
+     *                             property="roles",
+     *                             type="array",
+     *                             @OA\Items(type="string", example="user")
+     *                         ),
+     *                         @OA\Property(
+     *                             property="submenu",
+     *                             type="array",
+     *                             @OA\Items(
+     *                                 type="object",
+     *                                 @OA\Property(property="id", type="integer", example=2001),
+     *                                 @OA\Property(property="name", type="string", example="Create Form"),
+     *                                 @OA\Property(property="path", type="string", example="/forms/create"),
+     *                                 @OA\Property(property="order", type="integer", example=1)
+     *                             )
+     *                         )
+     *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="user_info",
+     *                     type="object",
+     *                     @OA\Property(property="faculty", type="string", example="FMIPA"),
+     *                     @OA\Property(property="faculty_code", type="string", example="FMIPA"),
+     *                     @OA\Property(property="department", type="string", example="ILKOM"),
+     *                     @OA\Property(property="department_code", type="string", example="ILKOM"),
+     *                     @OA\Property(property="study_program", type="string", example="S1 Ilmu Komputer"),
+     *                     @OA\Property(property="study_program_code", type="string", example="ILKOM01")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Unauthenticated")
+     *         )
+     *     )
+     * )
      */
     public function index(Request $request)
     {
@@ -43,14 +109,15 @@ class MenuController extends Controller
                 'roles' => ['admin', 'user']
             ],
             [
-            'id' => 100,
+            'id' => 90909,
                 'name' => 'DEVTEST (EDIT DI  BACKEND MENU CONTROLLER)',
                 'icon' => 'ClipboardList',
-                'order' => 100,
+                'order' => 2,
                 'roles' => ['admin', 'user'],
                 'submenu' => [
-                    ['id' => 2001, 'name' => 'Create Form', 'path' => '/form/create', 'order' => 1],
+                    ['id' => 2001, 'name' => 'Create Form', 'path' => '/forms/create', 'order' => 1],
                     ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
+                    ['id' => 2003, 'name' => 'Menu Setting', 'path' => '/menu', 'order' => 3],
                 ]
             ],
         ];

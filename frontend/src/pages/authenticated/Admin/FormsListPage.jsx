@@ -12,9 +12,10 @@ import {
   Tag,
   MoreVertical,
   Copy,
-  Archive
+  FileText
 } from 'lucide-react';
 import api from '../../../config/api';
+
 
 const FormsListPage = () => {
   const navigate = useNavigate();
