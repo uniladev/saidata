@@ -116,15 +116,63 @@ class AuthController extends Controller
 
         try {
             // Verify credentials with campus SSO
-            //$ssoResponse = $this->ssoService->verifyCredentials($username, $password);
-            $ssoResponse = [
-                'success' => true,
-                'data' => [
-                    'username'=>'2267051001',
+            // Mock SSO response based on username (match seeder data)
+            /*
+                SALAH struktur nya
+            */
+            $mockUsers = [
+                '2267051001' => [
+                    'username' => '2267051001',
                     'name' => 'Dafahan',
-                    'email' => 'dafahan@example.com',
-                    'role' => 'user'
-                ]
+                    'email' => 'dafahan@students.unila.ac.id',
+                    'role' => 'user',
+                    'faculty_code' => 'FMIPA',
+                    'department_code' => 'ILKOM',
+                    'study_program_code' => 'ILKOM-S1',
+                    'phone' => '081234567890',
+                ],
+                '2267051002' => [
+                    'username' => '2267051002',
+                    'name' => 'Siti Rahma',
+                    'email' => 'siti.rahma@students.unila.ac.id',
+                    'role' => 'user',
+                    'faculty_code' => 'FMIPA',
+                    'department_code' => 'BIO',
+                    'study_program_code' => 'BIO-S1',
+                    'phone' => '081234567891',
+                ],
+                '2267011001' => [
+                    'username' => '2267011001',
+                    'name' => 'Andi Wijaya',
+                    'email' => 'andi.wijaya@students.unila.ac.id',
+                    'role' => 'user',
+                    'faculty_code' => 'FK',
+                    'department_code' => 'FARM',
+                    'study_program_code' => 'FARM-S1',
+                    'phone' => '081234567892',
+                ],
+                '2267051003' => [
+                    'username' => '2267051003',
+                    'name' => 'Dewi Lestari',
+                    'email' => 'dewi.lestari@students.unila.ac.id',
+                    'role' => 'user',
+                    'faculty_code' => 'FMIPA',
+                    'department_code' => 'MAT',
+                    'study_program_code' => 'MAT-S1',
+                    'phone' => '081234567893',
+                ],
+                'admin' => [
+                    'username' => 'admin',
+                    'name' => 'Administrator',
+                    'email' => 'admin@unila.ac.id',
+                    'role' => 'admin',
+                ],
+            ];
+
+            $ssoData = $mockUsers[$username] ?? null;
+            $ssoResponse = [
+                'success' => $ssoData !== null,
+                'data' => $ssoData
             ];
 
             if (!$ssoResponse['success']) {
@@ -149,6 +197,10 @@ class AuthController extends Controller
             $user->save();
 
             // Return response with access token and set refresh token cookie
+            $profile = $user->profile ?? [];
+            if (is_object($profile)) {
+                $profile = (array) $profile;
+            }
             return response()->json([
                 'success' => true,
                 'token' => $token,
@@ -156,7 +208,11 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role
+                    'role' => $user->role,
+                    'faculty_code' => $profile['faculty_code'] ?? null,
+                    'department_code' => $profile['department_code'] ?? null,
+                    'study_program_code' => $profile['study_program_code'] ?? null,
+                    'phone' => $profile['phone'] ?? null,
                 ]
             ])->cookie(
                 'refresh_token',
@@ -413,12 +469,23 @@ class AuthController extends Controller
     {
         $user = User::where('username', $ssoData['username'])->first();
 
+        $profile = null;
+        if (isset($ssoData['faculty_code']) && isset($ssoData['department_code']) && isset($ssoData['study_program_code'])) {
+            $profile = [
+                'faculty_code' => $ssoData['faculty_code'],
+                'department_code' => $ssoData['department_code'],
+                'study_program_code' => $ssoData['study_program_code'],
+                'phone' => $ssoData['phone'] ?? null,
+            ];
+        }
+
         if (!$user) {
             $user = User::create([
                 'username' => $ssoData['username'],
                 'name' => $ssoData['name'],
                 'email' => $ssoData['email'],
                 'role' => $ssoData['role'] ?? 'user',
+                'profile' => $profile,
                 'created_at' => now()->timestamp,
                 'updated_at' => now()->timestamp,
             ]);
@@ -427,6 +494,7 @@ class AuthController extends Controller
                 'name' => $ssoData['name'],
                 'email' => $ssoData['email'],
                 'role' => $ssoData['role'] ?? $user->role,
+                'profile' => $profile,
                 'updated_at' => now()->timestamp,
             ]);
         }

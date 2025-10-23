@@ -22,13 +22,15 @@ class MenuController extends Controller
             ], 401);
         }
 
-        // Load user profile with relationships
-        $profile = $user->profile;
-        
-        // Get faculty and department info
-        $facultyCode = $profile?->faculty?->code;
-        $departmentCode = $profile?->department?->code;
-        $studyProgramCode = $profile?->study_program?->code;
+        // Load user profile (embedded array)
+        $profile = $user->profile ?? [];
+        if (is_object($profile)) {
+            $profile = (array) $profile;
+        }
+        // Get faculty and department info from profile array
+        $facultyCode = $profile['faculty_code'] ?? null;
+        $departmentCode = $profile['department_code'] ?? null;
+        $studyProgramCode = $profile['study_program_code'] ?? null;
 
         // Base menu items for all users
         $menuItems = [
@@ -39,6 +41,17 @@ class MenuController extends Controller
                 'path' => '/dashboard',
                 'order' => 1,
                 'roles' => ['admin', 'user']
+            ],
+            [
+            'id' => 100,
+                'name' => 'DEVTEST (EDIT DI  BACKEND MENU CONTROLLER)',
+                'icon' => 'ClipboardList',
+                'order' => 100,
+                'roles' => ['admin', 'user'],
+                'submenu' => [
+                    ['id' => 2001, 'name' => 'Create Form', 'path' => '/form/create', 'order' => 1],
+                    ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
+                ]
             ],
         ];
 
@@ -92,11 +105,11 @@ class MenuController extends Controller
             'data' => [
                 'menu' => $menuItems,
                 'user_info' => [
-                    'faculty' => $profile?->faculty?->name,
+                    'faculty' => $facultyCode,
                     'faculty_code' => $facultyCode,
-                    'department' => $profile?->department?->name,
+                    'department' => $departmentCode,
                     'department_code' => $departmentCode,
-                    'study_program' => $profile?->study_program?->name,
+                    'study_program' => $studyProgramCode,
                     'study_program_code' => $studyProgramCode,
                 ]
             ]
