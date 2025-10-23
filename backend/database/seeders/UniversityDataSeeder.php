@@ -18,15 +18,14 @@ class UniversityDataSeeder extends Seeder
         Faculty::query()->delete();
         User::whereIn('username', ['2267051001', '2267051002', '2267011001', '2267051003', 'admin'])->delete();
 
-        echo "🗑️  Cleared existing data\n";
+    echo "🗑️  Cleared existing data\n";
 
         // ============================================
-        // 1. CREATE FACULTIES WITH EMBEDDED DEPARTMENTS & STUDY PROGRAMS
-        // ============================================
+        // Removed unused imports
         
         // FMIPA dengan embedded departments
         Faculty::create([
-            'code' => 'FMIPA',
+                // User::whereIn('username', ['2267051001', '2267051002', '2267011001', '2267051003', 'admin'])->delete();
             'name' => 'Fakultas Matematika dan Ilmu Pengetahuan Alam',
             'departments' => [
                 [
@@ -174,103 +173,31 @@ class UniversityDataSeeder extends Seeder
             ]
         ]);
 
-        echo "✅ Faculties with embedded departments created\n";
+    echo "✅ Faculties with embedded departments created\n";
 
         // ============================================
         // 2. CREATE USERS WITH EMBEDDED PROFILE
         // ============================================
 
-        // Mahasiswa 1: Biologi FMIPA
-        User::create([
-            'username' => '2267051001',
-            'name' => 'Budi Santoso',
-            'email' => 'budi.santoso@students.unila.ac.id',
-            'role' => 'user',
-            'password' => Hash::make('password123'),
-            'profile' => [
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'BIO',
-                'study_program_code' => 'BIO-S1',
-                'student_id' => '2267051001',
-                'phone' => '081234567890',
-            ]
-        ]);
 
-        // Mahasiswa 2: Ilmu Komputer FMIPA
-        User::create([
-            'username' => '2267051002',
-            'name' => 'Siti Rahma',
-            'email' => 'siti.rahma@students.unila.ac.id',
-            'role' => 'user',
-            'password' => Hash::make('password123'),
-            'profile' => [
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'ILKOM',
-                'study_program_code' => 'ILKOM-S1',
-                'student_id' => '2267051002',
-                'phone' => '081234567891',
-            ]
-        ]);
-
-        // Mahasiswa 3: Farmasi FK
-        User::create([
-            'username' => '2267011001',
-            'name' => 'Andi Wijaya',
-            'email' => 'andi.wijaya@students.unila.ac.id',
-            'role' => 'user',
-            'password' => Hash::make('password123'),
-            'profile' => [
-                'faculty_code' => 'FK',
-                'department_code' => 'FARM',
-                'study_program_code' => 'FARM-S1',
-                'student_id' => '2267011001',
-                'phone' => '081234567892',
-            ]
-        ]);
-
-        // Mahasiswa 4: Matematika FMIPA
-        User::create([
-            'username' => '2267051003',
-            'name' => 'Dewi Lestari',
-            'email' => 'dewi.lestari@students.unila.ac.id',
-            'role' => 'user',
-            'password' => Hash::make('password123'),
-            'profile' => [
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'MAT',
-                'study_program_code' => 'MAT-S1',
-                'student_id' => '2267051003',
-                'phone' => '081234567893',
-            ]
-        ]);
-
-        // Admin user (no profile needed)
-        User::create([
-            'username' => 'admin',
-            'name' => 'Administrator',
-            'email' => 'admin@unila.ac.id',
-            'role' => 'admin',
-            'password' => Hash::make('admin123'),
-        ]);
-
-        echo "✅ Users with embedded profile created\n";
-        echo "\n";
-        echo "📚 Faculties (simplified structure):\n";
-        echo "  - FMIPA: 5 departments (BIO, ILKOM, MAT, KIM, FIS)\n";
-        echo "  - FK: 2 departments (DOKTER, FARM)\n";
-        echo "  - FEB: 2 departments (AKUN, MAN)\n";
-        echo "\n";
-        echo "👥 Users:\n";
-        echo "  1. 2267051001 / password123 - Budi Santoso (Biologi FMIPA)\n";
-        echo "  2. 2267051002 / password123 - Siti Rahma (Ilmu Komputer FMIPA)\n";
-        echo "  3. 2267011001 / password123 - Andi Wijaya (Farmasi FK)\n";
-        echo "  4. 2267051003 / password123 - Dewi Lestari (Matematika FMIPA)\n";
-        echo "  5. admin / admin123 - Administrator\n";
-        echo "\n";
-        echo "📝 Structure:\n";
-        echo "  - Faculty: {code, name, departments[]}\n";
-        echo "  - Department: {code, name, study_programs[]}\n";
-        echo "  - Study Program: {code, name, degree, duration_years}\n";
-        echo "  - User: {username, name, email, role, profile{faculty_code, department_code, study_program_code, student_id, phone}}\n";
+    echo "✅ Users with embedded profile created\n";
+    echo "\n";
+    echo "📚 Faculties (simplified structure):\n";
+    echo "  - FMIPA: 5 departments (BIO, ILKOM, MAT, KIM, FIS)\n";
+    echo "  - FK: 2 departments (DOKTER, FARM)\n";
+    echo "  - FEB: 2 departments (AKUN, MAN)\n";
+    echo "\n";
+    echo "👥 Users (with embedded profile):\n";
+    echo "  1. 2267051001 - Dafahan (Biologi FMIPA)\n";
+    echo "  2. 2267051002 - Siti Rahma (Ilmu Komputer FMIPA)\n";
+    echo "  3. 2267011001 - Andi Wijaya (Farmasi FK)\n";
+    echo "  4. 2267051003 - Dewi Lestari (Matematika FMIPA)\n";
+    echo "  5. admin - Administrator\n";
+    echo "\n";
+    echo "📝 Structure:\n";
+    echo "  - Faculty: {code, name, departments[]}\n";
+    echo "  - Department: {code, name, study_programs[]}\n";
+    echo "  - Study Program: {code, name, degree, duration_years}\n";
+    echo "  - User: {username, name, email, role, profile{faculty_code, department_code, study_program_code, phone}}\n";
     }
 }
