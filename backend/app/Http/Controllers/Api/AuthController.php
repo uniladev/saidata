@@ -133,13 +133,15 @@ class AuthController extends Controller
                 ],
                 '2267051002' => [
                     'username' => '2267051002',
-                    'name' => 'Siti Rahma',
                     'email' => 'siti.rahma@students.unila.ac.id',
                     'role' => 'user',
-                    'faculty_code' => 'FMIPA',
-                    'department_code' => 'BIO',
-                    'study_program_code' => 'BIO-S1',
-                    'phone' => '081234567891',
+                    'profile' => [
+                        'name' => 'Siti Rahma',
+                        'faculty_code' => 'FE',
+                        'department_code' => 'AK',
+                        'study_program_code' => 'AK-S1',
+                        'phone' => '081234567891',
+                    ],
                 ],
                 '2267011001' => [
                     'username' => '2267011001',
@@ -167,6 +169,7 @@ class AuthController extends Controller
                     'email' => 'admin@unila.ac.id',
                     'role' => 'admin',
                 ],
+                
             ];
 
             $ssoData = $mockUsers[$username] ?? null;
@@ -206,7 +209,7 @@ class AuthController extends Controller
                 'token' => $token,
                 'user' => [
                     'id' => $user->id,
-                    'name' => $user->name,
+                    'name' => $profile['name'] ?? null,
                     'email' => $user->email,
                     'role' => $user->role,
                     'faculty_code' => $profile['faculty_code'] ?? null,

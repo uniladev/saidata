@@ -1,25 +1,79 @@
 // src/pages/authenticated/Admin/MenuManagementPage.jsx
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react'; // Add Edit, Trash2 icons
-// import api from '../../config/api'; // We'll uncomment this later
+import { Edit, Trash2, GripVertical } from 'lucide-react';
+import { DndContext, closestCenter } from '@dnd-kit/core'; 
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import api from '../../../config/api'; // Uncommented for API calls
 
-// Mock data until the API is ready
-const MOCK_MENU_DATA = [
-  { id: 1, name: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard', order: 1, roles: ['user', 'admin'] },
-  { id: 2, name: 'Create Form', path: '/create-form', icon: 'FilePlus2', order: 2, roles: ['admin'] },
-  { id: 3, name: 'Forms', path: '/forms', icon: 'FileList', order: 3, roles: ['admin'] },
-];
+// Helper component for draggable items
+const SortableItem = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: id });
 
-// Add this component before the MenuManagementPage component
-const MenuItemFormModal = ({ item, onClose, onSave, existingItems }) => { // Added existingItems prop
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    touchAction: 'none',
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes}>
+      <div className="flex items-center">
+        <span {...listeners} className="cursor-grab text-gray-400 mr-2 p-1">
+          <GripVertical size={16} />
+        </span>
+        <div className="flex-grow">
+          {children}
+        </div>
+      </div>
+    </li>
+  );
+};
+
+// Modal for Add/Edit Menu Items
+const MenuItemFormModal = ({ item, itemType, parentId, categoryId, onClose, onSave }) => {
+  const isEditing = !!item;
+  const type = isEditing ? item.type : itemType;
+
   const [formData, setFormData] = useState({
     name: item?.name || '',
     path: item?.path || '',
-    icon: item?.icon || '',
-    order: item?.order || (existingItems.length > 0 ? Math.max(...existingItems.map(i => i.order)) + 1 : 1), // Default order is next highest + 1
-    roles: item?.roles?.join(', ') || 'user', // Join roles for input
-    submenu: item?.submenu || [], // Keep submenu structure (simple for now)
+    icon: item?.icon || (type === 'subcategory' ? 'Folder' : ''),
+    order: item?.order || 1,
+    roles: item?.roles?.join(', ') || 'user',
+    formId: item?.formId || '',
+    outputConfig: item?.outputConfig || '',
   });
+
+  const [formsList, setFormsList] = useState([]);
+  const [isLoadingForms, setIsLoadingForms] = useState(false);
+
+  // Fetch forms for service dropdown
+  useEffect(() => {
+    if (type === 'service') {
+      const fetchForms = async () => {
+        setIsLoadingForms(true);
+        try {
+          const response = await api.get('/forms');
+          setFormsList(response.data.data || []);
+        } catch (error) {
+          console.error("Error fetching forms:", error);
+          setFormsList([]);
+        } finally {
+          setIsLoadingForms(false);
+        }
+      };
+      fetchForms();
+    }
+  }, [type]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,9 +83,25 @@ const MenuItemFormModal = ({ item, onClose, onSave, existingItems }) => { // Add
   const handleSubmit = (e) => {
     e.preventDefault();
     const rolesArray = formData.roles.split(',').map(role => role.trim()).filter(role => role);
-    // Ensure order is a number
-    const orderNumber = parseInt(formData.order, 10) || 1; 
-    onSave({ ...item, ...formData, roles: rolesArray, order: orderNumber }); // Pass back the updated item data
+    const orderNumber = parseInt(formData.order, 10) || 1;
+
+    const savedItemData = {
+      ...(isEditing ? { _id: item._id } : {}),
+      type: type,
+      parentId: parentId,
+      categoryId: categoryId,
+      name: formData.name,
+      order: orderNumber,
+      roles: rolesArray,
+      ...(type !== 'category' && { path: formData.path }),
+      ...(type === 'subcategory' && { icon: formData.icon }),
+      ...(type === 'service' && { 
+        formId: formData.formId, 
+        outputConfig: formData.outputConfig 
+      }),
+    };
+
+    onSave(savedItemData);
   };
 
   return (
@@ -39,40 +109,126 @@ const MenuItemFormModal = ({ item, onClose, onSave, existingItems }) => { // Add
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b">
-            <h3 className="text-lg font-bold text-gray-900">
-              {item ? 'Edit Menu Item' : 'Add New Menu Item'}
+            <h3 className="text-lg font-bold text-gray-900 capitalize">
+              {isEditing ? `Edit ${type}` : `Add New ${type}`}
             </h3>
           </div>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-            {/* Form Fields */}
             <div>
               <label className="block text-sm font-medium mb-1">Name</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg" required />
+              <input 
+                type="text" 
+                name="name" 
+                value={formData.name} 
+                onChange={handleChange} 
+                className="w-full px-3 py-2 border rounded-lg" 
+                required 
+              />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Path</label>
-              <input type="text" name="path" value={formData.path} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Icon Name</label>
-              <input type="text" name="icon" value={formData.icon} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., LayoutDashboard" />
-            </div>
+
+            {type !== 'category' && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Path</label>
+                <input 
+                  type="text" 
+                  name="path" 
+                  value={formData.path} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border rounded-lg" 
+                  required 
+                  placeholder="e.g., /dashboard/faculty/general"
+                />
+              </div>
+            )}
+
+            {type === 'subcategory' && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Icon Name</label>
+                <input 
+                  type="text" 
+                  name="icon" 
+                  value={formData.icon} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border rounded-lg" 
+                  placeholder="e.g., Folder (from lucide-react)" 
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-1">Order</label>
-              <input type="number" name="order" value={formData.order} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg" required min="1"/>
+              <input 
+                type="number" 
+                name="order" 
+                value={formData.order} 
+                onChange={handleChange} 
+                className="w-full px-3 py-2 border rounded-lg" 
+                required 
+                min="1"
+              />
             </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Roles (comma-separated)</label>
-              <input type="text" name="roles" value={formData.roles} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., admin, user" />
+              <input 
+                type="text" 
+                name="roles" 
+                value={formData.roles} 
+                onChange={handleChange} 
+                className="w-full px-3 py-2 border rounded-lg" 
+                placeholder="e.g., admin, user" 
+              />
             </div>
-            {/* TODO: Add input for submenu items if needed */}
+
+            {type === 'service' && (
+              <>
+                <hr className="my-4"/>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Link to Form</label>
+                  <select
+                    name="formId"
+                    value={formData.formId}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+                    required
+                    disabled={isLoadingForms}
+                  >
+                    <option value="" disabled>
+                      {isLoadingForms ? 'Loading forms...' : '-- Select a Form --'}
+                    </option>
+                    {formsList.map(form => (
+                      <option key={form._id} value={form._id}>{form.title}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Select the form created in the Form Builder.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Output Configuration</label>
+                  <textarea
+                    name="outputConfig"
+                    value={formData.outputConfig}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    rows={3}
+                    placeholder="Define how the output document should be generated..."
+                  />
+                </div>
+              </>
+            )}
           </div>
           <div className="p-4 bg-gray-50 flex justify-end space-x-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            >
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              {item ? 'Save Changes' : 'Add Item'}
+            <button 
+              type="submit" 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              {isEditing ? 'Save Changes' : 'Add Item'}
             </button>
           </div>
         </form>
@@ -82,140 +238,330 @@ const MenuItemFormModal = ({ item, onClose, onSave, existingItems }) => { // Add
 };
 
 const MenuManagementPage = () => {
-  const [menuItems, setMenuItems] = useState([]);
+  const [menuStructure, setMenuStructure] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState(null); // Holds item being edited, or null for new item
+  const [currentItem, setCurrentItem] = useState(null);
 
-  // TODO: Replace mock data with API call when ready
+  // Fetch menu structure from backend
   useEffect(() => {
-    setIsLoading(true);
-    // Simulating API fetch
-    setTimeout(() => {
-      setMenuItems(MOCK_MENU_DATA);
-      setIsLoading(false);
-    }, 500); // Simulate network delay
+    fetchMenuStructure();
   }, []);
 
-  const handleAddItem = () => {
-    setCurrentItem(null); // No current item means it's a new one
+  const fetchMenuStructure = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/menu');
+      setMenuStructure(response.data.data.menu || []); // Access the 'menu' array, default to empty array if missing
+    } catch (err) {
+      console.error("Error fetching menu structure:", err);
+      setError(err.response?.data?.message || "Failed to load menu structure");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddSubcategory = (categoryId) => {
+    setCurrentItem({ 
+      type: 'subcategory', 
+      parentId: categoryId,
+      categoryId: categoryId 
+    });
     setIsModalOpen(true);
   };
 
-  const handleEditItem = (itemId) => {
-    const itemToEdit = menuItems.find(item => item.id === itemId);
-    if (itemToEdit) {
-      setCurrentItem(itemToEdit);
-      setIsModalOpen(true);
+  const handleAddService = (categoryId, subcategoryId) => {
+    setCurrentItem({ 
+      type: 'service', 
+      parentId: subcategoryId,
+      categoryId: categoryId 
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEditItem = (item, categoryId) => {
+    setCurrentItem({ ...item, categoryId });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveItem = async (savedItemData) => {
+    setIsLoading(true);
+    try {
+      if (savedItemData._id) {
+        // Update existing item
+        await api.put(`/menu/${savedItemData._id}`, savedItemData);
+      } else {
+        // Create new item
+        await api.post('/menu', savedItemData);
+      }
+      
+      // Refresh menu structure
+      await fetchMenuStructure();
+      setIsModalOpen(false);
+      setCurrentItem(null);
+    } catch (err) {
+      console.error("Error saving menu item:", err);
+      alert(err.response?.data?.message || "Failed to save menu item");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // This function receives the data from the modal form
-  const handleSaveItem = (savedItem) => {
-    setIsLoading(true); // Simulate saving delay
-    if (currentItem) {
-      // --- UPDATE ---
-      // TODO: Replace with PUT API Call when backend is ready
-      setMenuItems(prevItems =>
-        prevItems.map(item => (item.id === currentItem.id ? { ...item, ...savedItem } : item)) // Merge savedItem into existing item
-      );
-      console.log("Updated item:", savedItem);
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this item? This might also delete its children.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await api.delete(`/menu/${itemId}`);
+      await fetchMenuStructure();
+    } catch (err) {
+      console.error("Error deleting menu item:", err);
+      alert(err.response?.data?.message || "Failed to delete menu item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    // Find what type of item is being dragged
+    const isCategory = menuStructure.some(cat => cat._id === activeId);
+    
+    if (isCategory) {
+      // Reorder categories
+      const oldIndex = menuStructure.findIndex(cat => cat._id === activeId);
+      const newIndex = menuStructure.findIndex(cat => cat._id === overId);
+      const reorderedCategories = arrayMove(menuStructure, oldIndex, newIndex);
+      
+      setMenuStructure(reorderedCategories);
+      
+      // Save new order to backend
+      try {
+        await api.put('/menu/reorder', {
+          items: reorderedCategories.map((cat, index) => ({
+            _id: cat._id,
+            order: index + 1
+          }))
+        });
+      } catch (err) {
+        console.error("Error saving order:", err);
+        fetchMenuStructure(); // Rollback
+      }
     } else {
-      // --- CREATE ---
-      // TODO: Replace with POST API Call when backend is ready
-      const newItem = { ...savedItem, id: Date.now() }; // Generate temporary ID for now
-      setMenuItems(prevItems => [...prevItems, newItem]);
-      console.log("Added new item:", newItem);
+      // Handle subcategory reordering within the same category
+      let found = false;
+      const newMenuStructure = menuStructure.map(category => {
+        if (category.submenu) {
+          const activeIndex = category.submenu.findIndex(sub => sub._id === activeId);
+          const overIndex = category.submenu.findIndex(sub => sub._id === overId);
+          
+          if (activeIndex !== -1 && overIndex !== -1) {
+            // Both items are in this category - reorder them
+            const reorderedSubmenu = arrayMove(category.submenu, activeIndex, overIndex);
+            found = true;
+            return {
+              ...category,
+              submenu: reorderedSubmenu
+            };
+          }
+        }
+        return category;
+      });
+
+      if (found) {
+        setMenuStructure(newMenuStructure);
+        
+        // Save new order to backend
+        try {
+          const categoryWithReorderedItems = newMenuStructure.find(cat => 
+            cat.submenu && cat.submenu.some(sub => sub._id === activeId)
+          );
+          
+          if (categoryWithReorderedItems) {
+            await api.put('/menu/reorder', {
+              items: categoryWithReorderedItems.submenu.map((sub, index) => ({
+                _id: sub._id,
+                order: index + 1
+              }))
+            });
+          }
+        } catch (err) {
+          console.error("Error saving subcategory order:", err);
+          fetchMenuStructure(); // Rollback
+        }
+      }
     }
-    setIsModalOpen(false);
-    setCurrentItem(null);
-    setTimeout(() => setIsLoading(false), 300); // End simulation
   };
 
+  if (isLoading && menuStructure.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-gray-500">Loading menu structure...</p>
+      </div>
+    );
+  }
 
-  const handleDeleteItem = (itemId) => {
-    // Basic confirmation
-    if (window.confirm('Are you sure you want to delete this menu item?')) {
-      setIsLoading(true); // Simulate deleting delay
-      // --- DELETE ---
-      // TODO: Replace with DELETE API Call when backend is ready
-      setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
-      console.log("Deleted item ID:", itemId);
-      setTimeout(() => setIsLoading(false), 300); // End simulation
-    }
-  };
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-500">{error}</p>
+        <button 
+          onClick={fetchMenuStructure}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Menu Management</h1>
-        <button
-          onClick={handleAddItem}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+        <button 
+          onClick={() => {
+            setCurrentItem({ type: 'category', parentId: null, categoryId: null });
+            setIsModalOpen(true);
+          }}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
         >
-          <Plus className="w-4 h-4" />
-          <span>Add New Item</span>
+          Add Category
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Path</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">Loading menu items...</td>
-                </tr>
-              ) : error ? (
-                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-red-500">{error}</td>
-                </tr>
-              ) : menuItems.length === 0 ? (
-                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">No menu items found.</td>
-                </tr>
-              ) : (
-                menuItems.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.path}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.icon}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.order}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.roles?.join(', ') || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                        <button onClick={() => handleEditItem(item.id)} className="text-indigo-600 hover:text-indigo-900" title="Edit">
-                            <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteItem(item.id)} className="text-red-600 hover:text-red-900" title="Delete">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="bg-white rounded-lg shadow p-4 space-y-4">
+          {!Array.isArray(menuStructure) || menuStructure.length === 0 ? (
+            <p className="text-center text-gray-500 py-4">No menu structure available or loading...</p>
+          ) : (
+            <SortableContext
+              items={menuStructure.map(item => item._id)} // Safe now
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="space-y-3">
+                {menuStructure // Safe now
+                  .sort((a, b) => a.order - b.order)
+                  .map((category) => (
+                    <SortableItem key={category._id} id={category._id}>
+                      <div className="bg-gray-100 p-3 rounded-md border border-gray-200">
+                        {/* Category Header */}
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg font-semibold text-gray-800">{category.name}</span>
+                            <span className="text-xs text-gray-500">({category.submenu?.length || 0} subcategories)</span>
+                          </div>
+                          <div className="space-x-2">
+                            <button 
+                              onClick={() => handleAddSubcategory(category._id)} 
+                              className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                            >
+                              Add Subcategory
+                            </button>
+                            <button 
+                              onClick={() => handleEditItem(category, category._id)} 
+                              className="text-indigo-600 hover:text-indigo-900 text-sm"
+                            >
+                              <Edit size={14}/>
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteItem(category._id)} 
+                              className="text-red-600 hover:text-red-900 text-sm"
+                            >
+                              <Trash2 size={14}/>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* --- Subcategory Section --- */}
+                        {category.submenu && category.submenu.length > 0 && (
+                          // --- ADD SortableContext FOR SUBCATEGORIES ---
+                          <SortableContext
+                            items={category.submenu.map(sub => sub._id)} // IDs of subcategories in this category
+                            strategy={verticalListSortingStrategy}
+                            // id={`subcategory-${category._id}`} // Optional: Unique ID if needed
+                          >
+                            <ul className="ml-6 pl-4 border-l-2 border-blue-200 space-y-2 mt-2">
+                              {category.submenu
+                                .sort((a, b) => a.order - b.order)
+                                .map((subcategory) => (
+                                  // --- WRAP SUBCATEGORY LI WITH SortableItem ---
+                                  <SortableItem key={subcategory._id} id={subcategory._id}>
+                                    <div className="bg-white p-2 rounded border border-gray-200 shadow-sm">
+                                      {/* Subcategory Content */}
+                                      <div className="flex justify-between items-center mb-1">
+                                        {/* Drag handle is now inside SortableItem */}
+                                        <span className="text-sm font-medium">{subcategory.name}</span>
+                                        <div className="space-x-1">
+                                          <button onClick={() => handleAddService(category._id, subcategory._id)} className="text-green-600 hover:text-green-900 text-xs font-medium">Add Service</button>
+                                          <button onClick={() => handleEditItem(subcategory, category._id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={12}/></button>
+                                          <button onClick={() => handleDeleteItem(subcategory._id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={12}/></button>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Services Section */}
+                                      {subcategory.services && subcategory.services.length > 0 && (
+                                        <div className="mt-2 ml-4 space-y-1">
+                                          {subcategory.services
+                                            .sort((a, b) => a.order - b.order)
+                                            .map((service) => (
+                                              <div key={service._id} className="bg-gray-50 p-2 rounded border border-gray-100 flex justify-between items-center">
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="text-xs text-gray-600">🔧</span>
+                                                  <span className="text-xs font-medium">{service.name}</span>
+                                                  {service.formId && (
+                                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                                      Form Linked
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="space-x-1">
+                                                  <button onClick={() => handleEditItem(service, category._id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={10}/></button>
+                                                  <button onClick={() => handleDeleteItem(service._id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={10}/></button>
+                                                </div>
+                                              </div>
+                                            ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </SortableItem>
+                                ))}
+                            </ul>
+                          </SortableContext>
+                          // --- END SUBCATEGORY SortableContext ---
+                        )}
+                      </div>
+                    </SortableItem>
+                ))}
+              </ul>
+            </SortableContext>
+          )}
         </div>
-      </div>
+      </DndContext>
+
       {isModalOpen && (
         <MenuItemFormModal
-          item={currentItem}
-          onClose={() => setIsModalOpen(false)}
+          item={currentItem?._id ? currentItem : null}
+          itemType={currentItem?.type}
+          parentId={currentItem?.parentId}
+          categoryId={currentItem?.categoryId}
+          onClose={() => {
+            setIsModalOpen(false);
+            setCurrentItem(null);
+          }}
           onSave={handleSaveItem}
-          existingItems={menuItems} // Pass existing items to help with default order
         />
       )}
     </div>
