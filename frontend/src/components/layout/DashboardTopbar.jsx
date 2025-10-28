@@ -12,7 +12,7 @@ const DashboardTopbar = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
+  console.log(user);
   // Mock notifications
   const notifications = [
     { id: 1, message: 'Dokumen baru telah diupload', time: '5 menit yang lalu', unread: true },
@@ -121,14 +121,14 @@ const DashboardTopbar = ({ toggleSidebar }) => {
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="h-8 w-8 sm:h-9 sm:w-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                     {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
+                      <img src={user.avatar} alt={user.profile.name} className="h-full w-full rounded-full object-cover" />
                     ) : (
-                      <span className="text-sm">{user?.name?.charAt(0) || 'U'}</span>
+                      <span className="text-sm">{user?.profile?.name?.charAt(0) || 'U'}</span>
                     )}
                   </div>
                   
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                    <p className="text-sm font-medium text-gray-900">{user?.profile?.name || 'User'}</p>
                     <p className="text-xs text-gray-500">{user?.role || 'Member'}</p>
                   </div>
                 </div>

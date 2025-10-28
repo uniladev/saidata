@@ -204,6 +204,8 @@ class AuthController extends Controller
             if (is_object($profile)) {
                 $profile = (array) $profile;
             }
+
+            
             return response()->json([
                 'success' => true,
                 'token' => $token,
@@ -485,7 +487,6 @@ class AuthController extends Controller
         if (!$user) {
             $user = User::create([
                 'username' => $ssoData['username'],
-                'name' => $ssoData['name'],
                 'email' => $ssoData['email'],
                 'role' => $ssoData['role'] ?? 'user',
                 'profile' => $profile,
@@ -494,7 +495,6 @@ class AuthController extends Controller
             ]);
         } else {
             $user->update([
-                'name' => $ssoData['name'],
                 'email' => $ssoData['email'],
                 'role' => $ssoData['role'] ?? $user->role,
                 'profile' => $profile,
