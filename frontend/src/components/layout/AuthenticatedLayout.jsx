@@ -5,6 +5,9 @@ import { useState, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import DashboardTopbar from './DashboardTopbar';
 import DashboardSidebar from './DashboardSidebar';
+import api from '../../config/api'; // Import your api client
+
+
 
 const DashboardLoading = () => {
   return (
@@ -23,6 +26,9 @@ const DashboardLoading = () => {
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuData, setMenuData] = useState([]); // State for menu items
+  const [userInfo, setUserInfo] = useState(null); // State for user info
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true); // Loading state
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -32,10 +38,42 @@ const DashboardLayout = () => {
     setSidebarOpen(false);
   };
 
+  // Still inside AuthenticatedLayout, after the state declarations
+  useEffect(() => {
+    const fetchMenu = async () => {
+      setIsLoadingMenu(true);
+      try {
+        const response = await api.get('/menu');
+        if (response.data.success) {
+          setMenuData(response.data.data.menu || []);
+          setUserInfo(response.data.data.user_info || null);
+        } else {
+          console.error("Failed to fetch menu data:", response.data.message);
+          setMenuData([]); // Set empty on failure
+          setUserInfo(null);
+        }
+      } catch (error) {
+        console.error("Error fetching menu:", error);
+        setMenuData([]);
+        setUserInfo(null);
+      } finally {
+        setIsLoadingMenu(false);
+      }
+    };
+
+    fetchMenu();
+  }, []); // Empty dependency array means run once on mount
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
-      <DashboardSidebar isOpen={sidebarOpen} closeSidebar={closeSidebar} />
+      <DashboardSidebar 
+        isOpen={sidebarOpen} 
+        closeSidebar={closeSidebar} 
+        menuData={menuData} 
+        userInfo={userInfo} 
+        isLoading={isLoadingMenu} 
+      />
       
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 w-full overflow-hidden">
