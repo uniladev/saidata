@@ -123,13 +123,15 @@ class AuthController extends Controller
             $mockUsers = [
                 '2267051001' => [
                     'username' => '2267051001',
-                    'name' => 'Dafahan',
                     'email' => 'dafahan@students.unila.ac.id',
                     'role' => 'user',
-                    'faculty_code' => 'FMIPA',
-                    'department_code' => 'ILKOM',
-                    'study_program_code' => 'ILKOM-S1',
-                    'phone' => '081234567890',
+                    'profile' => [
+                        'name' => 'Dafahan',
+                        'faculty_code' => 'FMIPA',
+                        'department_code' => 'ILKOM',
+                        'study_program_code' => 'ILKOM-S1',
+                        'phone' => '081234567890',
+                    ],
                 ],
                 '2267051002' => [
                     'username' => '2267051002',
@@ -145,29 +147,39 @@ class AuthController extends Controller
                 ],
                 '2267011001' => [
                     'username' => '2267011001',
-                    'name' => 'Andi Wijaya',
                     'email' => 'andi.wijaya@students.unila.ac.id',
                     'role' => 'user',
-                    'faculty_code' => 'FK',
-                    'department_code' => 'FARM',
-                    'study_program_code' => 'FARM-S1',
-                    'phone' => '081234567892',
+                    'profile' => [
+                        'name' => 'Andi Wijaya',
+                        'faculty_code' => 'FK',
+                        'department_code' => 'FARM',
+                        'study_program_code' => 'FARM-S1',
+                        'phone' => '081234567892',
+                    ],
                 ],
                 '2267051003' => [
                     'username' => '2267051003',
-                    'name' => 'Dewi Lestari',
                     'email' => 'dewi.lestari@students.unila.ac.id',
                     'role' => 'user',
-                    'faculty_code' => 'FMIPA',
-                    'department_code' => 'MAT',
-                    'study_program_code' => 'MAT-S1',
-                    'phone' => '081234567893',
+                    'profile' => [
+                        'name' => 'Dewi Lestari',
+                        'faculty_code' => 'FMIPA',
+                        'department_code' => 'MAT',
+                        'study_program_code' => 'MAT-S1',
+                        'phone' => '081234567893',
+                    ],
                 ],
                 'admin' => [
                     'username' => 'admin',
-                    'name' => 'Administrator',
                     'email' => 'admin@unila.ac.id',
                     'role' => 'admin',
+                    'profile' => [
+                        'name' => 'Administrator',
+                        'faculty_code' => 'FMIPA',
+                        'department_code' => 'ILKOM',
+                        'study_program_code' => 'ILKOM-S1',
+                        'phone' => '081234567890',
+                    ],
                 ],
                 
             ];
@@ -292,13 +304,23 @@ class AuthController extends Controller
                 ], 404);
             }
 
+            // Get profile data
+            $profile = $user->profile ?? [];
+            if (is_object($profile)) {
+                $profile = (array) $profile;
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => $user->id,
-                    'name' => $user->name,
+                    'name' => $profile['name'] ?? null,
                     'email' => $user->email,
-                    'role' => $user->role
+                    'role' => $user->role,
+                    'faculty_code' => $profile['faculty_code'] ?? null,
+                    'department_code' => $profile['department_code'] ?? null,
+                    'study_program_code' => $profile['study_program_code'] ?? null,
+                    'phone' => $profile['phone'] ?? null,
                 ]
             ]);
 
@@ -474,12 +496,18 @@ class AuthController extends Controller
     {
         $user = User::where('username', $ssoData['username'])->first();
 
+        // Handle both nested profile structure and flat structure
         $profile = null;
-        if (isset($ssoData['faculty_code']) && isset($ssoData['department_code']) && isset($ssoData['study_program_code'])) {
+        if (isset($ssoData['profile'])) {
+            // Nested structure (like user 2267051002)
+            $profile = $ssoData['profile'];
+        } else {
+            // Flat structure (like other users)
             $profile = [
-                'faculty_code' => $ssoData['faculty_code'],
-                'department_code' => $ssoData['department_code'],
-                'study_program_code' => $ssoData['study_program_code'],
+                'name' => $ssoData['name'] ?? null,
+                'faculty_code' => $ssoData['faculty_code'] ?? null,
+                'department_code' => $ssoData['department_code'] ?? null,
+                'study_program_code' => $ssoData['study_program_code'] ?? null,
                 'phone' => $ssoData['phone'] ?? null,
             ];
         }
