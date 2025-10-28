@@ -128,7 +128,7 @@ const LoginPage = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 md:py-10">
-        <div className="flex flex-wrap items-center min-h-[70vh]">
+        <div className="flex flex-wrap items-center min-h-[70vh] justify-center">
           {/* Illustration - Hidden on mobile */}
           <div className="hidden lg:block w-full lg:w-7/12 md:w-6/12 px-4 mb-8 lg:mb-0">
             <div className="text-center illustration-container">
