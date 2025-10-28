@@ -1,4 +1,3 @@
-// ===== 4. FieldCard Component =====
 // frontend/src/components/formBuilder/FieldCard.jsx
 import React from 'react';
 import { GripVertical, Copy, Trash2 } from 'lucide-react';
@@ -47,9 +46,7 @@ const FieldCard = ({
               )}
             </div>
             <div className="text-base font-medium mb-1">{field.label}</div>
-            {field.type !== 'section' && (
-              <div className="text-sm text-gray-500">Name: {field.name}</div>
-            )}
+            {/* Removed: Name display - auto-generated on backend */}
             {field.helpText && (
               <div className="text-sm text-gray-400 mt-1">{field.helpText}</div>
             )}

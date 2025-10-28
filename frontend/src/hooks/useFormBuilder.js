@@ -1,5 +1,4 @@
 // frontend/src/hooks/useFormBuilder.js
-// CORRECTED VERSION - Properly handles options as objects {value, label}
 import { useState } from 'react';
 
 export const useFormBuilder = () => {
@@ -11,23 +10,96 @@ export const useFormBuilder = () => {
     successMessage: 'Thank you for your submission!',
   });
 
+  // Helper to get default values for each field type
+  const getFieldDefaults = (type) => {
+    const defaults = {
+      text: { placeholder: 'Enter text...' },
+      textarea: { placeholder: 'Enter your text...', rows: 4 },
+      number: { placeholder: 'Enter a number...', min: null, max: null, step: 1 },
+      email: { placeholder: 'example@email.com' },
+      phone: { placeholder: '+1234567890' },
+      url: { placeholder: 'https://example.com' },
+      select: { 
+        placeholder: 'Select an option...',
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' }
+        ]
+      },
+      radio: { 
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' }
+        ]
+      },
+      checkbox: { 
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' }
+        ]
+      },
+      date: {},
+      time: {},
+      file: { 
+        fileOptions: {
+          accept: '',
+          maxSize: 5,
+          multiple: false
+        }
+      },
+      rating: { maxRating: 5 },
+      range: { min: 0, max: 100, step: 1 },
+      color: {},
+      section: {}
+    };
+
+    return defaults[type] || {};
+  };
+
+  // Get field label from FIELD_TYPES or create default
+  const getFieldLabel = (type) => {
+    const labels = {
+      text: 'Text Input',
+      textarea: 'Text Area',
+      number: 'Number',
+      email: 'Email',
+      phone: 'Phone',
+      url: 'URL',
+      select: 'Dropdown',
+      radio: 'Radio Button',
+      checkbox: 'Checkbox',
+      date: 'Date',
+      time: 'Time',
+      file: 'File Upload',
+      rating: 'Rating',
+      range: 'Range Slider',
+      color: 'Color Picker',
+      section: 'Section Header'
+    };
+
+    return labels[type] || 'Field';
+  };
+
   const addField = (fieldType) => {
+    // fieldType is now just a string (e.g., 'text', 'email', etc.)
+    const defaults = getFieldDefaults(fieldType);
+    
     const newField = {
       id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: fieldType.type,
-      label: fieldType.label,
+      type: fieldType,
+      label: `New ${getFieldLabel(fieldType)}`,
       name: `field_${Date.now()}`,
       required: false,
-      placeholder: fieldType.placeholder || '',
+      placeholder: defaults.placeholder || '',
       helpText: '',
-      validation: fieldType.validation || null,
-      options: fieldType.options || [],
-      fileOptions: fieldType.fileOptions || null,
-      min: fieldType.min || null,
-      max: fieldType.max || null,
-      step: fieldType.step || null,
-      rows: fieldType.rows || null,
-      maxRating: fieldType.maxRating || null,
+      validation: null,
+      options: defaults.options || [],
+      fileOptions: defaults.fileOptions || null,
+      min: defaults.min !== undefined ? defaults.min : null,
+      max: defaults.max !== undefined ? defaults.max : null,
+      step: defaults.step !== undefined ? defaults.step : null,
+      rows: defaults.rows !== undefined ? defaults.rows : null,
+      maxRating: defaults.maxRating !== undefined ? defaults.maxRating : null,
     };
     
     setFormFields([...formFields, newField]);
@@ -110,25 +182,23 @@ export const useFormBuilder = () => {
     }
   };
 
-
   // Helper function to clean field data for backend
   const cleanFieldForBackend = (field) => {
-    // Create a plain object with only serializable data
     const cleanField = {
-      type: String(field.type || 'text'), // Ensure type is always a string, default to 'text' if missing
-      label: String(field.label || ''),   // Ensure label is always a string
-      name: String(field.name || ''),     // Ensure name is always a string
+      type: String(field.type || 'text'),
+      label: String(field.label || ''),
+      name: String(field.name || ''),
       required: Boolean(field.required || false),
       placeholder: String(field.placeholder || ''),
       helpText: String(field.helpText || ''),
       validation: field.validation || null,
-      options: [], // Will be set below
+      options: [],
       fileOptions: field.fileOptions || null,
-      min: field.min !== undefined && field.min !== null ? Number(field.min) : null, // Ensure numeric
-      max: field.max !== undefined && field.max !== null ? Number(field.max) : null, // Ensure numeric
-      step: field.step !== undefined && field.step !== null ? Number(field.step) : null, // Ensure numeric
-      rows: field.rows !== undefined && field.rows !== null ? Number(field.rows) : null, // Ensure numeric
-      maxRating: field.maxRating !== undefined && field.maxRating !== null ? Number(field.maxRating) : null, // Ensure numeric
+      min: field.min !== undefined && field.min !== null ? Number(field.min) : null,
+      max: field.max !== undefined && field.max !== null ? Number(field.max) : null,
+      step: field.step !== undefined && field.step !== null ? Number(field.step) : null,
+      rows: field.rows !== undefined && field.rows !== null ? Number(field.rows) : null,
+      maxRating: field.maxRating !== undefined && field.maxRating !== null ? Number(field.maxRating) : null,
     };
 
     // Handle options carefully
@@ -152,20 +222,18 @@ export const useFormBuilder = () => {
         multiple: Boolean(cleanField.fileOptions.multiple)
       };
     } else {
-        // Ensure fileOptions is null if not a valid object or missing
-        cleanField.fileOptions = null; 
+      cleanField.fileOptions = null;
     }
 
     // Ensure validation is null if empty
     if (cleanField.validation && typeof cleanField.validation === 'object' && Object.keys(cleanField.validation).length === 0) {
-        cleanField.validation = null;
+      cleanField.validation = null;
     }
 
     return cleanField;
   };
 
   const generateJson = () => {
-    // Create clean form data
     const formData = {
       title: String(formSettings.title || 'Untitled Form'),
       description: String(formSettings.description || ''),
@@ -175,7 +243,6 @@ export const useFormBuilder = () => {
       fields: formFields.map(field => cleanFieldForBackend(field))
     };
 
-    // Wrap in "form" key as backend expects
     return {
       form: formData
     };
@@ -185,7 +252,7 @@ export const useFormBuilder = () => {
     formFields,
     formSettings,
     setFormSettings,
-    setFormFields,  // Export this to allow loading existing forms
+    setFormFields,
     addField,
     updateField,
     deleteField,
