@@ -195,12 +195,66 @@ const sampleMenuData = [
   },
 ];
 
-const DashboardSidebar = ({ isOpen, closeSidebar, menuData, userInfo, isLoading }) => {
+const DashboardSidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [openSubmenu, setOpenSubmenu] = useState(null);
-  
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch menu items from API
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        setLoading(true);
+        
+        console.log('🔄 Fetching menu for user:', user?.username, user?.name);
+        
+        // Call API to get dynamic menu
+        const response = await api.get('/menu');
+        
+        console.log('📡 API Response:', response.data);
+        
+        if (response.data.success) {
+          const menuData = response.data.data.menu || [];
+          console.log('✅ Setting menu items:', menuData.length, 'items');
+          setMenuItems(menuData);
+          
+          // Log user info for debugging
+          if (response.data.data.user_info) {
+            console.log('👤 User Menu Info:', response.data.data.user_info);
+          }
+        } else {
+          throw new Error('Failed to fetch menu');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching menu items:', error);
+        console.log('⚠️ Using fallback menu');
+        
+        // Fallback: Filter menu based on user role
+        const userRole = user?.role?.toLowerCase() || 'user';
+        const filteredMenus = sampleMenuData
+          .filter(item => item.roles?.includes(userRole))
+          .sort((a, b) => a.order - b.order);
+        
+        console.log('📋 Fallback menu items:', filteredMenus.length, 'items for role:', userRole);
+        setMenuItems(filteredMenus);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      // Reset menu items before fetching
+      setMenuItems([]);
+      fetchMenuItems();
+    } else {
+      // Clear menu if no user
+      setMenuItems([]);
+    }
+  }, [user]);
+
   // Check if current path is active
   const isActive = (path) => {
     return location.pathname === path;
@@ -277,22 +331,23 @@ const DashboardSidebar = ({ isOpen, closeSidebar, menuData, userInfo, isLoading 
           scrollbarWidth: 'thin',
           scrollbarColor: '#CBD5E1 #F1F5F9'
         }}>
-          {isLoading ? ( // Uses 'isLoading' prop
+          {loading ? (
             // Loading skeleton
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
               ))}
             </div>
-          ) : menuData.length === 0 ? ( // Uses 'menuData' prop
+          ) : menuItems.length === 0 ? (
             // No menu items
             <div className="text-center py-8 text-gray-500">
               <p className="text-sm">Tidak ada menu tersedia</p>
             </div>
           ) : (
             // Dynamic menu items
-            menuData.map((item, index) => { // Uses 'menuData' prop
+            menuItems.map((item, index) => {
               const IconComponent = getIcon(item.icon);
+              
               return (
                 <div key={item.id}>
                   {item.submenu ? (
@@ -370,13 +425,6 @@ const DashboardSidebar = ({ isOpen, closeSidebar, menuData, userInfo, isLoading 
             })
           )}
         </nav>
-
-        {!isLoading && userInfo && (
-          <div className="px-4 py-2 mt-auto border-t border-gray-200">
-            <p className="text-xs text-gray-500 font-medium">{userInfo.faculty || 'Faculty Info'}</p>
-            <p className="text-xs text-gray-400">{userInfo.study_program || 'Study Program'}</p>
-          </div>
-        )}
 
         {/* Logout Button - Fixed at bottom */}
         <div className="p-4 border-t border-gray-200 flex-shrink-0">
