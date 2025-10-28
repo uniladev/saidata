@@ -110,41 +110,37 @@ export const useFormBuilder = () => {
     }
   };
 
+
   // Helper function to clean field data for backend
   const cleanFieldForBackend = (field) => {
     // Create a plain object with only serializable data
     const cleanField = {
-      type: field.type,
-      label: field.label,
-      name: field.name,
-      required: field.required || false,
-      placeholder: field.placeholder || '',
-      helpText: field.helpText || '',
+      type: String(field.type || 'text'), // Ensure type is always a string, default to 'text' if missing
+      label: String(field.label || ''),   // Ensure label is always a string
+      name: String(field.name || ''),     // Ensure name is always a string
+      required: Boolean(field.required || false),
+      placeholder: String(field.placeholder || ''),
+      helpText: String(field.helpText || ''),
       validation: field.validation || null,
       options: [], // Will be set below
       fileOptions: field.fileOptions || null,
-      min: field.min !== undefined && field.min !== null ? field.min : null,
-      max: field.max !== undefined && field.max !== null ? field.max : null,
-      step: field.step !== undefined && field.step !== null ? field.step : null,
-      rows: field.rows !== undefined && field.rows !== null ? field.rows : null,
-      maxRating: field.maxRating !== undefined && field.maxRating !== null ? field.maxRating : null,
+      min: field.min !== undefined && field.min !== null ? Number(field.min) : null, // Ensure numeric
+      max: field.max !== undefined && field.max !== null ? Number(field.max) : null, // Ensure numeric
+      step: field.step !== undefined && field.step !== null ? Number(field.step) : null, // Ensure numeric
+      rows: field.rows !== undefined && field.rows !== null ? Number(field.rows) : null, // Ensure numeric
+      maxRating: field.maxRating !== undefined && field.maxRating !== null ? Number(field.maxRating) : null, // Ensure numeric
     };
 
-    // Handle options carefully - convert to plain objects
+    // Handle options carefully
     if (Array.isArray(field.options)) {
       cleanField.options = field.options.map(option => {
-        // If option is already a plain object with value and label
         if (option && typeof option === 'object') {
           return {
             value: String(option.value || ''),
             label: String(option.label || '')
           };
         }
-        // If option is a string, convert to object
-        return {
-          value: String(option),
-          label: String(option)
-        };
+        return { value: String(option), label: String(option) };
       });
     }
 
@@ -155,6 +151,14 @@ export const useFormBuilder = () => {
         maxSize: Number(cleanField.fileOptions.maxSize || 5),
         multiple: Boolean(cleanField.fileOptions.multiple)
       };
+    } else {
+        // Ensure fileOptions is null if not a valid object or missing
+        cleanField.fileOptions = null; 
+    }
+
+    // Ensure validation is null if empty
+    if (cleanField.validation && typeof cleanField.validation === 'object' && Object.keys(cleanField.validation).length === 0) {
+        cleanField.validation = null;
     }
 
     return cleanField;

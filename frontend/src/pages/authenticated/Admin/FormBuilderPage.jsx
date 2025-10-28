@@ -94,7 +94,17 @@ function FormBuilderPage() {
     
     // Get the generated JSON
     const formJson = generateJson();
-    
+
+    const invalidField = formJson.form.fields.find(field => !field.label || field.label.trim() === '');
+    if (invalidField) {
+      // Find the field in the state to get its potentially temporary ID for selection
+      const fieldInState = formFields.find(f => f.name === invalidField.name); 
+      alert(`Validation Error: Please provide a label for all fields. Field "${invalidField.name || 'Unnamed Field'}" has an empty label.`);
+      if (fieldInState) {
+        setSelectedField(fieldInState.id); // Select the field with the error
+      }
+      return; // Stop the function here
+    }
     // DEBUG: Log the form structure
     console.log('=== FORM BUILDER DEBUG ===');
     console.log('Form Fields:', formFields);

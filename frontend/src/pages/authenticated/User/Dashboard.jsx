@@ -280,7 +280,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* This one will now be a LINK because it has a 'to' prop */}
           <QuickAction
-            to="/create-form"
+            to="/forms/create"
             icon={FilePlus2} // Make sure you've imported FilePlus2
             label="Create Form"
             color="border-blue-300 text-blue-600 hover:bg-blue-50"
