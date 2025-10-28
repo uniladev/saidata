@@ -342,7 +342,6 @@ class FormSubmissionController extends Controller
                 'message' => 'This form is no longer active'
             ], 403);
         }
-
         $validator = Validator::make($request->all(), [
             'answers' => 'required|array',
             'status' => 'nullable|in:completed,draft',
@@ -355,7 +354,6 @@ class FormSubmissionController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
         try {
                 $user = JWTAuth::parseToken()->authenticate();
 

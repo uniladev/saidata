@@ -11,12 +11,12 @@ class FormSubmissionPayload extends Model
 
     protected $fillable = [
         'submission_id',
-        'answers_json',
+        'answers',
         'created_at',
     ];
 
     protected $casts = [
-        'answers_json' => 'array',
+        'answers' => 'array',
         'created_at' => 'datetime',
     ];
 
