@@ -18,7 +18,8 @@ const {
   FormTakerPage,
   FormsListPage,
   // Other pages
-  NotFoundPage
+  NotFoundPage,
+  MenuManagementPage
 } = {
   HomePage: lazy(() => import("./pages/guest/Home")),
   AboutPage: lazy(() => import("./pages/guest/About")),
@@ -28,7 +29,8 @@ const {
   FormBuilderPage: lazy(() => import("./pages/authenticated/Admin/FormBuilderPage")),
   FormTakerPage: lazy(() => import("./pages/authenticated/Admin/FormTakerPage")),
   FormsListPage: lazy(() => import("./pages/authenticated/Admin/FormsListPage")),
-  NotFoundPage: lazy(() => import("./pages/NotFound"))
+  NotFoundPage: lazy(() => import("./pages/NotFound")),
+  MenuManagementPage: lazy(() => import("./pages/authenticated/Admin/MenuManagementPage"))
 };
 
 // Protected Route Component
@@ -86,6 +88,7 @@ export default function App() {
         <Route path="/forms/create" element={<FormBuilderPage />} />
         <Route path="/forms/edit/:formId" element={<FormBuilderPage />} />
         <Route path="/form/:formId" element={<FormTakerPage />} />
+        <Route path="/menu" element={<MenuManagementPage />} />
       </Route>
 
       {/* 404 Not Found */}

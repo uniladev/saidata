@@ -1,7 +1,7 @@
 // ============================================
 // FILE: frontend/src/components/layout/DashboardLayout.jsx
 // ============================================
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import DashboardTopbar from './DashboardTopbar';
 import DashboardSidebar from './DashboardSidebar';
