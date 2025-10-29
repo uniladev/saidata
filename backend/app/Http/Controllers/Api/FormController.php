@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\FormHistory;
-use App\Models\FormSubmission; 
+use App\Models\FormSubmission;
 use Illuminate\Support\Facades\DB;
 
 
@@ -112,6 +112,26 @@ class FormController extends Controller
      *                 @OA\Property(property="submitText", type="string", example="Submit", description="Submit button text"),
      *                 @OA\Property(property="successMessage", type="string", example="Thank you for your submission!", description="Success message after submission"),
      *                 @OA\Property(property="is_active", type="boolean", example=true, description="Form active status"),
+     *                 @OA\Property(property="type", type="string", enum={"service", "record"}, example="record", description="Form type: service or record"),
+     *                 @OA\Property(property="has_output", type="boolean", example=false, description="Whether form generates output/results"),
+     *                 @OA\Property(property="template_url", type="string", nullable=true, example="templates/forms/671292eb4c6b7a0d4e0b1234/1730000000_template.pdf", description="Path to template document"),
+     *                 @OA\Property(
+     *                     property="template_metadata",
+     *                     type="object",
+     *                     nullable=true,
+     *                     @OA\Property(property="original_name", type="string", example="Form_Template.pdf"),
+     *                     @OA\Property(property="size", type="integer", example=1024000),
+     *                     @OA\Property(property="mime_type", type="string", example="application/pdf"),
+     *                     @OA\Property(property="uploaded_at", type="string", format="date-time"),
+     *                     @OA\Property(property="uploaded_by", type="string", example="68ee3e2c533619c833053652")
+     *                 ),
+     *                 @OA\Property(
+     *                     property="metadata",
+     *                     type="object",
+     *                     nullable=true,
+     *                     description="Custom metadata for the form, e.g. category, tags, etc. Must be an object or array, not a string.",
+     *                     example={"category":"survey","tags":{"customer","feedback"}}
+     *                 ),
      *                 @OA\Property(
      *                     property="fields",
      *                     type="array",
@@ -124,9 +144,9 @@ class FormController extends Controller
      *                         @OA\Property(property="required", type="boolean", example=false),
      *                         @OA\Property(property="placeholder", type="string", example="Enter text here"),
      *                         @OA\Property(property="helpText", type="string", example="Help text for the field"),
-     *                         @OA\Property(property="validation", type="object", description="Validation rules object", nullable=true),
-     *                         @OA\Property(property="options", type="array", @OA\Items(type="string"), description="Options for select, radio, checkbox fields"),
-     *                         @OA\Property(property="fileOptions", type="object", nullable=true, description="File upload options"),
+     *                         @OA\Property(property="validation", type="object", description="Validation rules object", nullable=true, example={}),
+     *                         @OA\Property(property="options", type="array", @OA\Items(type="string"), description="Options for select, radio, checkbox fields", example={"Option 1", "Option 2"}),
+     *                         @OA\Property(property="fileOptions", type="object", nullable=true, description="File upload options", example={}),
      *                         @OA\Property(property="min", type="number", nullable=true, example=0, description="Minimum value for number fields"),
      *                         @OA\Property(property="max", type="number", nullable=true, example=100, description="Maximum value for number fields"),
      *                         @OA\Property(property="step", type="number", nullable=true, description="Step value for number fields"),
@@ -169,6 +189,8 @@ class FormController extends Controller
      *     @OA\Property(property="submitText", type="string", example="Submit"),
      *     @OA\Property(property="successMessage", type="string", example="Thank you for your submission!"),
      *     @OA\Property(property="is_active", type="boolean", example=true),
+     *     @OA\Property(property="type", type="string", enum={"service", "record"}, example="record", description="Form type"),
+     *     @OA\Property(property="has_output", type="boolean", example=false, description="Whether form generates output"),
      *     @OA\Property(
      *         property="fields",
      *         type="array",
@@ -191,6 +213,13 @@ class FormController extends Controller
      *             @OA\Property(property="maxRating", type="integer", nullable=true)
      *         )
      *     ),
+     *     @OA\Property(
+     *         property="metadata",
+     *         type="object",
+     *         nullable=true,
+     *         description="Custom metadata for the form, e.g. category, tags, etc.",
+     *         example={"category":"survey","tags":{"customer","feedback"}}
+     *     ),
      *     @OA\Property(property="created_by", type="string", example="68ee3e2c533619c833053652"),
      *     @OA\Property(property="updated_by", type="string", example="68ee3e2c533619c833053652"),
      *     @OA\Property(property="created_at", type="string", format="date-time"),
@@ -201,7 +230,7 @@ class FormController extends Controller
     {
         // Ensure the user is authenticated
         $user = JWTAuth::parseToken()->authenticate();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -217,7 +246,10 @@ class FormController extends Controller
             'form.submitText' => 'nullable|string|max:100',
             'form.successMessage' => 'nullable|string|max:500',
             'form.is_active' => 'nullable|boolean',
+            'form.type' => 'nullable|in:service,record',
+            'form.has_output' => 'nullable|boolean',
             'form.fields' => 'required|array|min:1',
+            'form.metadata' => 'nullable|array',
             'form.fields.*.type' => 'required|in:text,textarea,number,email,date,time,datetime-local,url,tel,password,select,radio,checkbox,file,rating,signature,matrix,repeater',
             'form.fields.*.label' => 'required|string|max:255',
             'form.fields.*.name' => 'required|string|max:255',
@@ -235,6 +267,7 @@ class FormController extends Controller
         ], [
             'form.required' => 'Form data is required',
             'form.title.required' => 'Form title is required',
+            'form.type.in' => 'Form type must be either "service" or "record"',
             'form.fields.required' => 'Form must have at least one field',
             'form.fields.min' => 'Form must have at least one field',
             'form.fields.*.type.required' => 'Each field must have a type',
@@ -252,7 +285,7 @@ class FormController extends Controller
 
         try {
             $formData = $request->input('form');
-            
+
             // Validate field names are unique within the form
             $fieldNames = array_column($formData['fields'], 'name');
             if (count($fieldNames) !== count(array_unique($fieldNames))) {
@@ -285,7 +318,7 @@ class FormController extends Controller
                 if (isset($field['max']) && $field['max'] === 0) {
                     $field['max'] = null;
                 }
-                
+
                 // Clean up empty objects/arrays
                 if (isset($field['validation']) && empty($field['validation'])) {
                     $field['validation'] = null;
@@ -298,12 +331,16 @@ class FormController extends Controller
                 usleep(100);
             }
 
-            // Prepare form data
+            // Ensure metadata is always an array
+            $formData['metadata'] = $formData['metadata'] ?? [];
+
+            // Prepare form data with defaults
             $formData['created_by'] = (string) $user->_id;
             $formData['updated_by'] = (string) $user->_id;
             $formData['version'] = 1;
             $formData['is_active'] = $formData['is_active'] ?? true;
-            // Set default values if not provided
+            $formData['type'] = $formData['type'] ?? 'record';
+            $formData['has_output'] = $formData['has_output'] ?? false;
             $formData['submitText'] = $formData['submitText'] ?? 'Submit';
             $formData['successMessage'] = $formData['successMessage'] ?? 'Thank you for your submission!';
             $formData['description'] = $formData['description'] ?? '';
@@ -314,7 +351,7 @@ class FormController extends Controller
             // Refresh the model to ensure _id is loaded
             $form->refresh();
 
-             // Create initial history record
+            // Create initial history record
             FormHistory::create([
                 'form_id' => $form->_id,
                 'version' => 1,
@@ -347,7 +384,7 @@ class FormController extends Controller
      * @OA\Put(
      *     path="/api/v1/forms/{id}",
      *     summary="Update form",
-     *     description="Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields.",
+     *     description="Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields. Supports template document upload.",
      *     tags={"Forms"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -359,41 +396,40 @@ class FormController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"form"},
-     *             @OA\Property(
-     *                 property="form",
-     *                 type="object",
-     *                 @OA\Property(property="title", type="string", example="Updated Form Title"),
-     *                 @OA\Property(property="description", type="string", example="Updated description"),
-     *                 @OA\Property(property="submitText", type="string", example="Submit"),
-     *                 @OA\Property(property="successMessage", type="string", example="Thank you!"),
-     *                 @OA\Property(property="is_active", type="boolean"),
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"form"},
      *                 @OA\Property(
-     *                     property="fields",
-     *                     type="array",
-     *                     description="Fields array. Include 'id' for existing fields to preserve them, omit 'id' for new fields.",
-     *                     @OA\Items(
-     *                         type="object",
-     *                         @OA\Property(property="id", type="string", description="Include this for existing fields", example="field_1760690243313_bhm124rg1"),
-     *                         @OA\Property(property="type", type="string", example="text"),
-     *                         @OA\Property(property="label", type="string", example="Updated Label"),
-     *                         @OA\Property(property="name", type="string", example="field_1")
-     *                     )
+     *                     property="form",
+     *                     type="string",
+     *                     description="JSON string of form data with title, description, fields, etc.",
+     *                     example="{""title"":""Updated Form"",""type"":""service"",""has_output"":true,""fields"":[{""type"":""text"",""label"":""Name"",""name"":""name"",""required"":true}]}"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="template",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="Template document file (DOCX)"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="remove_template",
+     *                     type="boolean",
+     *                     example=false,
+     *                     description="Set to true to remove existing template"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="increment_version",
+     *                     type="boolean",
+     *                     example=false,
+     *                     description="Set to true to create new version"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="change_summary",
+     *                     type="string",
+     *                     example="Added template document",
+     *                     description="Summary of changes made"
      *                 )
-     *             ),
-     *             @OA\Property(
-     *                 property="increment_version",
-     *                 type="boolean",
-     *                 example=true,
-     *                 description="Set to true to create new version (recommended when changing fields structure)"
-     *             ),
-     *             @OA\Property(
-     *                 property="change_summary",
-     *                 type="string",
-     *                 example="Updated question 3, added new email field",
-     *                 description="Summary of changes made"
      *             )
      *         )
      *     ),
@@ -409,13 +445,15 @@ class FormController extends Controller
      *                 type="object",
      *                 @OA\Property(property="form", ref="#/components/schemas/Form"),
      *                 @OA\Property(property="version_incremented", type="boolean", example=true),
-     *                 @OA\Property(property="previous_version", type="integer", example=1)
+     *                 @OA\Property(property="previous_version", type="integer", example=1),
+     *                 @OA\Property(property="template_updated", type="boolean", example=true)
      *             )
      *         )
      *     ),
      *     @OA\Response(response=404, description="Form not found"),
      *     @OA\Response(response=422, description="Validation error"),
-     *     @OA\Response(response=401, description="Unauthenticated")
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden - Not the form creator")
      * )
      */
     public function update(Request $request, $id)
@@ -439,32 +477,44 @@ class FormController extends Controller
             ], 404);
         }
 
-        // Validate the entire form structure
-        $validator = Validator::make($request->all(), [
+        // Check if user is the creator (optional - remove if anyone can update)
+        // Uncomment below if only creator can add templates
+        // if ($form->created_by !== (string) $user->_id) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Only the form creator can update templates'
+        //     ], 403);
+        // }
+
+        // Parse form data from JSON string if multipart/form-data
+        $formData = $request->has('form') ? json_decode($request->input('form'), true) : $request->input('form');
+        
+        // Validate the update request
+        $validator = Validator::make(array_merge(
+            ['form' => $formData],
+            $request->only(['template', 'remove_template', 'increment_version', 'change_summary'])
+        ), [
             'form' => 'required|array',
-            'form.title' => 'sometimes|required|string|max:255',
+            'form.title' => 'nullable|string|max:255',
             'form.description' => 'nullable|string',
             'form.submitText' => 'nullable|string|max:100',
             'form.successMessage' => 'nullable|string|max:500',
             'form.is_active' => 'nullable|boolean',
-            'form.fields' => 'sometimes|required|array|min:1',
+            'form.type' => 'nullable|in:service,record',
+            'form.has_output' => 'nullable|boolean',
+            'form.fields' => 'nullable|array|min:1',
+            'form.metadata' => 'nullable|array',
+            'form.fields.*.type' => 'required_with:form.fields|in:text,textarea,number,email,date,time,datetime-local,url,tel,password,select,radio,checkbox,file,rating,signature,matrix,repeater',
+            'form.fields.*.label' => 'required_with:form.fields|string|max:255',
+            'form.fields.*.name' => 'required_with:form.fields|string|max:255',
+            'template' => 'nullable|file|mimes:doc,docx|max:5240', // 5MB max
+            'remove_template' => 'nullable|boolean',
             'increment_version' => 'nullable|boolean',
             'change_summary' => 'nullable|string|max:500',
-            'form.fields.*.id' => 'nullable|string|max:255',
-            'form.fields.*.type' => 'required|in:text,textarea,number,email,date,time,datetime-local,url,tel,password,select,radio,checkbox,file,rating,signature,matrix,repeater',
-            'form.fields.*.label' => 'required|string|max:255',
-            'form.fields.*.name' => 'required|string|max:255',
-            'form.fields.*.required' => 'nullable|boolean',
-            'form.fields.*.placeholder' => 'nullable|string',
-            'form.fields.*.helpText' => 'nullable|string',
-            'form.fields.*.validation' => 'nullable|array',
-            'form.fields.*.options' => 'nullable|array',
-            'form.fields.*.fileOptions' => 'nullable|array',
-            'form.fields.*.min' => 'nullable|numeric',
-            'form.fields.*.max' => 'nullable|numeric',
-            'form.fields.*.step' => 'nullable|numeric',
-            'form.fields.*.rows' => 'nullable|integer|min:0',
-            'form.fields.*.maxRating' => 'nullable|integer|min:0',
+        ], [
+            'form.type.in' => 'Form type must be either "service" or "record"',
+            'template.mimes' => 'Template must be a DOC & DOCX file',
+            'template.max' => 'Template file size must not exceed 5MB',
         ]);
 
         if ($validator->fails()) {
@@ -476,99 +526,97 @@ class FormController extends Controller
         }
 
         try {
-            $formData = $request->input('form');
             $incrementVersion = $request->input('increment_version', false);
             $changeSummary = $request->input('change_summary', 'Form updated');
-            
-            $previousVersion = $form->version;
-            $versionIncremented = false;
+            $templateUpdated = false;
 
-            // Check if structure changed
-            $structureChanged = false;
-            
-            // Validate uniqueness if fields are being updated
-            if (isset($formData['fields'])) {
-                $fieldNames = array_column($formData['fields'], 'name');
-                if (count($fieldNames) !== count(array_unique($fieldNames))) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Validation error',
-                        'errors' => ['fields' => ['Duplicate field names found in form']]
-                    ], 422);
+            // Handle template removal
+            if ($request->input('remove_template', false)) {
+                if ($form->template_url) {
+                    // Delete old template file
+                    \Storage::disk('public')->delete($form->template_url);
+                    $formData['template_url'] = null;
+                    $formData['template_metadata'] = null;
+                    $templateUpdated = true;
+                    $changeSummary = $changeSummary ?: 'Template removed';
                 }
-                
-                // Process fields: generate IDs for new fields, keep existing IDs
-                foreach ($formData['fields'] as &$field) {
-                    // If field doesn't have an ID, it's a new field - generate one
-                    if (!isset($field['id']) || empty($field['id'])) {
-                        $fieldId = 'field_' . time() . '_' . Str::random(10);
-                        $field['id'] = $fieldId;
-                        usleep(100); // Small delay for unique timestamps
-                    }
-
-                    // Clean up field data
-                    if (isset($field['rows']) && $field['rows'] === 0) {
-                        $field['rows'] = null;
-                    }
-                    if (isset($field['maxRating']) && $field['maxRating'] === 0) {
-                        $field['maxRating'] = null;
-                    }
-                    if (isset($field['step']) && $field['step'] === 0) {
-                        $field['step'] = null;
-                    }
-                    if (isset($field['min']) && $field['min'] === 0 && $field['type'] !== 'number') {
-                        $field['min'] = null;
-                    }
-                    if (isset($field['max']) && $field['max'] === 0) {
-                        $field['max'] = null;
-                    }
-                    if (isset($field['validation']) && empty($field['validation'])) {
-                        $field['validation'] = null;
-                    }
-                    if (isset($field['fileOptions']) && empty($field['fileOptions'])) {
-                        $field['fileOptions'] = null;
-                    }
-                }
-                $structureChanged = $this->hasStructureChanged($form->fields, $formData['fields']);
             }
-            // Use transaction for atomicity
-        
-                // Save current version to history if structure changed or version increment requested
-                if ($structureChanged || $incrementVersion) {
-                    FormHistory::create([
-                        'form_id' => $form->_id,
-                        'version' => $form->version,
-                        'title' => $form->title,
-                        'slug' => $form->slug,
-                        'description' => $form->description,
-                        'submitText' => $form->submitText,
-                        'successMessage' => $form->successMessage,
-                        'fields' => $form->fields,
-                        'changed_by' => (string) $user->_id,
-                        'change_summary' => $changeSummary,
-                    ]);
 
-                    // Increment version
-                    $formData['version'] = $form->version + 1;
-                    $versionIncremented = true;
+            // Handle template upload
+            if ($request->hasFile('template')) {
+                // Delete old template if exists
+                if ($form->template_url) {
+                    \Storage::disk('public')->delete($form->template_url);
                 }
-                // Update timestamp and user
-                $formData['updated_by'] = (string) $user->_id;
 
-                // Exclude sensitive fields from update
-                unset($formData['created_by'], $formData['created_at'], $formData['_id']);
+                $file = $request->file('template');
+                
+                // Create directory for form templates
+                $directory = "templates/forms/{$id}";
+                
+                // Generate unique filename
+                $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) 
+                           . '.' . $file->getClientOriginalExtension();
+                
+                // Store file
+                $path = $file->storeAs($directory, $filename, 'public');
+                
+                // Update form data with template info
+                $formData['template_url'] = $path;
+                $formData['template_metadata'] = [
+                    'original_name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'uploaded_at' => now()->toISOString(),
+                    'uploaded_by' => (string) $user->_id,
+                ];
+                
+                $templateUpdated = true;
+                $changeSummary = $changeSummary ?: 'Template document added';
+            }
 
-                // Update the form (MongoDB document operations are atomic)
-                $form->update($formData);
+            // Update metadata
+            $formData['metadata'] = $formData['metadata'] ?? $form->metadata ?? [];
+            $formData['updated_by'] = (string) $user->_id;
+
+            // Update the form version if needed
+            $previousVersion = $form->version;
             
+            if ($incrementVersion) {
+                $formData['version'] = $form->version + 1;
+            }
 
-            // Refresh the model to ensure _id and updated data are properly loaded
+            // Update the form
+            $form->update($formData);
             $form->refresh();
+
+            // Create history record if version incremented
+            if ($incrementVersion) {
+                FormHistory::create([
+                    'form_id' => $form->_id,
+                    'version' => $form->version,
+                    'title' => $form->title,
+                    'slug' => $form->slug,
+                    'description' => $form->description,
+                    'submitText' => $form->submitText,
+                    'successMessage' => $form->successMessage,
+                    'fields' => $form->fields,
+                    'template_url' => $form->template_url,
+                    'template_metadata' => $form->template_metadata,
+                    'changed_by' => (string) $user->_id,
+                    'change_summary' => $changeSummary,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Form updated successfully',
-                'data' => $form->load(['creator:_id,name,email', 'updater:_id,name,email'])
+                'data' => [
+                    'form' => $form->load(['creator:_id,name,email', 'updater:_id,name,email']),
+                    'version_incremented' => $incrementVersion,
+                    'previous_version' => $previousVersion,
+                    'template_updated' => $templateUpdated,
+                ]
             ], 200);
 
         } catch (\Exception $e) {
@@ -708,7 +756,7 @@ class FormController extends Controller
         try {
             // Delete form history first
             FormHistory::where('form_id', $id)->delete();
-            
+
             // Delete the form
             $form->delete();
 
@@ -724,7 +772,7 @@ class FormController extends Controller
             ], 500);
         }
     }
-      /**
+    /**
      * @OA\Get(
      *     path="/api/v1/forms/{id}/history",
      *     summary="Get form version history",
@@ -838,9 +886,9 @@ class FormController extends Controller
     public function showBySlug($slug)
     {
         // Find the form using the 'slug' column instead of the 'id'
-        $form = Form::where('slug', $slug) 
-                    ->with(['creator:_id,name,email', 'updater:_id,name,email'])
-                    ->first(); // Use first() to get a single result
+        $form = Form::where('slug', $slug)
+            ->with(['creator:_id,name,email', 'updater:_id,name,email'])
+            ->first(); // Use first() to get a single result
 
         if (!$form) {
             return response()->json([
@@ -854,7 +902,7 @@ class FormController extends Controller
             'data' => $form
         ], 200);
     }
-     /**
+    /**
      * Helper method to detect structure changes
      */
     private function hasStructureChanged($oldFields, $newFields)
@@ -871,9 +919,11 @@ class FormController extends Controller
             }
 
             $oldField = $oldFields[$index];
-            
-            if ($oldField['type'] !== $newField['type'] || 
-                $oldField['name'] !== $newField['name']) {
+
+            if (
+                $oldField['type'] !== $newField['type'] ||
+                $oldField['name'] !== $newField['name']
+            ) {
                 return true;
             }
         }

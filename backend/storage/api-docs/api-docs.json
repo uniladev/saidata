@@ -521,6 +521,64 @@
                                                 "type": "boolean",
                                                 "example": true
                                             },
+                                            "type": {
+                                                "description": "Form type: service or record",
+                                                "type": "string",
+                                                "enum": [
+                                                    "service",
+                                                    "record"
+                                                ],
+                                                "example": "record"
+                                            },
+                                            "has_output": {
+                                                "description": "Whether form generates output/results",
+                                                "type": "boolean",
+                                                "example": false
+                                            },
+                                            "template_url": {
+                                                "description": "Path to template document",
+                                                "type": "string",
+                                                "example": "templates/forms/671292eb4c6b7a0d4e0b1234/1730000000_template.pdf",
+                                                "nullable": true
+                                            },
+                                            "template_metadata": {
+                                                "properties": {
+                                                    "original_name": {
+                                                        "type": "string",
+                                                        "example": "Form_Template.pdf"
+                                                    },
+                                                    "size": {
+                                                        "type": "integer",
+                                                        "example": 1024000
+                                                    },
+                                                    "mime_type": {
+                                                        "type": "string",
+                                                        "example": "application/pdf"
+                                                    },
+                                                    "uploaded_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "uploaded_by": {
+                                                        "type": "string",
+                                                        "example": "68ee3e2c533619c833053652"
+                                                    }
+                                                },
+                                                "type": "object",
+                                                "nullable": true
+                                            },
+                                            "metadata": {
+                                                "description": "Custom metadata for the form, e.g. category, tags, etc. Must be an object or array, not a string.",
+                                                "type": "object",
+                                                "example": {
+                                                    "category": "survey",
+                                                    "tags": [
+                                                        "customer",
+                                                        "feedback"
+                                                    ]
+                                                },
+                                                "nullable": true
+                                            },
                                             "fields": {
                                                 "type": "array",
                                                 "items": {
@@ -578,6 +636,7 @@
                                                         "validation": {
                                                             "description": "Validation rules object",
                                                             "type": "object",
+                                                            "example": [],
                                                             "nullable": true
                                                         },
                                                         "options": {
@@ -585,11 +644,16 @@
                                                             "type": "array",
                                                             "items": {
                                                                 "type": "string"
-                                                            }
+                                                            },
+                                                            "example": [
+                                                                "Option 1",
+                                                                "Option 2"
+                                                            ]
                                                         },
                                                         "fileOptions": {
                                                             "description": "File upload options",
                                                             "type": "object",
+                                                            "example": [],
                                                             "nullable": true
                                                         },
                                                         "min": {
@@ -749,7 +813,7 @@
                     "Forms"
                 ],
                 "summary": "Update form",
-                "description": "Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields.",
+                "description": "Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields. Supports template document upload.",
                 "operationId": "cd7f11d5218d6865724c77f1ea25d841",
                 "parameters": [
                     {
@@ -767,71 +831,36 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
                                     "form"
                                 ],
                                 "properties": {
                                     "form": {
-                                        "properties": {
-                                            "title": {
-                                                "type": "string",
-                                                "example": "Updated Form Title"
-                                            },
-                                            "description": {
-                                                "type": "string",
-                                                "example": "Updated description"
-                                            },
-                                            "submitText": {
-                                                "type": "string",
-                                                "example": "Submit"
-                                            },
-                                            "successMessage": {
-                                                "type": "string",
-                                                "example": "Thank you!"
-                                            },
-                                            "is_active": {
-                                                "type": "boolean"
-                                            },
-                                            "fields": {
-                                                "description": "Fields array. Include 'id' for existing fields to preserve them, omit 'id' for new fields.",
-                                                "type": "array",
-                                                "items": {
-                                                    "properties": {
-                                                        "id": {
-                                                            "description": "Include this for existing fields",
-                                                            "type": "string",
-                                                            "example": "field_1760690243313_bhm124rg1"
-                                                        },
-                                                        "type": {
-                                                            "type": "string",
-                                                            "example": "text"
-                                                        },
-                                                        "label": {
-                                                            "type": "string",
-                                                            "example": "Updated Label"
-                                                        },
-                                                        "name": {
-                                                            "type": "string",
-                                                            "example": "field_1"
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                }
-                                            }
-                                        },
-                                        "type": "object"
+                                        "description": "JSON string of form data with title, description, fields, etc.",
+                                        "type": "string",
+                                        "example": "{\"title\":\"Updated Form\",\"type\":\"service\",\"has_output\":true,\"fields\":[{\"type\":\"text\",\"label\":\"Name\",\"name\":\"name\",\"required\":true}]}"
+                                    },
+                                    "template": {
+                                        "description": "Template document file (DOCX)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "remove_template": {
+                                        "description": "Set to true to remove existing template",
+                                        "type": "boolean",
+                                        "example": false
                                     },
                                     "increment_version": {
-                                        "description": "Set to true to create new version (recommended when changing fields structure)",
+                                        "description": "Set to true to create new version",
                                         "type": "boolean",
-                                        "example": true
+                                        "example": false
                                     },
                                     "change_summary": {
                                         "description": "Summary of changes made",
                                         "type": "string",
-                                        "example": "Updated question 3, added new email field"
+                                        "example": "Added template document"
                                     }
                                 },
                                 "type": "object"
@@ -866,6 +895,10 @@
                                                 "previous_version": {
                                                     "type": "integer",
                                                     "example": 1
+                                                },
+                                                "template_updated": {
+                                                    "type": "boolean",
+                                                    "example": true
                                                 }
                                             },
                                             "type": "object"
@@ -884,6 +917,9 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not the form creator"
                     }
                 },
                 "security": [
@@ -2439,6 +2475,20 @@
                         "type": "boolean",
                         "example": true
                     },
+                    "type": {
+                        "description": "Form type",
+                        "type": "string",
+                        "enum": [
+                            "service",
+                            "record"
+                        ],
+                        "example": "record"
+                    },
+                    "has_output": {
+                        "description": "Whether form generates output",
+                        "type": "boolean",
+                        "example": false
+                    },
                     "fields": {
                         "type": "array",
                         "items": {
@@ -2509,6 +2559,18 @@
                             },
                             "type": "object"
                         }
+                    },
+                    "metadata": {
+                        "description": "Custom metadata for the form, e.g. category, tags, etc.",
+                        "type": "object",
+                        "example": {
+                            "category": "survey",
+                            "tags": [
+                                "customer",
+                                "feedback"
+                            ]
+                        },
+                        "nullable": true
                     },
                     "created_by": {
                         "type": "string",
