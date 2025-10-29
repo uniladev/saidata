@@ -521,6 +521,64 @@
                                                 "type": "boolean",
                                                 "example": true
                                             },
+                                            "type": {
+                                                "description": "Form type: service or record",
+                                                "type": "string",
+                                                "enum": [
+                                                    "service",
+                                                    "record"
+                                                ],
+                                                "example": "record"
+                                            },
+                                            "has_output": {
+                                                "description": "Whether form generates output/results",
+                                                "type": "boolean",
+                                                "example": false
+                                            },
+                                            "template_url": {
+                                                "description": "Path to template document",
+                                                "type": "string",
+                                                "example": "templates/forms/671292eb4c6b7a0d4e0b1234/1730000000_template.pdf",
+                                                "nullable": true
+                                            },
+                                            "template_metadata": {
+                                                "properties": {
+                                                    "original_name": {
+                                                        "type": "string",
+                                                        "example": "Form_Template.pdf"
+                                                    },
+                                                    "size": {
+                                                        "type": "integer",
+                                                        "example": 1024000
+                                                    },
+                                                    "mime_type": {
+                                                        "type": "string",
+                                                        "example": "application/pdf"
+                                                    },
+                                                    "uploaded_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "uploaded_by": {
+                                                        "type": "string",
+                                                        "example": "68ee3e2c533619c833053652"
+                                                    }
+                                                },
+                                                "type": "object",
+                                                "nullable": true
+                                            },
+                                            "metadata": {
+                                                "description": "Custom metadata for the form, e.g. category, tags, etc. Must be an object or array, not a string.",
+                                                "type": "object",
+                                                "example": {
+                                                    "category": "survey",
+                                                    "tags": [
+                                                        "customer",
+                                                        "feedback"
+                                                    ]
+                                                },
+                                                "nullable": true
+                                            },
                                             "fields": {
                                                 "type": "array",
                                                 "items": {
@@ -578,6 +636,7 @@
                                                         "validation": {
                                                             "description": "Validation rules object",
                                                             "type": "object",
+                                                            "example": [],
                                                             "nullable": true
                                                         },
                                                         "options": {
@@ -585,11 +644,16 @@
                                                             "type": "array",
                                                             "items": {
                                                                 "type": "string"
-                                                            }
+                                                            },
+                                                            "example": [
+                                                                "Option 1",
+                                                                "Option 2"
+                                                            ]
                                                         },
                                                         "fileOptions": {
                                                             "description": "File upload options",
                                                             "type": "object",
+                                                            "example": [],
                                                             "nullable": true
                                                         },
                                                         "min": {
@@ -749,7 +813,7 @@
                     "Forms"
                 ],
                 "summary": "Update form",
-                "description": "Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields.",
+                "description": "Update an existing form. Backend will preserve existing field IDs and generate new IDs for new fields. Supports template document upload.",
                 "operationId": "cd7f11d5218d6865724c77f1ea25d841",
                 "parameters": [
                     {
@@ -767,71 +831,36 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
                                     "form"
                                 ],
                                 "properties": {
                                     "form": {
-                                        "properties": {
-                                            "title": {
-                                                "type": "string",
-                                                "example": "Updated Form Title"
-                                            },
-                                            "description": {
-                                                "type": "string",
-                                                "example": "Updated description"
-                                            },
-                                            "submitText": {
-                                                "type": "string",
-                                                "example": "Submit"
-                                            },
-                                            "successMessage": {
-                                                "type": "string",
-                                                "example": "Thank you!"
-                                            },
-                                            "is_active": {
-                                                "type": "boolean"
-                                            },
-                                            "fields": {
-                                                "description": "Fields array. Include 'id' for existing fields to preserve them, omit 'id' for new fields.",
-                                                "type": "array",
-                                                "items": {
-                                                    "properties": {
-                                                        "id": {
-                                                            "description": "Include this for existing fields",
-                                                            "type": "string",
-                                                            "example": "field_1760690243313_bhm124rg1"
-                                                        },
-                                                        "type": {
-                                                            "type": "string",
-                                                            "example": "text"
-                                                        },
-                                                        "label": {
-                                                            "type": "string",
-                                                            "example": "Updated Label"
-                                                        },
-                                                        "name": {
-                                                            "type": "string",
-                                                            "example": "field_1"
-                                                        }
-                                                    },
-                                                    "type": "object"
-                                                }
-                                            }
-                                        },
-                                        "type": "object"
+                                        "description": "JSON string of form data with title, description, fields, etc.",
+                                        "type": "string",
+                                        "example": "{\"title\":\"Updated Form\",\"type\":\"service\",\"has_output\":true,\"fields\":[{\"type\":\"text\",\"label\":\"Name\",\"name\":\"name\",\"required\":true}]}"
+                                    },
+                                    "template": {
+                                        "description": "Template document file (DOCX)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "remove_template": {
+                                        "description": "Set to true to remove existing template",
+                                        "type": "boolean",
+                                        "example": false
                                     },
                                     "increment_version": {
-                                        "description": "Set to true to create new version (recommended when changing fields structure)",
+                                        "description": "Set to true to create new version",
                                         "type": "boolean",
-                                        "example": true
+                                        "example": false
                                     },
                                     "change_summary": {
                                         "description": "Summary of changes made",
                                         "type": "string",
-                                        "example": "Updated question 3, added new email field"
+                                        "example": "Added template document"
                                     }
                                 },
                                 "type": "object"
@@ -866,6 +895,10 @@
                                                 "previous_version": {
                                                     "type": "integer",
                                                     "example": 1
+                                                },
+                                                "template_updated": {
+                                                    "type": "boolean",
+                                                    "example": true
                                                 }
                                             },
                                             "type": "object"
@@ -884,6 +917,9 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not the form creator"
                     }
                 },
                 "security": [
@@ -2216,578 +2252,6 @@
                 ]
             }
         },
-        "/api/v1/admin/menus": {
-            "get": {
-                "tags": [
-                    "Menu Management"
-                ],
-                "summary": "Get all menus with hierarchy",
-                "description": "Retrieve all menu items filtered by user's admin scope. Admin Univ can see universitas & update_data, Admin Fakultas can see their faculty menus, Admin Jurusan can see their department menus.",
-                "operationId": "getMenus",
-                "parameters": [
-                    {
-                        "name": "scope",
-                        "in": "query",
-                        "description": "Filter by scope (universitas, fakultas, jurusan, update_data)",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "level",
-                        "in": "query",
-                        "description": "Filter by level (1, 2, 3)",
-                        "required": false,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Menus retrieved successfully"
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "_id": {
-                                                        "type": "string",
-                                                        "example": "507f1f77bcf86cd799439011"
-                                                    },
-                                                    "name": {
-                                                        "type": "string",
-                                                        "example": "Layanan Universitas"
-                                                    },
-                                                    "level": {
-                                                        "type": "integer",
-                                                        "example": 1
-                                                    },
-                                                    "scope": {
-                                                        "type": "string",
-                                                        "example": "universitas"
-                                                    },
-                                                    "type": {
-                                                        "type": "string",
-                                                        "example": "category"
-                                                    },
-                                                    "icon": {
-                                                        "type": "string",
-                                                        "example": "fas fa-university"
-                                                    },
-                                                    "order": {
-                                                        "type": "integer",
-                                                        "example": 2
-                                                    },
-                                                    "children": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "object"
-                                                        }
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Invalid token"
-                    },
-                    "403": {
-                        "description": "Forbidden - Not an admin user"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "post": {
-                "tags": [
-                    "Menu Management"
-                ],
-                "summary": "Create a new menu",
-                "description": "Create a new menu item with validation rules based on level and scope. Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
-                "operationId": "createMenu",
-                "requestBody": {
-                    "description": "Menu data to create",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "name",
-                                    "level",
-                                    "scope",
-                                    "type"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "maxLength": 255,
-                                        "example": "Surat Keterangan Mahasiswa"
-                                    },
-                                    "level": {
-                                        "type": "integer",
-                                        "maximum": 3,
-                                        "minimum": 1,
-                                        "example": 2
-                                    },
-                                    "scope": {
-                                        "type": "string",
-                                        "enum": [
-                                            "universitas",
-                                            "fakultas",
-                                            "jurusan",
-                                            "update_data"
-                                        ],
-                                        "example": "universitas"
-                                    },
-                                    "type": {
-                                        "type": "string",
-                                        "enum": [
-                                            "category",
-                                            "subcategory",
-                                            "form"
-                                        ],
-                                        "example": "form"
-                                    },
-                                    "icon": {
-                                        "type": "string",
-                                        "maxLength": 100,
-                                        "example": "fas fa-file",
-                                        "nullable": true
-                                    },
-                                    "parent_id": {
-                                        "type": "string",
-                                        "example": "507f1f77bcf86cd799439011",
-                                        "nullable": true
-                                    },
-                                    "route": {
-                                        "type": "string",
-                                        "maxLength": 255,
-                                        "example": "/forms/surat-keterangan",
-                                        "nullable": true
-                                    },
-                                    "form_id": {
-                                        "type": "string",
-                                        "example": "507f1f77bcf86cd799439012",
-                                        "nullable": true
-                                    },
-                                    "faculty_code": {
-                                        "type": "string",
-                                        "maxLength": 10,
-                                        "example": "FT",
-                                        "nullable": true
-                                    },
-                                    "department_code": {
-                                        "type": "string",
-                                        "maxLength": 10,
-                                        "example": "IF",
-                                        "nullable": true
-                                    },
-                                    "is_active": {
-                                        "type": "boolean",
-                                        "default": true,
-                                        "example": true
-                                    },
-                                    "order": {
-                                        "type": "integer",
-                                        "minimum": 0,
-                                        "example": 1
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Menu created successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Menu created successfully"
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "_id": {
-                                                    "type": "string",
-                                                    "example": "507f1f77bcf86cd799439013"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                },
-                                                "level": {
-                                                    "type": "integer"
-                                                },
-                                                "scope": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error or invalid business rule"
-                    },
-                    "403": {
-                        "description": "Forbidden - Not authorized to create in this scope"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/admin/menus/{id}": {
-            "get": {
-                "tags": [
-                    "Menu Management"
-                ],
-                "summary": "Get menu by ID",
-                "description": "Retrieve a specific menu item with its parent and children relationships",
-                "operationId": "showMenu",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Menu MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Menu retrieved successfully"
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "_id": {
-                                                    "type": "string",
-                                                    "example": "507f1f77bcf86cd799439011"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                },
-                                                "level": {
-                                                    "type": "integer"
-                                                },
-                                                "parent": {
-                                                    "type": "object"
-                                                },
-                                                "children": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - Not authorized"
-                    },
-                    "404": {
-                        "description": "Menu not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Menu Management"
-                ],
-                "summary": "Update menu",
-                "description": "Update an existing menu item. Only name, icon (level 1 only), route, form_id, is_active, and order can be updated.",
-                "operationId": "updateMenu",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Menu MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "description": "Menu fields to update (partial update allowed)",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "maxLength": 255,
-                                        "example": "Updated Menu Name"
-                                    },
-                                    "icon": {
-                                        "type": "string",
-                                        "maxLength": 100,
-                                        "example": "fas fa-star",
-                                        "nullable": true
-                                    },
-                                    "route": {
-                                        "type": "string",
-                                        "maxLength": 255,
-                                        "example": "/forms/updated-route",
-                                        "nullable": true
-                                    },
-                                    "form_id": {
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "is_active": {
-                                        "type": "boolean",
-                                        "example": true
-                                    },
-                                    "order": {
-                                        "type": "integer",
-                                        "minimum": 0,
-                                        "example": 2
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Menu updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Menu updated successfully"
-                                        },
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error or invalid business rule"
-                    },
-                    "403": {
-                        "description": "Forbidden - Not authorized"
-                    },
-                    "404": {
-                        "description": "Menu not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Menu Management"
-                ],
-                "summary": "Delete menu with cascade",
-                "description": "Delete a menu item and all its children recursively (cascade delete). This is a permanent operation.",
-                "operationId": "deleteMenu",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Menu MongoDB ObjectId",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "pattern": "^[a-f0-9]{24}$"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Menu deleted successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Menu and 3 children deleted successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - Not authorized"
-                    },
-                    "404": {
-                        "description": "Menu not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/admin/menus/reorder": {
-            "post": {
-                "tags": [
-                    "Menu Management"
-                ],
-                "summary": "Reorder menus",
-                "description": "Bulk update menu order. Only menus that the user has authorization to manage will be updated.",
-                "operationId": "reorderMenus",
-                "requestBody": {
-                    "description": "Array of menus with new order values",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "menus"
-                                ],
-                                "properties": {
-                                    "menus": {
-                                        "type": "array",
-                                        "items": {
-                                            "required": [
-                                                "id",
-                                                "order"
-                                            ],
-                                            "properties": {
-                                                "id": {
-                                                    "type": "string",
-                                                    "example": "507f1f77bcf86cd799439011"
-                                                },
-                                                "order": {
-                                                    "type": "integer",
-                                                    "minimum": 0,
-                                                    "example": 1
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "minItems": 1
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Menus reordered successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Menus reordered successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error"
-                    },
-                    "403": {
-                        "description": "Forbidden - Not authorized"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/api/v1/users/{userId}/profile": {
             "get": {
                 "tags": [
@@ -3011,6 +2475,20 @@
                         "type": "boolean",
                         "example": true
                     },
+                    "type": {
+                        "description": "Form type",
+                        "type": "string",
+                        "enum": [
+                            "service",
+                            "record"
+                        ],
+                        "example": "record"
+                    },
+                    "has_output": {
+                        "description": "Whether form generates output",
+                        "type": "boolean",
+                        "example": false
+                    },
                     "fields": {
                         "type": "array",
                         "items": {
@@ -3082,6 +2560,18 @@
                             "type": "object"
                         }
                     },
+                    "metadata": {
+                        "description": "Custom metadata for the form, e.g. category, tags, etc.",
+                        "type": "object",
+                        "example": {
+                            "category": "survey",
+                            "tags": [
+                                "customer",
+                                "feedback"
+                            ]
+                        },
+                        "nullable": true
+                    },
                     "created_by": {
                         "type": "string",
                         "example": "68ee3e2c533619c833053652"
@@ -3131,6 +2621,10 @@
         {
             "name": "Menu",
             "description": "Menu"
+        },
+        {
+            "name": "Menu Management",
+            "description": "Menu Management"
         },
         {
             "name": "User Profiles",

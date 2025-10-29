@@ -20,6 +20,8 @@ class FormHistory extends Model
         'fields',
         'changed_by',
         'change_summary',
+        'template_url',
+        'template_metadata',
     ];
 
     protected $casts = [
@@ -27,6 +29,7 @@ class FormHistory extends Model
         'version' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'template_metadata' => 'array',
     ];
 
     public function form()

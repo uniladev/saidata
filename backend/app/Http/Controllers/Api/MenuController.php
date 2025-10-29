@@ -118,6 +118,7 @@ class MenuController extends Controller
                     ['id' => 2001, 'name' => 'Create Form', 'path' => '/forms/create', 'order' => 1],
                     ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
                     ['id' => 2003, 'name' => 'Menu Setting', 'path' => '/menu', 'order' => 3],
+                    ['id' => 2004, 'name' => 'Table', 'path' => '/table-demo', 'order' => 4],
                 ]
             ],
         ];
