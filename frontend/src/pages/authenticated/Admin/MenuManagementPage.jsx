@@ -141,20 +141,33 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, onClose, onSa
               </div>
             )}
 
-            {type === 'subcategory' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Icon Name</label>
-                <input 
-                  type="text" 
-                  name="icon" 
-                  value={formData.icon} 
-                  onChange={handleChange} 
-                  className="w-full px-3 py-2 border rounded-lg" 
-                  placeholder="e.g., Folder (from lucide-react)" 
-                />
-              </div>
+            {(type === 'subcategory' || type === 'subsubcategory') && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Path</label>
+                  <input 
+                    type="text" 
+                    name="path" 
+                    value={formData.path} 
+                    onChange={handleChange} 
+                    className="w-full px-3 py-2 border rounded-lg" 
+                    required 
+                    placeholder="e.g., /dashboard/faculty/general"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Icon Name</label>
+                  <input 
+                    type="text" 
+                    name="icon" 
+                    value={formData.icon} 
+                    onChange={handleChange} 
+                    className="w-full px-3 py-2 border rounded-lg" 
+                    placeholder="e.g., Folder (from lucide-react)" 
+                  />
+                </div>
+              </>
             )}
-
             <div>
               <label className="block text-sm font-medium mb-1">Order</label>
               <input 
@@ -300,7 +313,7 @@ const MenuManagementPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get('/menu');
+      const response = await api.get('/menu-management');
       console.log("DATA MENU DITERIMA:", response.data.data.menu);
       setMenuStructure(response.data.data.menu || []); // Access the 'menu' array, default to empty array if missing
     } catch (err) {
@@ -320,13 +333,23 @@ const MenuManagementPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleAddService = (categoryId, subcategoryId) => {
-    setCurrentItem({ 
-      type: 'service', 
-      parentId: subcategoryId,
-      categoryId: categoryId 
-    });
-    setIsModalOpen(true);
+  const handleAddSubSubcategory = (categoryId, subcategoryId) => {
+  setCurrentItem({ 
+    type: 'subsubcategory', 
+    parentId: subcategoryId, // Induknya adalah subcategory
+    categoryId: categoryId 
+  });
+  setIsModalOpen(true);
+  };
+
+// PERBARUI FUNGSI INI
+  const handleAddService = (categoryId, subcategoryId, subSubcategoryId) => {
+  setCurrentItem({ 
+    type: 'service', 
+    parentId: subSubcategoryId, // Induknya sekarang adalah sub-subcategory
+    categoryId: categoryId 
+  });
+  setIsModalOpen(true);
   };
 
   const handleEditItem = (item, categoryId) => {
@@ -339,10 +362,10 @@ const MenuManagementPage = () => {
     try {
       if (savedItemData.id) {
         // Update existing item
-        await api.put(`/menu/${savedItemData.id}`, savedItemData);
+        await api.put(`/menu-management/${savedItemData.id}`, savedItemData);
       } else {
         // Create new item
-        await api.post('/menu', savedItemData);
+        await api.post('/menu-management', savedItemData);
       }
       
       // Refresh menu structure
@@ -364,7 +387,7 @@ const MenuManagementPage = () => {
     
     setIsLoading(true);
     try {
-      await api.delete(`/menu/${itemId}`);
+      await api.delete(`/menu-management/${itemId}`);
       await fetchMenuStructure();
     } catch (err) {
       console.error("Error deleting menu item:", err);
@@ -397,7 +420,7 @@ const MenuManagementPage = () => {
       
       // Save new order to backend
       try {
-        await api.put('/menu/reorder', {
+        await api.put('/menu-management/reorder', {
           items: reorderedCategories.map((cat, index) => ({
             id: cat.id,
             order: index + 1
@@ -438,7 +461,7 @@ const MenuManagementPage = () => {
           );
           
           if (categoryWithReorderedItems) {
-            await api.put('/menu/reorder', {
+            await api.put('/menu-management/reorder', {
               items: categoryWithReorderedItems.submenu.map((sub, index) => ({
                 id: sub.id,
                 order: index + 1
@@ -519,6 +542,11 @@ const MenuManagementPage = () => {
                               Add Subcategory
                             </button>
                             <button 
+                              onClick={() => handleAddService(category.id, subcategory.id)} 
+                              className="text-green-600 hover:text-green-900 text-sm font-medium"
+                            >Add Service
+                            </button>
+                            <button 
                               onClick={() => handleEditItem(category, category.id)} 
                               className="text-indigo-600 hover:text-indigo-900 text-sm"
                             >
@@ -532,64 +560,98 @@ const MenuManagementPage = () => {
                             </button>
                           </div>
                         </div>
-
                         {/* --- Subcategory Section --- */}
                         {category.submenu && category.submenu.length > 0 && (
-                          // --- ADD SortableContext FOR SUBCATEGORIES ---
                           <SortableContext
-                            items={category.submenu.map(sub => sub.id)} // IDs of subcategories in this category
+                            items={category.submenu.map(sub => sub.id)}
                             strategy={verticalListSortingStrategy}
-                            // id={`subcategory-${category.id}`} // Optional: Unique ID if needed
                           >
                             <ul className="ml-6 pl-4 border-l-2 border-blue-200 space-y-2 mt-2">
                               {category.submenu
                                 .sort((a, b) => a.order - b.order)
                                 .map((subcategory) => (
-                                  // --- WRAP SUBCATEGORY LI WITH SortableItem ---
                                   <SortableItem key={subcategory.id} id={subcategory.id}>
                                     <div className="bg-white p-2 rounded border border-gray-200 shadow-sm">
                                       {/* Subcategory Content */}
                                       <div className="flex justify-between items-center mb-1">
-                                        {/* Drag handle is now inside SortableItem */}
                                         <span className="text-sm font-medium">{subcategory.name}</span>
                                         <div className="space-x-1">
-                                          <button onClick={() => handleAddService(category.id, subcategory.id)} className="text-green-600 hover:text-green-900 text-xs font-medium">Add Service</button>
-                                          <button onClick={() => handleEditItem(subcategory, category.id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={12}/></button>
-                                          <button onClick={() => handleDeleteItem(subcategory.id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={12}/></button>
+                                          {/* Tombol yang Anda buat sebelumnya dipertahankan */}
+                                          <button 
+                                            onClick={() => handleAddSubcategory(category.id)} 
+                                            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                                          >
+                                            Add Subcategory
+                                          </button>
+                                          
+                                          {/* --- PERUBAHAN: Tombol ini sekarang untuk menambah Sub-Subcategory --- */}
+                                          <button 
+                                            onClick={() => handleAddSubSubcategory(category.id, subcategory.id)} 
+                                            className="text-purple-600 hover:text-purple-900 text-xs font-medium"
+                                          >
+                                            Add Sub-Subcategory
+                                          </button>
+                                          
+                                          <button 
+                                            onClick={() => handleEditItem(subcategory, category.id)} 
+                                            className="text-indigo-600 hover:text-indigo-900 text-xs"
+                                          >
+                                            <Edit size={12}/>
+                                          </button>
+                                          <button 
+                                            onClick={() => handleDeleteItem(subcategory.id)} 
+                                            className="text-red-600 hover:text-red-900 text-xs"
+                                          >
+                                            <Trash2 size={12}/>
+                                          </button>
                                         </div>
                                       </div>
                                       
-                                      {/* Services Section */}
-                                      {subcategory.services && subcategory.services.length > 0 && (
-                                        <div className="mt-2 ml-4 space-y-1">
-                                          {subcategory.services
+                                      {/* --- BAGIAN BARU: Render Sub-Subcategory --- */}
+                                      {subcategory.submenu && subcategory.submenu.length > 0 && (
+                                        <ul className="ml-6 pl-4 border-l-2 border-green-200 space-y-2 mt-2">
+                                          {subcategory.submenu
                                             .sort((a, b) => a.order - b.order)
-                                            .map((service) => (
-                                              <div key={service.id} className="bg-gray-50 p-2 rounded border border-gray-100 flex justify-between items-center">
-                                                <div className="flex items-center space-x-2">
-                                                  <span className="text-xs text-gray-600">🔧</span>
-                                                  <span className="text-xs font-medium">{service.name}</span>
-                                                  {service.formId && (
-                                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                                                      Form Linked
-                                                    </span>
-                                                  )}
+                                            .map((subSubcategory) => (
+                                              <li key={subSubcategory.id} className="bg-gray-50 p-2 rounded border border-gray-100">
+                                                <div className="flex justify-between items-center">
+                                                  <span className="text-sm text-gray-700">{subSubcategory.name}</span>
+                                                  <div className="space-x-1">
+                                                    {/* Tombol Add Service sekarang ada di sini */}
+                                                    <button 
+                                                      onClick={() => handleAddService(category.id, subcategory.id, subSubcategory.id)} 
+                                                      className="text-green-600 hover:text-green-900 text-xs font-medium"
+                                                    >
+                                                      Add Service
+                                                    </button>
+                                                    <button 
+                                                      onClick={() => handleEditItem(subSubcategory, category.id)} 
+                                                      className="text-indigo-600 hover:text-indigo-900 text-xs"
+                                                    >
+                                                      <Edit size={12}/>
+                                                    </button>
+                                                    <button 
+                                                      onClick={() => handleDeleteItem(subSubcategory.id)} 
+                                                      className="text-red-600 hover:text-red-900 text-xs"
+                                                    >
+                                                      <Trash2 size={12}/>
+                                                    </button>
+                                                  </div>
                                                 </div>
-                                                <div className="space-x-1">
-                                                  <button onClick={() => handleEditItem(service, category.id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={10}/></button>
-                                                  <button onClick={() => handleDeleteItem(service.id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={10}/></button>
-                                                </div>
-                                              </div>
+                                                {/* Di sini Anda bisa menambahkan perulangan untuk services jika diperlukan */}
+                                              </li>
                                             ))}
-                                        </div>
+                                        </ul>
                                       )}
+                                      {/* --- AKHIR BAGIAN BARU --- */}
+
                                     </div>
                                   </SortableItem>
                                 ))}
                             </ul>
                           </SortableContext>
-                          // --- END SUBCATEGORY SortableContext ---
                         )}
+                        {/* ... (sisa kode) ... */}
                       </div>
                     </SortableItem>
                 ))}
