@@ -19,21 +19,31 @@ class Form extends Model
         'fields',
         'version',
         'is_active',
+        'type',        // added
+        'has_output',  // added
         'created_by',
         'updated_by',
+        'metadata',
+        'template_url',
+        'template_metadata',
     ];
 
     protected $casts = [
         'fields' => 'array',
         'version' => 'integer',
         'is_active' => 'boolean',
+        'has_output' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'template_metadata' => 'array',
     ];
 
     protected $attributes = [
         'version' => 1,
         'is_active' => true,
+        'type' => 'record',
+        'has_output' => false,
+        'metadata' => [],
     ];
 
     protected $appends = ['_id'];
@@ -53,10 +63,15 @@ class Form extends Model
         'fields',
         'version',
         'is_active',
+        'type',        // added
+        'has_output',  // added
         'created_by',
         'updated_by',
         'created_at',
         'updated_at',
+        'metadata',
+        'template_url',
+        'template_metadata',
     ];
 
     protected static function boot()
@@ -73,6 +88,11 @@ class Form extends Model
                 $form->slug = $form->generateUniqueSlug($form->title, $form->_id);
             }
         });
+    }
+    public function setTypeAttribute($value)
+    {
+        $allowed = ['service', 'record'];
+        $this->attributes['type'] = in_array($value, $allowed) ? $value : 'record';
     }
 
     public function generateUniqueSlug($title, $excludeId = null)

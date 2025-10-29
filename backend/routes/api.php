@@ -56,6 +56,16 @@ Route::prefix('v1')->group(function () {
 
             // Get form by slug
             Route::get('/slug/{slug}', [FormController::class, 'showBySlug']);
+
+            // Form versioning routes
+            Route::get('/{id}/history', [FormController::class, 'history']);
+            Route::get('/{id}/version/{version}', [FormController::class, 'showVersion']);
+
+            // Toggle form status
+            Route::patch('forms/{id}/toggle-status', [FormController::class, 'toggleStatus']);
+
+            // Download form template
+            Route::get('forms/{id}/template', [FormController::class, 'downloadTemplate']);
         });
 
         // Form Submissions routes
@@ -92,13 +102,6 @@ Route::prefix('v1')->group(function () {
                 ->where('id', '[a-f0-9]{24}');
         });
 
-        // Form versioning routes
-        Route::group(['prefix' => 'forms', 'middleware' => 'auth:api'], function () {
-            Route::get('/{id}/history', [FormController::class, 'history']);
-            Route::get('/{id}/version/{version}', [FormController::class, 'showVersion']);
-        });
-
-        // Toggle form status
-        Route::patch('forms/{id}/toggle-status', [FormController::class, 'toggleStatus']);
+        
     });
 });
