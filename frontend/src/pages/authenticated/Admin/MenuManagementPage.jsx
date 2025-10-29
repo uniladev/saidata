@@ -20,7 +20,6 @@ const SortableItem = ({ id, children }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
     touchAction: 'none',
   };
 
@@ -86,7 +85,7 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, onClose, onSa
     const orderNumber = parseInt(formData.order, 10) || 1;
 
     const savedItemData = {
-      ...(isEditing ? { _id: item._id } : {}),
+      ...(isEditing ? { id: item.id } : {}),
       type: type,
       parentId: parentId,
       categoryId: categoryId,
@@ -197,7 +196,7 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, onClose, onSa
                       {isLoadingForms ? 'Loading forms...' : '-- Select a Form --'}
                     </option>
                     {formsList.map(form => (
-                      <option key={form._id} value={form._id}>{form.title}</option>
+                      <option key={form.id} value={form.id}>{form.title}</option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Select the form created in the Form Builder.</p>
@@ -254,6 +253,7 @@ const MenuManagementPage = () => {
     setError(null);
     try {
       const response = await api.get('/menu');
+      console.log("DATA MENU DITERIMA:", response.data.data.menu);
       setMenuStructure(response.data.data.menu || []); // Access the 'menu' array, default to empty array if missing
     } catch (err) {
       console.error("Error fetching menu structure:", err);
@@ -289,9 +289,9 @@ const MenuManagementPage = () => {
   const handleSaveItem = async (savedItemData) => {
     setIsLoading(true);
     try {
-      if (savedItemData._id) {
+      if (savedItemData.id) {
         // Update existing item
-        await api.put(`/menu/${savedItemData._id}`, savedItemData);
+        await api.put(`/menu/${savedItemData.id}`, savedItemData);
       } else {
         // Create new item
         await api.post('/menu', savedItemData);
@@ -337,12 +337,12 @@ const MenuManagementPage = () => {
     const overId = over.id;
 
     // Find what type of item is being dragged
-    const isCategory = menuStructure.some(cat => cat._id === activeId);
+    const isCategory = menuStructure.some(cat => cat.id === activeId);
     
     if (isCategory) {
       // Reorder categories
-      const oldIndex = menuStructure.findIndex(cat => cat._id === activeId);
-      const newIndex = menuStructure.findIndex(cat => cat._id === overId);
+      const oldIndex = menuStructure.findIndex(cat => cat.id === activeId);
+      const newIndex = menuStructure.findIndex(cat => cat.id === overId);
       const reorderedCategories = arrayMove(menuStructure, oldIndex, newIndex);
       
       setMenuStructure(reorderedCategories);
@@ -351,7 +351,7 @@ const MenuManagementPage = () => {
       try {
         await api.put('/menu/reorder', {
           items: reorderedCategories.map((cat, index) => ({
-            _id: cat._id,
+            id: cat.id,
             order: index + 1
           }))
         });
@@ -364,8 +364,8 @@ const MenuManagementPage = () => {
       let found = false;
       const newMenuStructure = menuStructure.map(category => {
         if (category.submenu) {
-          const activeIndex = category.submenu.findIndex(sub => sub._id === activeId);
-          const overIndex = category.submenu.findIndex(sub => sub._id === overId);
+          const activeIndex = category.submenu.findIndex(sub => sub.id === activeId);
+          const overIndex = category.submenu.findIndex(sub => sub.id === overId);
           
           if (activeIndex !== -1 && overIndex !== -1) {
             // Both items are in this category - reorder them
@@ -386,13 +386,13 @@ const MenuManagementPage = () => {
         // Save new order to backend
         try {
           const categoryWithReorderedItems = newMenuStructure.find(cat => 
-            cat.submenu && cat.submenu.some(sub => sub._id === activeId)
+            cat.submenu && cat.submenu.some(sub => sub.id === activeId)
           );
           
           if (categoryWithReorderedItems) {
             await api.put('/menu/reorder', {
               items: categoryWithReorderedItems.submenu.map((sub, index) => ({
-                _id: sub._id,
+                id: sub.id,
                 order: index + 1
               }))
             });
@@ -448,15 +448,15 @@ const MenuManagementPage = () => {
             <p className="text-center text-gray-500 py-4">No menu structure available or loading...</p>
           ) : (
             <SortableContext
-              items={menuStructure.map(item => item._id)} // Safe now
+              items={menuStructure.map(item => item.id)} // Safe now
               strategy={verticalListSortingStrategy}
             >
               <ul className="space-y-3">
                 {menuStructure // Safe now
                   .sort((a, b) => a.order - b.order)
                   .map((category) => (
-                    <SortableItem key={category._id} id={category._id}>
-                      <div className="bg-gray-100 p-3 rounded-md border border-gray-200">
+                    <SortableItem key={category.id} id={category.id}>
+                      <div className="p-3 rounded-md border border-gray-200">
                         {/* Category Header */}
                         <div className="flex justify-between items-center mb-2">
                           <div className="flex items-center space-x-2">
@@ -465,19 +465,19 @@ const MenuManagementPage = () => {
                           </div>
                           <div className="space-x-2">
                             <button 
-                              onClick={() => handleAddSubcategory(category._id)} 
+                              onClick={() => handleAddSubcategory(category.id)} 
                               className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                             >
                               Add Subcategory
                             </button>
                             <button 
-                              onClick={() => handleEditItem(category, category._id)} 
+                              onClick={() => handleEditItem(category, category.id)} 
                               className="text-indigo-600 hover:text-indigo-900 text-sm"
                             >
                               <Edit size={14}/>
                             </button>
                             <button 
-                              onClick={() => handleDeleteItem(category._id)} 
+                              onClick={() => handleDeleteItem(category.id)} 
                               className="text-red-600 hover:text-red-900 text-sm"
                             >
                               <Trash2 size={14}/>
@@ -489,25 +489,25 @@ const MenuManagementPage = () => {
                         {category.submenu && category.submenu.length > 0 && (
                           // --- ADD SortableContext FOR SUBCATEGORIES ---
                           <SortableContext
-                            items={category.submenu.map(sub => sub._id)} // IDs of subcategories in this category
+                            items={category.submenu.map(sub => sub.id)} // IDs of subcategories in this category
                             strategy={verticalListSortingStrategy}
-                            // id={`subcategory-${category._id}`} // Optional: Unique ID if needed
+                            // id={`subcategory-${category.id}`} // Optional: Unique ID if needed
                           >
                             <ul className="ml-6 pl-4 border-l-2 border-blue-200 space-y-2 mt-2">
                               {category.submenu
                                 .sort((a, b) => a.order - b.order)
                                 .map((subcategory) => (
                                   // --- WRAP SUBCATEGORY LI WITH SortableItem ---
-                                  <SortableItem key={subcategory._id} id={subcategory._id}>
+                                  <SortableItem key={subcategory.id} id={subcategory.id}>
                                     <div className="bg-white p-2 rounded border border-gray-200 shadow-sm">
                                       {/* Subcategory Content */}
                                       <div className="flex justify-between items-center mb-1">
                                         {/* Drag handle is now inside SortableItem */}
                                         <span className="text-sm font-medium">{subcategory.name}</span>
                                         <div className="space-x-1">
-                                          <button onClick={() => handleAddService(category._id, subcategory._id)} className="text-green-600 hover:text-green-900 text-xs font-medium">Add Service</button>
-                                          <button onClick={() => handleEditItem(subcategory, category._id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={12}/></button>
-                                          <button onClick={() => handleDeleteItem(subcategory._id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={12}/></button>
+                                          <button onClick={() => handleAddService(category.id, subcategory.id)} className="text-green-600 hover:text-green-900 text-xs font-medium">Add Service</button>
+                                          <button onClick={() => handleEditItem(subcategory, category.id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={12}/></button>
+                                          <button onClick={() => handleDeleteItem(subcategory.id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={12}/></button>
                                         </div>
                                       </div>
                                       
@@ -517,7 +517,7 @@ const MenuManagementPage = () => {
                                           {subcategory.services
                                             .sort((a, b) => a.order - b.order)
                                             .map((service) => (
-                                              <div key={service._id} className="bg-gray-50 p-2 rounded border border-gray-100 flex justify-between items-center">
+                                              <div key={service.id} className="bg-gray-50 p-2 rounded border border-gray-100 flex justify-between items-center">
                                                 <div className="flex items-center space-x-2">
                                                   <span className="text-xs text-gray-600">🔧</span>
                                                   <span className="text-xs font-medium">{service.name}</span>
@@ -528,8 +528,8 @@ const MenuManagementPage = () => {
                                                   )}
                                                 </div>
                                                 <div className="space-x-1">
-                                                  <button onClick={() => handleEditItem(service, category._id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={10}/></button>
-                                                  <button onClick={() => handleDeleteItem(service._id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={10}/></button>
+                                                  <button onClick={() => handleEditItem(service, category.id)} className="text-indigo-600 hover:text-indigo-900 text-xs"><Edit size={10}/></button>
+                                                  <button onClick={() => handleDeleteItem(service.id)} className="text-red-600 hover:text-red-900 text-xs"><Trash2 size={10}/></button>
                                                 </div>
                                               </div>
                                             ))}
@@ -553,7 +553,7 @@ const MenuManagementPage = () => {
 
       {isModalOpen && (
         <MenuItemFormModal
-          item={currentItem?._id ? currentItem : null}
+          item={currentItem?.id ? currentItem : null}
           itemType={currentItem?.type}
           parentId={currentItem?.parentId}
           categoryId={currentItem?.categoryId}

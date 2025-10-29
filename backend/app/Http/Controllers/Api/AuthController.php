@@ -120,6 +120,7 @@ class AuthController extends Controller
             /*
                 SALAH struktur nya
             */
+
             $mockUsers = [
                 '2267051001' => [
                     'username' => '2267051001',
@@ -181,7 +182,42 @@ class AuthController extends Controller
                         'phone' => '081234567890',
                     ],
                 ],
-                
+                'admin_univ' => [
+                    'username' => 'admin_univ',
+                    'email' => 'admin2@unila.ac.id',
+                    'role' => 'admin',
+                    'profile' => [
+                        'name' => 'Administrator Univ',
+                        'faculty_code' => null,
+                        'department_code' => null,
+                        'study_program_code' => null,
+                        'phone' => '081234567890',
+                    ],
+                ],
+                'admin_fakultas' => [
+                    'username' => 'admin_fakultas',
+                    'email' => 'admin3@unila.ac.id',
+                    'role' => 'admin',
+                    'profile' => [
+                        'name' => 'Administrator Fakultas',
+                        'faculty_code' => 'FT',
+                        'department_code' => null,
+                        'study_program_code' => null,
+                        'phone' => '081234567878',
+                    ],
+                ],
+                'admin_jurusan' => [
+                    'username' => 'admin_jurusan',
+                    'email' => 'admin4@unila.ac.id',
+                    'role' => 'admin',
+                    'profile' => [
+                        'name' => 'Administrator Jurusan',
+                        'faculty_code' => 'FMIPA',
+                        'department_code' => 'ILKOM',
+                        'study_program_code' => null,
+                        'phone' => '081234567812',
+                    ],
+                ],
             ];
 
             $ssoData = $mockUsers[$username] ?? null;
