@@ -29,11 +29,19 @@ Route::prefix('v1')->group(function () {
         
         // Menu routes
         Route::get('/menu', [MenuController::class, 'index']);
-        Route::get('/menu-management', [MenuManagementController::class, 'index']);
-        Route::post('/menu-management', [MenuManagementController::class, 'store']);       // <-- TAMBAHKAN INI
-        Route::put('/menu-management/{id}', [MenuManagementController::class, 'update']);    // <-- TAMBAHKAN INI
-        Route::delete('/menu-management/{id}', [MenuManagementController::class, 'destroy']); // <-- TAMBAHKAN INI
-        Route::put('/menu-management/reorder', [MenuManagementController::class, 'reorder']); // <-- TAMBAHKAN INI
+        
+        // Menu Management routes (Admin only)
+        Route::prefix('admin/menus')->group(function () {
+            Route::get('/', [MenuManagementController::class, 'index']);
+            Route::post('/', [MenuManagementController::class, 'store']);
+            Route::get('/{id}', [MenuManagementController::class, 'show'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::put('/{id}', [MenuManagementController::class, 'update'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::delete('/{id}', [MenuManagementController::class, 'destroy'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::post('/reorder', [MenuManagementController::class, 'reorder']);
+        });
         
         // Forms routes - Only MongoDB ObjectId
         Route::prefix('forms')->group(function () {
