@@ -78,7 +78,27 @@ class FormSubmissionController extends Controller
             ], 400);
         }
 
-        $submissions = FormSubmission::where('form_id', $formId)
+        // Check if form exists
+        $form = Form::find($formId);
+        if (!$form) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form not found'
+            ], 404);
+        }
+
+        // Get authenticated user
+        $user = JWTAuth::parseToken()->authenticate();
+
+        // Build query based on user role
+        $query = FormSubmission::where('form_id', $formId);
+
+        // If not admin, only show user's own submissions
+        if ($user->role !== 'admin') {
+            $query->where('submitted_by', $user->_id);
+        }
+
+        $submissions = $query
             ->with(['submitter:_id,name,email'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -88,7 +108,6 @@ class FormSubmissionController extends Controller
             'data' => $submissions
         ], 200);
     }
-
     /**
      * @OA\Get(
      *     path="/api/v1/submissions/{id}",

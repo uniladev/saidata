@@ -91,5 +91,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/history', [FormController::class, 'history']);
             Route::get('/{id}/version/{version}', [FormController::class, 'showVersion']);
         });
+
+        // Toggle form status
+        Route::patch('forms/{id}/toggle-status', [FormController::class, 'toggleStatus']);
     });
 });

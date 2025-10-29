@@ -896,8 +896,8 @@
                 "tags": [
                     "Forms"
                 ],
-                "summary": "Delete form",
-                "description": "Delete a form permanently",
+                "summary": "Delete form permanently",
+                "description": "Permanently delete a form. Only forms with zero submissions can be deleted.",
                 "operationId": "01f1be53256aaaaa8a2db6c2e9876bf8",
                 "parameters": [
                     {
@@ -926,6 +926,105 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Form deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Cannot delete form with submissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cannot delete form with existing submissions"
+                                        },
+                                        "submission_count": {
+                                            "type": "integer",
+                                            "example": 5
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/forms/{id}/toggle-status": {
+            "patch": {
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Toggle form active/inactive status",
+                "description": "Toggle form between active and inactive status. Inactive forms cannot receive new submissions.",
+                "operationId": "b25c0ca4366adb4c3d741f456dbcc0ae",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "MongoDB ObjectId (24 character hex string)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$",
+                            "example": "671292eb4c6b7a0d4e0b1234"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form status toggled successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Form status updated successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string"
+                                                },
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"

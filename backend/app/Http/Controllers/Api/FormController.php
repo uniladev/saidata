@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\FormHistory;
+use App\Models\FormSubmission; 
 use Illuminate\Support\Facades\DB;
 
 
@@ -580,10 +581,76 @@ class FormController extends Controller
     }
 
     /**
+     * @OA\Patch(
+     *     path="/api/v1/forms/{id}/toggle-status",
+     *     summary="Toggle form active/inactive status",
+     *     description="Toggle form between active and inactive status. Inactive forms cannot receive new submissions.",
+     *     tags={"Forms"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="MongoDB ObjectId (24 character hex string)",
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$", example="671292eb4c6b7a0d4e0b1234")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Form status toggled successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Form status updated successfully"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="_id", type="string"),
+     *                 @OA\Property(property="title", type="string"),
+     *                 @OA\Property(property="is_active", type="boolean", example=false),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Form not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function toggleStatus($id)
+    {
+        $form = Form::find($id);
+
+        if (!$form) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form not found'
+            ], 404);
+        }
+
+        // Get authenticated user
+        $user = JWTAuth::parseToken()->authenticate();
+
+        // Toggle the is_active status
+        $form->is_active = !$form->is_active;
+        $form->updated_by = (string) $user->_id;
+        $form->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Form status updated successfully',
+            'data' => [
+                '_id' => $form->_id,
+                'title' => $form->title,
+                'is_active' => $form->is_active,
+                'updated_at' => $form->updated_at,
+            ]
+        ], 200);
+    }
+
+    /**
      * @OA\Delete(
      *     path="/api/v1/forms/{id}",
-     *     summary="Delete form",
-     *     description="Delete a form permanently",
+     *     summary="Delete form permanently",
+     *     description="Permanently delete a form. Only forms with zero submissions can be deleted.",
      *     tags={"Forms"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -602,6 +669,16 @@ class FormController extends Controller
      *             @OA\Property(property="message", type="string", example="Form deleted successfully")
      *         )
      *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Cannot delete form with submissions",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Cannot delete form with existing submissions"),
+     *             @OA\Property(property="submission_count", type="integer", example=5)
+     *         )
+     *     ),
      *     @OA\Response(response=404, description="Form not found"),
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
@@ -617,13 +694,35 @@ class FormController extends Controller
             ], 404);
         }
 
-        // Soft delete by setting is_active to false
-        $form->update(['is_active' => false]);
+        // Check if form has any submissions
+        $submissionCount = FormSubmission::where('form_id', $id)->count();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Form deleted successfully'
-        ], 200);
+        if ($submissionCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete form with existing submissions',
+                'submission_count' => $submissionCount
+            ], 403);
+        }
+
+        try {
+            // Delete form history first
+            FormHistory::where('form_id', $id)->delete();
+            
+            // Delete the form
+            $form->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Form deleted successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete form',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
       /**
      * @OA\Get(
