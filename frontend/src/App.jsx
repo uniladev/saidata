@@ -1,5 +1,5 @@
 // frontend/src/App.jsx
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { GuestLayout, AuthenticatedLayout } from "./components/layout";
 import { useAuth } from "./context/AuthContext";
@@ -21,6 +21,7 @@ const {
   // Other pages
   NotFoundPage,
   MenuManagementPage,
+  TablePage,
 } = {
   HomePage: lazy(() => import("./pages/guest/Home")),
   AboutPage: lazy(() => import("./pages/guest/About")),
@@ -33,6 +34,7 @@ const {
   DocumentTemplates: lazy(() => import("./pages/authenticated/User/DocumentTemplates")),
   NotFoundPage: lazy(() => import("./pages/NotFound")),
   MenuManagementPage: lazy(() => import("./pages/authenticated/Admin/MenuManagementPage")),
+  TablePage: lazy(() => import("./pages/authenticated/Admin/TablePage")),
 };
 
 // Protected Route Component
@@ -59,6 +61,7 @@ const PublicRoute = ({ children }) => {
 
 export default function App() {
   return (
+    <Suspense fallback={<div>Loading...</div>}> 
     <Routes>
       {/* Guest Routes */}
       <Route element={<GuestLayout />}>
@@ -92,10 +95,12 @@ export default function App() {
         <Route path="/form/:formId" element={<FormTakerPage />} />
         <Route path="/menu" element={<MenuManagementPage />} />
         <Route path="/menu/:slug" element={<DocumentTemplates />} />
+        <Route path="/table-demo" element={<TablePage />} />
       </Route>
 
       {/* 404 Not Found */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
   );
 }
