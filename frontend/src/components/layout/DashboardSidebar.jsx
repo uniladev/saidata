@@ -57,20 +57,23 @@ const sampleMenuData = [
       { 
         id: 21, 
         name: 'Create Form', 
-        path: '/forms/create',
-        order: 1
+        path: '/forms/create', 
+        order: 1, 
+        roles: ['admin_univ'] 
       },
       { 
         id: 22, 
         name: 'Forms', 
-        path: '/forms',
-        order: 2
+        path: '/forms', 
+        order: 2, 
+        roles: ['admin_univ'] 
       },
       { 
         id: 23, 
         name: 'Layanan Umum', 
-        path: '/dashboard/university/general',
-        order: 3
+        path: '/dashboard/university/general', 
+        order: 3, 
+        roles: ['admin_univ'] 
       },
     ]
   },
@@ -79,25 +82,28 @@ const sampleMenuData = [
     name: 'Layanan Fakultas',
     icon: 'GraduationCap',
     order: 3,
-    roles: ['admin', 'user'],
+    roles: ['admin'],
     submenu: [
       { 
         id: 31, 
         name: 'Layanan Umum', 
-        path: '/dashboard/faculty/general',
-        order: 1
+        path: '/dashboard/faculty/general', 
+        order: 1, 
+        roles: ['admin_univ','admin_fakultas'] 
       },
       { 
         id: 32, 
         name: 'Layanan Akademik', 
-        path: '/dashboard/faculty/academic',
-        order: 2
+        path: '/dashboard/faculty/academic', 
+        order: 2, 
+        roles: ['admin_univ','admin_fakultas'] 
       },
       { 
         id: 33, 
         name: 'Layanan Keuangan', 
-        path: '/dashboard/faculty/finance',
-        order: 3
+        path: '/dashboard/faculty/finance', 
+        order: 3, 
+        roles: ['admin_univ','admin_fakultas'] 
       },
     ]
   },
@@ -106,37 +112,42 @@ const sampleMenuData = [
     name: 'Layanan Jurusan',
     icon: 'BookOpen',
     order: 4,
-    roles: ['admin', 'user'],
+    roles: ['admin'],
     submenu: [
       { 
         id: 41, 
         name: 'Layanan Akademik', 
-        path: '/dashboard/department/academic',
-        order: 1
+        path: '/dashboard/department/academic', 
+        order: 1, 
+        roles: ['admin_univ','admin_jurusan'] 
       },
       { 
         id: 42, 
         name: 'Layanan Laboratorium', 
-        path: '/dashboard/department/laboratory',
-        order: 2
+        path: '/dashboard/department/laboratory', 
+        order: 2, 
+        roles: ['admin_univ','admin_jurusan'] 
       },
       { 
         id: 43, 
         name: 'Layanan IT & Server', 
-        path: '/dashboard/department/it-services',
-        order: 3
+        path: '/dashboard/department/it-services', 
+        order: 3, 
+        roles: ['admin_univ','admin_jurusan'] 
       },
       { 
         id: 44, 
         name: 'Layanan Administrasi', 
-        path: '/dashboard/department/administration',
-        order: 4
+        path: '/dashboard/department/administration', 
+        order: 4, 
+        roles: ['admin_univ','admin_jurusan'] 
       },
       { 
         id: 45, 
         name: 'Layanan Penelitian', 
-        path: '/dashboard/department/research',
-        order: 5
+        path: '/dashboard/department/research', 
+        order: 5, 
+        roles: ['admin_univ','admin_jurusan'] 
       }
     ]
   },
@@ -147,13 +158,32 @@ const sampleMenuData = [
     order: 5,
     roles: ['admin', 'user'],
     submenu: [
-      { id: 51, name: 'Semua Permohonan', path: '/dashboard/requests', order: 1 },
-      { id: 52, name: 'Permohonan Pending', path: '/dashboard/requests/pending', order: 2 },
-      { id: 53, name: 'Permohonan Disetujui', path: '/dashboard/requests/approved', order: 3 },
-      { id: 54, name: 'Permohonan Ditolak', path: '/dashboard/requests/rejected', order: 4 },
+      { 
+        id: 51, 
+        name: 'Semua Permohonan', 
+        path: '/dashboard/requests', 
+        order: 1 
+      },
+      { 
+        id: 52, 
+        name: 'Permohonan Pending', 
+        path: '/dashboard/requests/pending',
+        order: 2 
+      },
+      { 
+        id: 53, 
+        name: 'Permohonan Disetujui', 
+        path: '/dashboard/requests/approved', 
+        order: 3 
+      },
+      { 
+        id: 54, 
+        name: 'Permohonan Ditolak', 
+        path: '/dashboard/requests/rejected', 
+        order: 4 
+      },
     ]
-  },
-  {
+  },{
     id: 6,
     name: 'Validasi Permohonan',
     icon: 'CheckCircle',
@@ -191,7 +221,7 @@ const sampleMenuData = [
     icon: 'HelpCircle',
     path: '/dashboard/help',
     order: 10,
-    roles: ['admin', 'user']
+    roles: ['admin', 'user', 'validator']
   },
 ];
 
@@ -217,29 +247,58 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
         console.log('📡 API Response:', response.data);
         
         if (response.data.success) {
-          const menuData = response.data.data.menu || [];
-          console.log('✅ Setting menu items:', menuData.length, 'items');
-          setMenuItems(menuData);
-          
-          // Log user info for debugging
-          if (response.data.data.user_info) {
-            console.log('👤 User Menu Info:', response.data.data.user_info);
-          }
-        } else {
-          throw new Error('Failed to fetch menu');
+        const menuData = response.data.data.menu || [];
+
+        // --- NEW: filter menu by user role (including nested submenu/services) ---
+        const userRole = (user?.role || 'user').toLowerCase();
+
+        const filteredMenus = (menuData || [])
+          .filter(menu => !menu.roles || menu.roles.map(r=>r.toLowerCase()).includes(userRole))
+          .map(menu => ({
+            ...menu,
+            submenu: (menu.submenu || [])
+              .filter(sub => !sub.roles || sub.roles.map(r=>r.toLowerCase()).includes(userRole))
+              .map(sub => ({
+                ...sub,
+                services: (sub.services || [])
+                  .filter(srv => !srv.roles || srv.roles.map(r=>r.toLowerCase()).includes(userRole))
+              }))
+          }));
+
+        setMenuItems(filteredMenus);
+        // -----------------------------------------------------------------------
+        
+        // Log user info for debugging
+        if (response.data.data.user_info) {
+          console.log('👤 User Menu Info:', response.data.data.user_info);
         }
+      } else {
+        throw new Error('Failed to fetch menu');
+      }
       } catch (error) {
         console.error('❌ Error fetching menu items:', error);
         console.log('⚠️ Using fallback menu');
         
         // Fallback: Filter menu based on user role
-        const userRole = user?.role?.toLowerCase() || 'user';
+        const userRole = (user?.role || 'user').toLowerCase();
+
         const filteredMenus = sampleMenuData
-          .filter(item => item.roles?.includes(userRole))
-          .sort((a, b) => a.order - b.order);
-        
+          .filter(menu => !menu.roles || menu.roles.map(r=>r.toLowerCase()).includes(userRole))
+          .map(menu => ({
+            ...menu,
+            submenu: (menu.submenu || [])
+              .filter(sub => !sub.roles || sub.roles.map(r=>r.toLowerCase()).includes(userRole))
+              .map(sub => ({
+                ...sub,
+                services: (sub.services || [])
+                  .filter(srv => !srv.roles || srv.roles.map(r=>r.toLowerCase()).includes(userRole))
+              }))
+          }))
+          .sort((a,b) => (a.order||0) - (b.order||0));
         console.log('📋 Fallback menu items:', filteredMenus.length, 'items for role:', userRole);
+
         setMenuItems(filteredMenus);
+
       } finally {
         setLoading(false);
       }
