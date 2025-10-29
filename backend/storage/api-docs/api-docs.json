@@ -2216,6 +2216,53 @@
                 ]
             }
         },
+        "/api/v1/menu-management": {
+            "get": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Get dynamic menu for Management Page, filtered by admin role",
+                "description": "Mengambil data menu dinamis untuk halaman manajemen, sudah difilter berdasarkan role/nama admin.",
+                "operationId": "getDynamicManagementMenu",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data menu yang difilter",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "menu": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/users/{userId}/profile": {
             "get": {
                 "tags": [
@@ -2555,6 +2602,10 @@
         {
             "name": "Menu",
             "description": "Menu"
+        },
+        {
+            "name": "Menu Management",
+            "description": "Menu Management"
         },
         {
             "name": "User Profiles",
