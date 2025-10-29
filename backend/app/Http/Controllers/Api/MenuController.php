@@ -232,6 +232,109 @@ class MenuController extends Controller
     }
     
     /**
+     * Get submenu for faculty
+     */
+    private function getFacultySubmenu($facultyCode)
+    {
+        // Submenu berbeda per fakultas
+        switch ($facultyCode) {
+            case 'FMIPA':
+                return [
+                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
+                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
+                    ['id' => 33, 'name' => 'Layanan Penelitian', 'path' => '/dashboard/faculty/research', 'order' => 3],
+                    ['id' => 34, 'name' => 'Layanan Laboratorium', 'path' => '/dashboard/faculty/laboratory', 'order' => 4],
+                ];
+            
+            case 'FK':
+                return [
+                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
+                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
+                    ['id' => 33, 'name' => 'Layanan Klinik', 'path' => '/dashboard/faculty/clinic', 'order' => 3],
+                    ['id' => 34, 'name' => 'Layanan Praktek', 'path' => '/dashboard/faculty/practice', 'order' => 4],
+                ];
+            
+            default:
+                return [
+                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
+                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
+                ];
+        }
+    }
+
+    /**
+     * Get submenu for department
+     */
+    private function getDepartmentSubmenu($facultyCode, $departmentCode)
+    {
+        // Submenu berbeda per jurusan
+        $key = "{$facultyCode}_{$departmentCode}";
+        
+        switch ($key) {
+            // FMIPA - Biologi
+            case 'FMIPA_BIO':
+                return [
+                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
+                    ['id' => 42, 'name' => 'Layanan Lab Biologi', 'path' => '/dashboard/department/bio-lab', 'order' => 2],
+                    ['id' => 43, 'name' => 'Penelitian Biologi', 'path' => '/dashboard/department/bio-research', 'order' => 3],
+                    ['id' => 44, 'name' => 'Praktikum Lapangan', 'path' => '/dashboard/department/field-practice', 'order' => 4],
+                ];
+            
+            // FMIPA - Ilmu Komputer
+            case 'FMIPA_ILKOM':
+                return [
+                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
+                    ['id' => 42, 'name' => 'Lab Programming', 'path' => '/dashboard/department/programming-lab', 'order' => 2],
+                    ['id' => 43, 'name' => 'Lab Jaringan', 'path' => '/dashboard/department/network-lab', 'order' => 3],
+                    ['id' => 44, 'name' => 'Layanan Server & IT', 'path' => '/dashboard/department/it-services', 'order' => 4],
+                    ['id' => 45, 'name' => 'Bimbingan Tugas Akhir', 'path' => '/dashboard/department/thesis-guidance', 'order' => 5],
+                ];
+            
+            // FMIPA - Matematika
+            case 'FMIPA_MAT':
+                return [
+                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
+                    ['id' => 42, 'name' => 'Lab Matematika', 'path' => '/dashboard/department/math-lab', 'order' => 2],
+                    ['id' => 43, 'name' => 'Konsultasi Statistik', 'path' => '/dashboard/department/statistics-consultation', 'order' => 3],
+                    ['id' => 44, 'name' => 'Bimbingan Tugas Akhir', 'path' => '/dashboard/department/thesis-guidance', 'order' => 4],
+                ];
+            
+            // FK - Farmasi
+            case 'FK_FARM':
+                return [
+                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
+                    ['id' => 42, 'name' => 'Lab Farmasi', 'path' => '/dashboard/department/pharmacy-lab', 'order' => 2],
+                    ['id' => 43, 'name' => 'Praktek Apoteker', 'path' => '/dashboard/department/pharmacist-practice', 'order' => 3],
+                    ['id' => 44, 'name' => 'Konsultasi Obat', 'path' => '/dashboard/department/drug-consultation', 'order' => 4],
+                ];
+            
+            // Default untuk jurusan lain
+            default:
+                return [
+                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
+                    ['id' => 42, 'name' => 'Layanan Administrasi', 'path' => '/dashboard/department/administration', 'order' => 2],
+                ];
+        }
+    }
+
+    /**
+     * Get department display name
+     */
+    private function getDepartmentDisplayName($departmentCode)
+    {
+        $names = [
+            'BIO' => 'Biologi',
+            'ILKOM' => 'Ilmu Komputer',
+            'MAT' => 'Matematika',
+            'KIM' => 'Kimia',
+            'FIS' => 'Fisika',
+            'FARM' => 'Farmasi',
+            'DOKTER' => 'Pendidikan Dokter',
+        ];
+
+        return $names[$departmentCode] ?? $departmentCode;
+    }
+    /**
      * Get menu for admin users
      */
     private function getAdminMenu()
