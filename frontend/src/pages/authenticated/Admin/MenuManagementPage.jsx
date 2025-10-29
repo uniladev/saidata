@@ -1,10 +1,11 @@
 // src/pages/authenticated/Admin/MenuManagementPage.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Edit, Trash2, GripVertical } from 'lucide-react';
 import { DndContext, closestCenter } from '@dnd-kit/core'; 
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import api from '../../../config/api'; // Uncommented for API calls
+import { useAuth } from '../../../context/AuthContext';
 
 // Helper component for draggable items
 const SortableItem = ({ id, children }) => {
@@ -238,6 +239,8 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, onClose, onSa
 
 const MenuManagementPage = () => {
   const [menuStructure, setMenuStructure] = useState([]);
+  const { user } = useAuth(); // <--- TAMBAHKAN BARIS INI
+  console.log("OBJEK USER SAAT INI:", user);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -247,6 +250,51 @@ const MenuManagementPage = () => {
   useEffect(() => {
     fetchMenuStructure();
   }, []);
+
+  const filteredMenuStructure = useMemo(() => {
+    // Pastikan semua data siap
+    if (!menuStructure || menuStructure.length === 0 || !user || !user.name) {
+      return [];
+    }
+
+    // Ambil nama dari objek user
+    const adminName = user.name; 
+
+    // 1. Super Admin ('Administrator')
+    // Bisa melihat semua menu
+    if (adminName === 'Administrator') {
+      return menuStructure;
+    }
+
+    // 2. Admin Universitas ('Administrator Univ')
+    // Sembunyikan Fakultas & Jurusan
+    if (adminName === 'Administrator Univ') {
+      return menuStructure.filter(cat => 
+        cat.name !== 'Layanan Fakultas' && cat.name !== 'Layanan Jurusan'
+      );
+    }
+
+    // 3. Admin Fakultas ('Administrator Fakultas')
+    // Sembunyikan Universitas & Jurusan
+    if (adminName === 'Administrator Fakultas') {
+      return menuStructure.filter(cat => 
+        cat.name !== 'Layanan Universitas' && cat.name !== 'Layanan Jurusan'
+      );
+    }
+    
+    // 4. Admin Jurusan ('Administrator Jurusan')
+    // Sembunyikan Universitas & Fakultas
+    if (adminName === 'Administrator Jurusan') {
+      return menuStructure.filter(cat => 
+        cat.name !== 'Layanan Universitas' && cat.name !== 'Layanan Fakultas'
+      );
+    }
+
+    // Fallback: Jika user login tapi namanya tidak cocok
+    // (Misal: user biasa yang entah bagaimana bisa akses halaman ini)
+    return []; 
+
+  }, [menuStructure, user]);
 
   const fetchMenuStructure = async () => {
     setIsLoading(true);
@@ -444,15 +492,15 @@ const MenuManagementPage = () => {
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="bg-white rounded-lg shadow p-4 space-y-4">
-          {!Array.isArray(menuStructure) || menuStructure.length === 0 ? (
+          {!Array.isArray(menuStructure) || filteredMenuStructure.length === 0 ? (
             <p className="text-center text-gray-500 py-4">No menu structure available or loading...</p>
           ) : (
             <SortableContext
-              items={menuStructure.map(item => item.id)} // Safe now
+              items={filteredMenuStructure.map(item => item.id)} // Safe now
               strategy={verticalListSortingStrategy}
             >
               <ul className="space-y-3">
-                {menuStructure // Safe now
+                {filteredMenuStructure // Safe now
                   .sort((a, b) => a.order - b.order)
                   .map((category) => (
                     <SortableItem key={category.id} id={category.id}>
