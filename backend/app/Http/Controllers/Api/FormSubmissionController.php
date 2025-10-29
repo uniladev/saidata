@@ -78,7 +78,27 @@ class FormSubmissionController extends Controller
             ], 400);
         }
 
-        $submissions = FormSubmission::where('form_id', $formId)
+        // Check if form exists
+        $form = Form::find($formId);
+        if (!$form) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form not found'
+            ], 404);
+        }
+
+        // Get authenticated user
+        $user = JWTAuth::parseToken()->authenticate();
+
+        // Build query based on user role
+        $query = FormSubmission::where('form_id', $formId);
+
+        // If not admin, only show user's own submissions
+        if ($user->role !== 'admin') {
+            $query->where('submitted_by', $user->_id);
+        }
+
+        $submissions = $query
             ->with(['submitter:_id,name,email'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -88,7 +108,6 @@ class FormSubmissionController extends Controller
             'data' => $submissions
         ], 200);
     }
-
     /**
      * @OA\Get(
      *     path="/api/v1/submissions/{id}",
@@ -326,8 +345,8 @@ class FormSubmissionController extends Controller
             ], 400);
         }
 
-        // Check if form exists
-        $form = Form::find($formId);
+        // Check if form exists and load fields
+        $form = Form::with('fields')->find($formId);
         if (!$form) {
             return response()->json([
                 'success' => false,
@@ -354,24 +373,37 @@ class FormSubmissionController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        // Validate that submitted fields exist in the form
+        $validFieldIds = $form->fields->pluck('field_id')->toArray();
+        $submittedFieldIds = array_keys($request->input('answers'));
+        $invalidFields = array_diff($submittedFieldIds, $validFieldIds);
+
+        if (!empty($invalidFields)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid field IDs submitted',
+                'invalid_fields' => $invalidFields
+            ], 422);
+        }
+
         try {
-                $user = JWTAuth::parseToken()->authenticate();
+            $user = JWTAuth::parseToken()->authenticate();
 
-                // Create submission with minimal snapshot
-                $submission = FormSubmission::create([
-                    'form_id' => $formId,
-                    'form_version' => $form->version ?? 1, // Store version
-                    'form_title' => $form->title, // Store title for display
-                    'submitted_by' => $user->_id,
-                    'status' => $request->input('status', 'completed'),
-                ]);
+            // Create submission with minimal snapshot
+            $submission = FormSubmission::create([
+                'form_id' => $formId,
+                'form_version' => $form->version ?? 1,
+                'form_title' => $form->title,
+                'submitted_by' => $user->_id,
+                'status' => $request->input('status', 'completed'),
+            ]);
 
-                // Create payload
-                FormSubmissionPayload::create([
-                    'submission_id' => $submission->_id,
-                    'answers' => $request->input('answers'),
-                ]);
-            
+            // Create payload
+            FormSubmissionPayload::create([
+                'submission_id' => $submission->_id,
+                'answers' => $request->input('answers'),
+            ]);
 
             // Load relationships for response
             $submission->load(['submitter:_id,name,email', 'payload']);
