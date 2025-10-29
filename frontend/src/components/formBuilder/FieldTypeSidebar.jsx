@@ -1,12 +1,17 @@
-// ===== 2. FieldTypeSidebar Component =====
 // frontend/src/components/formBuilder/FieldTypeSidebar.jsx
 import React from 'react';
 
 const FieldTypeSidebar = ({ fieldTypes, onAddField, setDragAction }) => {
   const handleDragStart = (e, type) => {
+    console.log('🎨 Starting drag from sidebar, type:', type);
     e.dataTransfer.setData('newFieldType', type);
     e.dataTransfer.effectAllowed = 'copy';
     setDragAction('add');
+  };
+
+  const handleDragEnd = (e) => {
+    console.log('🏁 Drag ended from sidebar');
+    // Don't reset dragAction here, let the canvas handle it
   };
 
   return (
@@ -18,8 +23,9 @@ const FieldTypeSidebar = ({ fieldTypes, onAddField, setDragAction }) => {
             key={fieldType.type}
             draggable="true"
             onDragStart={(e) => handleDragStart(e, fieldType.type)}
+            onDragEnd={handleDragEnd}
             onClick={() => onAddField(fieldType.type)}
-            className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center space-x-2 transition-colors cursor-grab"
+            className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center space-x-2 transition-colors cursor-grab active:cursor-grabbing"
           >
             <span className="text-xl">{fieldType.icon}</span>
             <span className="text-sm">{fieldType.label}</span>
@@ -30,4 +36,4 @@ const FieldTypeSidebar = ({ fieldTypes, onAddField, setDragAction }) => {
   );
 };
 
-export default FieldTypeSidebar;    
+export default FieldTypeSidebar;

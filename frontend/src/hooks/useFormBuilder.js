@@ -43,7 +43,7 @@ export const useFormBuilder = () => {
       file: { 
         fileOptions: {
           accept: '',
-          maxSize: 5,
+          maxSize: 1,
           multiple: false
         }
       },
@@ -80,8 +80,10 @@ export const useFormBuilder = () => {
     return labels[type] || 'Field';
   };
 
-  const addField = (fieldType) => {
-    // fieldType is now just a string (e.g., 'text', 'email', etc.)
+  // FIXED: Now accepts optional insertAtIndex parameter
+  const addField = (fieldType, insertAtIndex = null) => {
+    console.log('🔧 addField called with:', { fieldType, insertAtIndex, currentFieldCount: formFields.length });
+    
     const defaults = getFieldDefaults(fieldType);
     
     const newField = {
@@ -102,7 +104,17 @@ export const useFormBuilder = () => {
       maxRating: defaults.maxRating !== undefined ? defaults.maxRating : null,
     };
     
-    setFormFields([...formFields, newField]);
+    // FIXED: Insert at specific index if provided, otherwise append to end
+    if (insertAtIndex !== null && insertAtIndex !== undefined && insertAtIndex >= 0) {
+      const newFields = [...formFields];
+      newFields.splice(insertAtIndex, 0, newField);
+      console.log('✅ Inserted field at index:', insertAtIndex, 'New field count:', newFields.length);
+      setFormFields(newFields);
+    } else {
+      console.log('✅ Appended field to end. New field count:', formFields.length + 1);
+      setFormFields([...formFields, newField]);
+    }
+    
     return newField.id;
   };
 

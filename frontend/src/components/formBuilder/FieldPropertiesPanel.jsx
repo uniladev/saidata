@@ -267,10 +267,10 @@ const FileOptions = ({ field, updateField }) => {
             type="number"
             min="1"
             max="100"
-            value={field.fileOptions?.maxSize || 5}
+            value={field.fileOptions?.maxSize || 1}
             onChange={(e) => updateField(field.id, 'fileOptions', {
               ...(field.fileOptions || {}),
-              maxSize: parseInt(e.target.value) || 5
+              maxSize: parseInt(e.target.value) || 1
             })}
             className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />

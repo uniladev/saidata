@@ -17,6 +17,7 @@ const {
   FormBuilderPage,
   FormTakerPage,
   FormsListPage,
+  DocumentTemplates,
   // Other pages
   NotFoundPage,
   MenuManagementPage,
@@ -29,6 +30,7 @@ const {
   FormBuilderPage: lazy(() => import("./pages/authenticated/Admin/FormBuilderPage")),
   FormTakerPage: lazy(() => import("./pages/authenticated/Admin/FormTakerPage")),
   FormsListPage: lazy(() => import("./pages/authenticated/Admin/FormsListPage")),
+  DocumentTemplates: lazy(() => import("./pages/authenticated/User/DocumentTemplates")),
   NotFoundPage: lazy(() => import("./pages/NotFound")),
   MenuManagementPage: lazy(() => import("./pages/authenticated/Admin/MenuManagementPage")),
 };
@@ -89,6 +91,7 @@ export default function App() {
         <Route path="/forms/edit/:formId" element={<FormBuilderPage />} />
         <Route path="/form/:formId" element={<FormTakerPage />} />
         <Route path="/menu" element={<MenuManagementPage />} />
+        <Route path="/menu/:slug" element={<DocumentTemplates />} />
       </Route>
 
       {/* 404 Not Found */}
