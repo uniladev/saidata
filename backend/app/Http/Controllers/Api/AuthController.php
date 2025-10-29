@@ -192,6 +192,7 @@ class AuthController extends Controller
                         'department_code' => null,
                         'study_program_code' => null,
                         'phone' => '081234567890',
+                        'class' => 'university'
                     ],
                 ],
                 'admin_fakultas' => [
@@ -204,6 +205,7 @@ class AuthController extends Controller
                         'department_code' => null,
                         'study_program_code' => null,
                         'phone' => '081234567878',
+                        'class' => 'faculty'
                     ],
                 ],
                 'admin_jurusan' => [
@@ -216,6 +218,7 @@ class AuthController extends Controller
                         'department_code' => 'ILKOM',
                         'study_program_code' => null,
                         'phone' => '081234567812',
+                        'class' => 'department'
                     ],
                 ],
             ];
