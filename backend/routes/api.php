@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\FormSubmissionController;
 use App\Http\Controllers\Api\FormSubmissionPayloadController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\MenuManagementController;
 
 Route::prefix('v1')->group(function () {
     
@@ -28,6 +29,11 @@ Route::prefix('v1')->group(function () {
         
         // Menu routes
         Route::get('/menu', [MenuController::class, 'index']);
+        Route::get('/menu-management', [MenuManagementController::class, 'index']);
+        Route::post('/menu-management', [MenuManagementController::class, 'store']);       // <-- TAMBAHKAN INI
+        Route::put('/menu-management/{id}', [MenuManagementController::class, 'update']);    // <-- TAMBAHKAN INI
+        Route::delete('/menu-management/{id}', [MenuManagementController::class, 'destroy']); // <-- TAMBAHKAN INI
+        Route::put('/menu-management/reorder', [MenuManagementController::class, 'reorder']); // <-- TAMBAHKAN INI
         
         // Forms routes - Only MongoDB ObjectId
         Route::prefix('forms')->group(function () {
