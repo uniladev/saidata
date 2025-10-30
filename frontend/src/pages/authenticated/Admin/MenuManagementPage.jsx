@@ -427,7 +427,7 @@ const MenuManagementPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get('/admin/menus');
+      const response = await api.get('/management/menu');
       const menuData = response.data.data || [];
       setMenuStructure(menuData);
       setOriginalMenuStructure(JSON.parse(JSON.stringify(menuData))); // Deep copy
@@ -464,7 +464,7 @@ const MenuManagementPage = () => {
       extractMenusWithOrder(menuStructure);
 
       // Save using POST reorder endpoint
-      await api.post('/admin/menus/reorder', {
+      await api.post('/management/menu/reorder', {
         menus: menusToReorder
       });
       
@@ -527,7 +527,7 @@ const MenuManagementPage = () => {
       if (savedItemData.id) {
         await api.put(`/admin/menus/${savedItemData.id}`, savedItemData);
       } else {
-        await api.post('/admin/menus', savedItemData);
+        await api.post('/management/menu', savedItemData);
       }
       
       await fetchMenuStructure();
