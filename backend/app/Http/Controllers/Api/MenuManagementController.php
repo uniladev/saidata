@@ -22,7 +22,7 @@ class MenuManagementController extends Controller
      *     path="/api/v1/admin/menus",
      *     operationId="getMenus",
      *     summary="Get all menus with hierarchy",
-     *     description="Retrieve all menu items filtered by user's admin scope. Admin Univ can see universitas & update_data, Admin Fakultas can see their faculty menus, Admin Jurusan can see their department menus.",
+     *     description="Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -50,12 +50,13 @@ class MenuManagementController extends Controller
      *                 type="array",
      *                 @OA\Items(
      *                     type="object",
-     *                     @OA\Property(property="_id", type="string", example="507f1f77bcf86cd799439011"),
+     *                     @OA\Property(property="id", type="string", example="fixed_l1_layanan_universitas", description="Fixed L1 IDs use prefix 'fixed_l1_', database menus use MongoDB ObjectId"),
      *                     @OA\Property(property="name", type="string", example="Layanan Universitas"),
      *                     @OA\Property(property="level", type="integer", example=1),
      *                     @OA\Property(property="scope", type="string", example="universitas"),
      *                     @OA\Property(property="type", type="string", example="category"),
      *                     @OA\Property(property="icon", type="string", example="fas fa-university"),
+     *                     @OA\Property(property="is_fixed", type="boolean", example=true, description="True for Level 1 fixed categories, false for manageable menus"),
      *                     @OA\Property(property="order", type="integer", example=2),
      *                     @OA\Property(
      *                         property="children",
@@ -82,8 +83,15 @@ class MenuManagementController extends Controller
             ], 403);
         }
 
+        // Get fixed L1 categories first
+        $fixedL1Categories = $this->getFixedL1Categories($adminType, $user);
+        
+        // Get manageable menus (L2 and L3 only) from database
         $query = Menu::query();
-
+        
+        // Only get L2 and L3 menus (L1 is hardcoded)
+        $query->where('level', '>', 1);
+        
         // Exclude system menus from management (Dashboard, Riwayat Permohonan, etc.)
         $query->where('scope', '!=', 'system');
 
@@ -128,11 +136,12 @@ class MenuManagementController extends Controller
         } elseif ($adminType === 'admin_jurusan') {
             $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
             $departmentCode = $profile['department_code'] ?? null;
+            $facultyCode = $profile['faculty_code'] ?? null;
             
-            if (!$departmentCode) {
+            if (!$departmentCode || !$facultyCode) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Department code not found in profile'
+                    'message' => 'Department/Faculty code not found in profile'
                 ], 400);
             }
             
@@ -144,16 +153,29 @@ class MenuManagementController extends Controller
                 ], 403);
             }
             
-            $query->where('scope', 'jurusan')->where('department_code', $departmentCode);
+            $query->where('scope', 'jurusan')
+                  ->where('faculty_code', $facultyCode)
+                  ->where('department_code', $departmentCode);
         }
-
 
         if ($request->has('level')) {
-            $query->where('level', (int) $request->level);
+            $level = (int) $request->level;
+            if ($level === 1) {
+                // L1 is hardcoded, return only fixed categories
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Fixed L1 categories retrieved successfully',
+                    'data' => $fixedL1Categories
+                ]);
+            }
+            $query->where('level', $level);
         }
 
-        $menus = $query->orderBy('order')->get();
-        $hierarchicalMenus = $this->buildHierarchy($menus);
+        $manageableMenus = $query->orderBy('order')->get();
+        
+        // Combine fixed L1 with manageable L2/L3
+        $allMenus = collect($fixedL1Categories)->concat($manageableMenus);
+        $hierarchicalMenus = $this->buildHierarchy($allMenus);
 
         return response()->json([
             'success' => true,
@@ -167,7 +189,7 @@ class MenuManagementController extends Controller
      *     path="/api/v1/admin/menus",
      *     operationId="createMenu",
      *     summary="Create a new menu",
-     *     description="Create a new menu item with validation rules based on level and scope. Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
+     *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
@@ -176,11 +198,11 @@ class MenuManagementController extends Controller
      *         @OA\JsonContent(
      *             required={"name","level","scope","type"},
      *             @OA\Property(property="name", type="string", maxLength=255, example="Surat Keterangan Mahasiswa"),
-     *             @OA\Property(property="level", type="integer", minimum=1, maximum=3, example=2),
+     *             @OA\Property(property="level", type="integer", minimum=2, maximum=3, example=2, description="Level 1 categories are fixed/hardcoded and cannot be created"),
      *             @OA\Property(property="scope", type="string", enum={"universitas","fakultas","jurusan","update_data"}, example="universitas"),
      *             @OA\Property(property="type", type="string", enum={"category","subcategory","form"}, example="form"),
      *             @OA\Property(property="icon", type="string", maxLength=100, example="fas fa-file", nullable=true),
-     *             @OA\Property(property="parent_id", type="string", example="507f1f77bcf86cd799439011", nullable=true),
+     *             @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas", nullable=true, description="Can be MongoDB ObjectId or fixed L1 category ID (e.g., fixed_l1_layanan_fakultas)"),
      *             @OA\Property(property="route", type="string", maxLength=255, example="/forms/surat-keterangan", nullable=true),
      *             @OA\Property(property="form_id", type="string", example="507f1f77bcf86cd799439012", nullable=true),
      *             @OA\Property(property="faculty_code", type="string", maxLength=10, example="FT", nullable=true),
@@ -204,7 +226,7 @@ class MenuManagementController extends Controller
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=400, description="Validation error or invalid business rule"),
+     *     @OA\Response(response=400, description="Validation error, invalid business rule, or attempt to create Level 1 category"),
      *     @OA\Response(response=403, description="Forbidden - Not authorized to create in this scope")
      * )
      */
@@ -219,11 +241,11 @@ class MenuManagementController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'level' => 'required|integer|min:1|max:3',
+            'level' => 'required|integer|min:2|max:3', // L1 tidak bisa dibuat (fixed)
             'scope' => ['required', Rule::in(['universitas', 'fakultas', 'jurusan', 'update_data'])],
             'type' => ['required', Rule::in(['category', 'subcategory', 'form'])],
             'icon' => 'nullable|string|max:100',
-            'parent_id' => 'nullable|exists:menus,_id',
+            'parent_id' => 'nullable|string', // Allow fixed L1 IDs or database ObjectIds
             'route' => 'nullable|string|max:255',
             'form_id' => 'nullable|exists:forms,_id',
             'faculty_code' => 'nullable|string|max:10',
@@ -234,6 +256,14 @@ class MenuManagementController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 400);
+        }
+
+        // Level 1 categories are fixed/hardcoded - cannot be created
+        if ($request->level === 1) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Level 1 categories are fixed and cannot be created. Only Level 2 and 3 menus can be managed.'
+            ], 400);
         }
 
         if (!$this->canManageScope($user, $adminType, $request->scope, $request->faculty_code, $request->department_code)) {
@@ -309,6 +339,24 @@ class MenuManagementController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        // Handle fixed L1 categories
+        if (str_starts_with($id, 'fixed_l1_')) {
+            $fixedL1Categories = $this->getFixedL1Categories($adminType, $user);
+            $fixedMenu = collect($fixedL1Categories)->firstWhere('id', $id);
+            
+            if (!$fixedMenu) {
+                return response()->json(['success' => false, 'message' => 'Fixed L1 category not found or not accessible'], 404);
+            }
+            
+            // Get children from database
+            $children = Menu::where('parent_id', $id)
+                           ->where('scope', $fixedMenu['scope'])
+                           ->get();
+            
+            $fixedMenu['children'] = $children;
+            return response()->json(['success' => true, 'message' => 'Fixed L1 category retrieved successfully', 'data' => $fixedMenu]);
+        }
+
         $menu = Menu::with(['parent', 'children'])->find($id);
 
         if (!$menu) {
@@ -378,6 +426,14 @@ class MenuManagementController extends Controller
             return response()->json(['success' => false, 'message' => 'Menu not found'], 404);
         }
 
+        // Level 1 categories are fixed/hardcoded - cannot be updated
+        if ($menu->level === 1) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Level 1 categories are fixed and cannot be updated. Only Level 2 and 3 menus can be managed.'
+            ], 400);
+        }
+
         if (!$this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -444,6 +500,14 @@ class MenuManagementController extends Controller
 
         if (!$menu) {
             return response()->json(['success' => false, 'message' => 'Menu not found'], 404);
+        }
+
+        // Level 1 categories are fixed/hardcoded - cannot be deleted
+        if ($menu->level === 1) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Level 1 categories are fixed and cannot be deleted. Only Level 2 and 3 menus can be managed.'
+            ], 400);
         }
 
         if (!$this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
@@ -572,6 +636,100 @@ class MenuManagementController extends Controller
         return null;
     }
 
+    private function getFixedL1Categories($adminType, $user)
+    {
+        $fixedCategories = [];
+        $baseId = 'fixed_l1_'; // Prefix untuk ID virtual
+
+        if ($adminType === 'admin_univ') {
+            $fixedCategories = [
+                [
+                    'id' => $baseId . 'layanan_universitas',
+                    'name' => 'Layanan Universitas',
+                    'level' => 1,
+                    'scope' => 'universitas',
+                    'type' => 'category',
+                    'icon' => 'fas fa-university',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => null,
+                    'department_code' => null,
+                    'is_active' => true,
+                    'order' => 1,
+                    'is_fixed' => true,
+                    'children' => []
+                ],
+                [
+                    'id' => $baseId . 'update_data',
+                    'name' => 'Update Data',
+                    'level' => 1,
+                    'scope' => 'update_data',
+                    'type' => 'category',
+                    'icon' => 'fas fa-edit',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => null,
+                    'department_code' => null,
+                    'is_active' => true,
+                    'order' => 2,
+                    'is_fixed' => true,
+                    'children' => []
+                ]
+            ];
+        } elseif ($adminType === 'admin_fakultas') {
+            $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+            $facultyCode = $profile['faculty_code'] ?? null;
+            
+            $fixedCategories = [
+                [
+                    'id' => $baseId . 'layanan_fakultas',
+                    'name' => 'Layanan Fakultas',
+                    'level' => 1,
+                    'scope' => 'fakultas',
+                    'type' => 'category',
+                    'icon' => 'fas fa-building',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => $facultyCode,
+                    'department_code' => null,
+                    'is_active' => true,
+                    'order' => 1,
+                    'is_fixed' => true,
+                    'children' => []
+                ]
+            ];
+        } elseif ($adminType === 'admin_jurusan') {
+            $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+            $facultyCode = $profile['faculty_code'] ?? null;
+            $departmentCode = $profile['department_code'] ?? null;
+            
+            $fixedCategories = [
+                [
+                    'id' => $baseId . 'layanan_jurusan',
+                    'name' => 'Layanan Jurusan',
+                    'level' => 1,
+                    'scope' => 'jurusan',
+                    'type' => 'category',
+                    'icon' => 'fas fa-graduation-cap',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => $facultyCode,
+                    'department_code' => $departmentCode,
+                    'is_active' => true,
+                    'order' => 1,
+                    'is_fixed' => true,
+                    'children' => []
+                ]
+            ];
+        }
+
+        return $fixedCategories;
+    }
+
     private function canManageScope($user, $adminType, $scope, $facultyCode = null, $departmentCode = null)
     {
         $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
@@ -598,10 +756,18 @@ class MenuManagementController extends Controller
         $branch = [];
 
         foreach ($menus as $menu) {
-            if ($menu->parent_id == $parentId) {
-                $children = $this->buildHierarchy($menus, $menu->_id);
+            // Handle both array (fixed L1) and object (database menus)
+            $menuParentId = is_array($menu) ? ($menu['parent_id'] ?? null) : $menu->parent_id;
+            $menuId = is_array($menu) ? $menu['id'] : $menu->_id;
+            
+            if ($menuParentId == $parentId) {
+                $children = $this->buildHierarchy($menus, $menuId);
                 if ($children) {
-                    $menu->children = $children;
+                    if (is_array($menu)) {
+                        $menu['children'] = $children;
+                    } else {
+                        $menu->children = $children;
+                    }
                 }
                 $branch[] = $menu;
             }

@@ -20,85 +20,157 @@ class MenuSeeder extends Seeder
 
         echo "Seeding menu categories...\n";
 
-        // ===========================================
-        // MANAGEABLE MENUS - Can be managed by Admin
-        // ===========================================
-        echo "\n📝 Creating MANAGEABLE menus (for Menu Management)...\n";
+        // =======================================================
+        // MANAGEABLE MENUS - Only L2/L3 (L1 is hardcoded/fixed)
+        // =======================================================
+        echo "\n📝 Creating MANAGEABLE menus (L2/L3 only - L1 is fixed)...\n";
         
-        $manageableMenus = [
+        // Sample L2 menus for different scopes (parent_id will use fixed L1 IDs)
+        $sampleL2Menus = [
+            // Universitas scope examples
             [
-                'name' => 'Layanan Universitas',
-                'level' => 1,
+                'name' => 'Surat Rekomendasi',
+                'level' => 2,
                 'scope' => 'universitas',
                 'type' => 'category',
-                'icon' => 'fas fa-university',
-                'parent_id' => null,
+                'parent_id' => 'fixed_l1_layanan_universitas', // Reference to fixed L1
                 'route' => null,
                 'form_id' => null,
                 'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+            // Update data scope example
+            [
+                'name' => 'Update Profile',
+                'level' => 2,
+                'scope' => 'update_data',
+                'type' => 'form',
+                'parent_id' => 'fixed_l1_update_data', // Reference to fixed L1
+                'route' => '/forms/update-profile',
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ]
+        ];
+
+        // Sample fakultas scope L2 menus
+        $fakultasL2Menus = [
+            // FMIPA examples
+            [
+                'name' => 'Permohonan Surat Keterangan',
+                'level' => 2,
+                'scope' => 'fakultas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_fakultas', // Reference to fixed L1
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+            [
+                'name' => 'Legalisir Dokumen',
+                'level' => 2,
+                'scope' => 'fakultas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_fakultas',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
                 'department_code' => null,
                 'is_active' => true,
                 'order' => 2
             ],
+            // FK examples
             [
-                'name' => 'Update Data',
-                'level' => 1,
-                'scope' => 'update_data',
-                'type' => 'category',
-                'icon' => 'fas fa-edit',
-                'parent_id' => null,
-                'route' => null,
-                'form_id' => null,
-                'faculty_code' => null,
-                'department_code' => null,
-                'is_active' => true,
-                'order' => 3
-            ],
-            [
-                'name' => 'Layanan Fakultas',
-                'level' => 1,
+                'name' => 'Surat Rekomendasi',
+                'level' => 2,
                 'scope' => 'fakultas',
                 'type' => 'category',
-                'icon' => 'fas fa-building',
-                'parent_id' => null,
+                'parent_id' => 'fixed_l1_layanan_fakultas',
                 'route' => null,
                 'form_id' => null,
-                'faculty_code' => null, // Will be set dynamically based on user's faculty
+                'faculty_code' => 'FK',
                 'department_code' => null,
                 'is_active' => true,
-                'order' => 4
-            ],
-            [
-                'name' => 'Layanan Jurusan',
-                'level' => 1,
-                'scope' => 'jurusan',
-                'type' => 'category',
-                'icon' => 'fas fa-graduation-cap',
-                'parent_id' => null,
-                'route' => null,
-                'form_id' => null,
-                'faculty_code' => null,
-                'department_code' => null, // Will be set dynamically based on user's department
-                'is_active' => true,
-                'order' => 5
+                'order' => 1
             ]
         ];
+
+        // Sample jurusan scope L2 menus
+        $jurusanL2Menus = [
+            // ILKOM examples
+            [
+                'name' => 'Surat Aktif Kuliah',
+                'level' => 2,
+                'scope' => 'jurusan',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_jurusan', // Reference to fixed L1
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'ILKOM',
+                'is_active' => true,
+                'order' => 1
+            ],
+            [
+                'name' => 'Verifikasi Dokumen',
+                'level' => 2,
+                'scope' => 'jurusan',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_jurusan',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'ILKOM',
+                'is_active' => true,
+                'order' => 2
+            ],
+            // BIO examples
+            [
+                'name' => 'Surat Keterangan',
+                'level' => 2,
+                'scope' => 'jurusan',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_jurusan',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'BIO',
+                'is_active' => true,
+                'order' => 1
+            ]
+        ];
+
+        // Combine all manageable menus (L2 only for demo)
+        $manageableMenus = array_merge($sampleL2Menus, $fakultasL2Menus, $jurusanL2Menus);
 
         foreach ($manageableMenus as $menuData) {
             Menu::create($menuData);
             echo "  ✓ Created: {$menuData['name']} (Level {$menuData['level']}, Scope: {$menuData['scope']})\n";
         }
 
-        echo "\n✅ Successfully seeded " . count($manageableMenus) . " MANAGEABLE menu categories.\n";
-        echo "\nAdmin Access Rights:\n";
-        echo "- 🎯 Admin Univ: Can manage 'Layanan Universitas' + 'Update Data'\n";
-        echo "- 🎯 Admin Fakultas: Can manage 'Layanan Fakultas' (their faculty only)\n";
-        echo "- 🎯 Admin Jurusan: Can manage 'Layanan Jurusan' (their department only)\n";
-        echo "\nFixed System Menus (NOT manageable):\n"; 
-        echo "- Dashboard: Fixed route to /dashboard\n";
-        echo "- Riwayat Permohonan: Fixed route to /history\n";
-        echo "\nNote:\n";
-        echo "- Level 2 and Level 3 menus should be created via the Menu Management API\n";
-        echo "- Update Data category can only contain Level 2 forms (no subcategories)\n";
+        echo "\n✅ Successfully seeded " . count($manageableMenus) . " MANAGEABLE menu items (L2 samples).\n";
+
+        echo "\n🔒 FIXED L1 Categories (Hardcoded - NOT in database):\n";
+        echo "- 'Layanan Universitas' (Admin Univ only)\n";
+        echo "- 'Update Data' (Admin Univ only)\n";
+        echo "- 'Layanan Fakultas' (Admin Fakultas - filtered by faculty_code)\n";
+        echo "- 'Layanan Jurusan' (Admin Jurusan - filtered by department_code)\n";
+
+        echo "\n📝 Admin Can Manage:\n";
+        echo "- 🎯 Admin Univ: L2/L3 under 'Layanan Universitas' + 'Update Data'\n";
+        echo "- 🎯 Admin Fakultas: L2/L3 under 'Layanan Fakultas' (their faculty only)\n";
+        echo "- 🎯 Admin Jurusan: L2/L3 under 'Layanan Jurusan' (their department only)\n";
+        
+        echo "\n⚠️  L1 Categories:\n";
+        echo "- Cannot be created, updated, or deleted via API\n";
+        echo "- Names are generic: 'Layanan Fakultas', 'Layanan Jurusan' (no specific names)\n";
+        echo "- Content filtered by admin's faculty_code/department_code\n";
     }
 }

@@ -34,8 +34,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('admin/menus')->group(function () {
             Route::get('/', [MenuManagementController::class, 'index']);
             Route::post('/', [MenuManagementController::class, 'store']);
-            Route::get('/{id}', [MenuManagementController::class, 'show'])
-                ->where('id', '[a-f0-9]{24}');
+            Route::get('/{id}', [MenuManagementController::class, 'show']);
             Route::put('/{id}', [MenuManagementController::class, 'update'])
                 ->where('id', '[a-f0-9]{24}');
             Route::delete('/{id}', [MenuManagementController::class, 'destroy'])

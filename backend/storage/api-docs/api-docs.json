@@ -2258,7 +2258,7 @@
                     "Menu Management"
                 ],
                 "summary": "Get all menus with hierarchy",
-                "description": "Retrieve all menu items filtered by user's admin scope. Admin Univ can see universitas & update_data, Admin Fakultas can see their faculty menus, Admin Jurusan can see their department menus.",
+                "description": "Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope.",
                 "operationId": "getMenus",
                 "parameters": [
                     {
@@ -2299,9 +2299,10 @@
                                             "type": "array",
                                             "items": {
                                                 "properties": {
-                                                    "_id": {
+                                                    "id": {
+                                                        "description": "Fixed L1 IDs use prefix 'fixed_l1_', database menus use MongoDB ObjectId",
                                                         "type": "string",
-                                                        "example": "507f1f77bcf86cd799439011"
+                                                        "example": "fixed_l1_layanan_universitas"
                                                     },
                                                     "name": {
                                                         "type": "string",
@@ -2322,6 +2323,11 @@
                                                     "icon": {
                                                         "type": "string",
                                                         "example": "fas fa-university"
+                                                    },
+                                                    "is_fixed": {
+                                                        "description": "True for Level 1 fixed categories, false for manageable menus",
+                                                        "type": "boolean",
+                                                        "example": true
                                                     },
                                                     "order": {
                                                         "type": "integer",
@@ -2361,7 +2367,7 @@
                     "Menu Management"
                 ],
                 "summary": "Create a new menu",
-                "description": "Create a new menu item with validation rules based on level and scope. Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
+                "description": "Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
                 "operationId": "createMenu",
                 "requestBody": {
                     "description": "Menu data to create",
@@ -2382,9 +2388,10 @@
                                         "example": "Surat Keterangan Mahasiswa"
                                     },
                                     "level": {
+                                        "description": "Level 1 categories are fixed/hardcoded and cannot be created",
                                         "type": "integer",
                                         "maximum": 3,
-                                        "minimum": 1,
+                                        "minimum": 2,
                                         "example": 2
                                     },
                                     "scope": {
@@ -2413,8 +2420,9 @@
                                         "nullable": true
                                     },
                                     "parent_id": {
+                                        "description": "Can be MongoDB ObjectId or fixed L1 category ID (e.g., fixed_l1_layanan_fakultas)",
                                         "type": "string",
-                                        "example": "507f1f77bcf86cd799439011",
+                                        "example": "fixed_l1_layanan_fakultas",
                                         "nullable": true
                                     },
                                     "route": {
@@ -2496,7 +2504,7 @@
                         }
                     },
                     "400": {
-                        "description": "Validation error or invalid business rule"
+                        "description": "Validation error, invalid business rule, or attempt to create Level 1 category"
                     },
                     "403": {
                         "description": "Forbidden - Not authorized to create in this scope"
