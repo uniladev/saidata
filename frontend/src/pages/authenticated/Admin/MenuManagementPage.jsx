@@ -427,8 +427,8 @@ const MenuManagementPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get('/menu-management');
-      const menuData = response.data.data.menu || [];
+      const response = await api.get('/admin/menus');
+      const menuData = response.data.data || [];
       setMenuStructure(menuData);
       setOriginalMenuStructure(JSON.parse(JSON.stringify(menuData))); // Deep copy
     } catch (err) {
@@ -450,9 +450,22 @@ const MenuManagementPage = () => {
   const handleSaveOrder = async () => {
     setIsSavingOrder(true);
     try {
-      // Save the entire structure
-      await api.put('/menu-management/reorder-nested', {
-        structure: menuStructure
+      // Prepare menus array for reorder API
+      const menusToReorder = [];
+      const extractMenusWithOrder = (menus, baseOrder = 0) => {
+        menus.forEach((menu, index) => {
+          const order = baseOrder + index + 1;
+          menusToReorder.push({ id: menu._id || menu.id, order });
+          if (menu.children && menu.children.length > 0) {
+            extractMenusWithOrder(menu.children, order * 100);
+          }
+        });
+      };
+      extractMenusWithOrder(menuStructure);
+
+      // Save using POST reorder endpoint
+      await api.post('/admin/menus/reorder', {
+        menus: menusToReorder
       });
       
       // Update original structure and exit reorder mode
@@ -512,9 +525,9 @@ const MenuManagementPage = () => {
     setIsLoading(true);
     try {
       if (savedItemData.id) {
-        await api.put(`/menu-management/${savedItemData.id}`, savedItemData);
+        await api.put(`/admin/menus/${savedItemData.id}`, savedItemData);
       } else {
-        await api.post('/menu-management', savedItemData);
+        await api.post('/admin/menus', savedItemData);
       }
       
       await fetchMenuStructure();
@@ -535,7 +548,7 @@ const MenuManagementPage = () => {
     
     setIsLoading(true);
     try {
-      await api.delete(`/menu-management/${itemId}`);
+      await api.delete(`/admin/menus/${itemId}`);
       await fetchMenuStructure();
     } catch (err) {
       console.error("Error deleting menu item:", err);

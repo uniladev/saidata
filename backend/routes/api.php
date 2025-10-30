@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\FormSubmissionController;
-use App\Http\Controllers\Api\FormSubmissionPayloadController;
+// use App\Http\Controllers\Api\FormSubmissionPayloadController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\MenuManagementController;
@@ -86,15 +86,15 @@ Route::prefix('v1')->group(function () {
                 ->where('id', '[a-f0-9]{24}');
             
             // Get payload by submission ID
-            Route::get('/{submissionId}/payload', [FormSubmissionPayloadController::class, 'show'])
-                ->where('submissionId', '[a-f0-9]{24}');
+            // Route::get('/{submissionId}/payload', [FormSubmissionPayloadController::class, 'show'])
+            //     ->where('submissionId', '[a-f0-9]{24}');
         });
 
         // Submission payloads routes (direct access)
-        Route::prefix('payloads')->group(function () {
-            Route::get('/{id}', [FormSubmissionPayloadController::class, 'showById'])
-                ->where('id', '[a-f0-9]{24}');
-        });
+        // Route::prefix('payloads')->group(function () {
+        //     Route::get('/{id}', [FormSubmissionPayloadController::class, 'showById'])
+        //         ->where('id', '[a-f0-9]{24}');
+        // });
 
         // User profiles routes
         Route::prefix('users')->group(function () {

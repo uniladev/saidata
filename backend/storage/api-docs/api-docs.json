@@ -2252,6 +2252,578 @@
                 ]
             }
         },
+        "/api/v1/admin/menus": {
+            "get": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Get all menus with hierarchy",
+                "description": "Retrieve all menu items filtered by user's admin scope. Admin Univ can see universitas & update_data, Admin Fakultas can see their faculty menus, Admin Jurusan can see their department menus.",
+                "operationId": "getMenus",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "description": "Filter by scope (universitas, fakultas, jurusan, update_data)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "level",
+                        "in": "query",
+                        "description": "Filter by level (1, 2, 3)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Menus retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "_id": {
+                                                        "type": "string",
+                                                        "example": "507f1f77bcf86cd799439011"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Layanan Universitas"
+                                                    },
+                                                    "level": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "scope": {
+                                                        "type": "string",
+                                                        "example": "universitas"
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "category"
+                                                    },
+                                                    "icon": {
+                                                        "type": "string",
+                                                        "example": "fas fa-university"
+                                                    },
+                                                    "order": {
+                                                        "type": "integer",
+                                                        "example": 2
+                                                    },
+                                                    "children": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid token"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not an admin user"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Create a new menu",
+                "description": "Create a new menu item with validation rules based on level and scope. Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
+                "operationId": "createMenu",
+                "requestBody": {
+                    "description": "Menu data to create",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "level",
+                                    "scope",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "Surat Keterangan Mahasiswa"
+                                    },
+                                    "level": {
+                                        "type": "integer",
+                                        "maximum": 3,
+                                        "minimum": 1,
+                                        "example": 2
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                            "universitas",
+                                            "fakultas",
+                                            "jurusan",
+                                            "update_data"
+                                        ],
+                                        "example": "universitas"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "category",
+                                            "subcategory",
+                                            "form"
+                                        ],
+                                        "example": "form"
+                                    },
+                                    "icon": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "fas fa-file",
+                                        "nullable": true
+                                    },
+                                    "parent_id": {
+                                        "type": "string",
+                                        "example": "507f1f77bcf86cd799439011",
+                                        "nullable": true
+                                    },
+                                    "route": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "/forms/surat-keterangan",
+                                        "nullable": true
+                                    },
+                                    "form_id": {
+                                        "type": "string",
+                                        "example": "507f1f77bcf86cd799439012",
+                                        "nullable": true
+                                    },
+                                    "faculty_code": {
+                                        "type": "string",
+                                        "maxLength": 10,
+                                        "example": "FT",
+                                        "nullable": true
+                                    },
+                                    "department_code": {
+                                        "type": "string",
+                                        "maxLength": 10,
+                                        "example": "IF",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "default": true,
+                                        "example": true
+                                    },
+                                    "order": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Menu created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Menu created successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string",
+                                                    "example": "507f1f77bcf86cd799439013"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "level": {
+                                                    "type": "integer"
+                                                },
+                                                "scope": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or invalid business rule"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized to create in this scope"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/menus/{id}": {
+            "get": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Get menu by ID",
+                "description": "Retrieve a specific menu item with its parent and children relationships",
+                "operationId": "showMenu",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu MongoDB ObjectId",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Menu retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string",
+                                                    "example": "507f1f77bcf86cd799439011"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "level": {
+                                                    "type": "integer"
+                                                },
+                                                "parent": {
+                                                    "type": "object"
+                                                },
+                                                "children": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized"
+                    },
+                    "404": {
+                        "description": "Menu not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Update menu",
+                "description": "Update an existing menu item. Only name, icon (level 1 only), route, form_id, is_active, and order can be updated.",
+                "operationId": "updateMenu",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu MongoDB ObjectId",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Menu fields to update (partial update allowed)",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "Updated Menu Name"
+                                    },
+                                    "icon": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "fas fa-star",
+                                        "nullable": true
+                                    },
+                                    "route": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "/forms/updated-route",
+                                        "nullable": true
+                                    },
+                                    "form_id": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "order": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Menu updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Menu updated successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or invalid business rule"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized"
+                    },
+                    "404": {
+                        "description": "Menu not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Delete menu with cascade",
+                "description": "Delete a menu item and all its children recursively (cascade delete). This is a permanent operation.",
+                "operationId": "deleteMenu",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu MongoDB ObjectId",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{24}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Menu deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Menu and 3 children deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized"
+                    },
+                    "404": {
+                        "description": "Menu not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/menus/reorder": {
+            "post": {
+                "tags": [
+                    "Menu Management"
+                ],
+                "summary": "Reorder menus",
+                "description": "Bulk update menu order. Only menus that the user has authorization to manage will be updated.",
+                "operationId": "reorderMenus",
+                "requestBody": {
+                    "description": "Array of menus with new order values",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "menus"
+                                ],
+                                "properties": {
+                                    "menus": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "id",
+                                                "order"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "example": "507f1f77bcf86cd799439011"
+                                                },
+                                                "order": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Menus reordered successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Menus reordered successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - Not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/users/{userId}/profile": {
             "get": {
                 "tags": [
@@ -2621,10 +3193,6 @@
         {
             "name": "Menu",
             "description": "Menu"
-        },
-        {
-            "name": "Menu Management",
-            "description": "Menu Management"
         },
         {
             "name": "User Profiles",

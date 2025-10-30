@@ -84,9 +84,24 @@ class MenuManagementController extends Controller
 
         $query = Menu::query();
 
+        // Validate scope parameter against admin authorization
+        $requestedScope = $request->input('scope');
+        
         // Filter by scope based on admin type
         if ($adminType === 'admin_univ') {
+            // Admin Univ can only access universitas and update_data
+            if ($requestedScope && !in_array($requestedScope, ['universitas', 'update_data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Admin Universitas can only access universitas and update_data scopes.'
+                ], 403);
+            }
+            
             $query->whereIn('scope', ['universitas', 'update_data']);
+            
+            if ($requestedScope) {
+                $query->where('scope', $requestedScope);
+            }
         } elseif ($adminType === 'admin_fakultas') {
             $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
             $facultyCode = $profile['faculty_code'] ?? null;
@@ -96,6 +111,14 @@ class MenuManagementController extends Controller
                     'success' => false,
                     'message' => 'Faculty code not found in profile'
                 ], 400);
+            }
+            
+            // Admin Fakultas can only access fakultas scope
+            if ($requestedScope && $requestedScope !== 'fakultas') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Admin Fakultas can only access fakultas scope.'
+                ], 403);
             }
             
             $query->where('scope', 'fakultas')->where('faculty_code', $facultyCode);
@@ -110,12 +133,17 @@ class MenuManagementController extends Controller
                 ], 400);
             }
             
+            // Admin Jurusan can only access jurusan scope
+            if ($requestedScope && $requestedScope !== 'jurusan') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Admin Jurusan can only access jurusan scope.'
+                ], 403);
+            }
+            
             $query->where('scope', 'jurusan')->where('department_code', $departmentCode);
         }
 
-        if ($request->has('scope')) {
-            $query->where('scope', $request->scope);
-        }
 
         if ($request->has('level')) {
             $query->where('level', (int) $request->level);
@@ -402,70 +430,195 @@ class MenuManagementController extends Controller
      */
     public function destroy($id)
     {
-        // --- INI ADALAH KODE YANG SUDAH DIPERBAIKI ---
-        return [
-            [
-                'id' => 2,
-                'name' => 'Layanan Universitas',
-                'icon' => 'Building',
-                'order' => 2,
-                'roles' => ['admin'],
-                'submenu' => [
-                    ['id' => 21, 'name' => 'Layanan Akademik', 'path' => '/dashboard/university/academic', 'order' => 1],
-                    ['id' => 22, 'name' => 'Layanan Keuangan', 'path' => '/dashboard/university/finance', 'order' => 2],
-                    ['id' => 23, 'name' => 'Layanan Umum', 'path' => '/dashboard/university/general', 'order' => 3],
-                ]
-            ],
-            [
-                'id' => 3,
-                'name' => 'Layanan Fakultas',
-                'icon' => 'GraduationCap',
-                'order' => 3,
-                'roles' => ['admin'],
-                'submenu' => [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                    ['id' => 33, 'name' => 'Layanan Keuangan', 'path' => '/dashboard/faculty/finance', 'order' => 3],
-                ]
-            ],
-            [
-                'id' => 4,
-                'name' => 'Layanan Jurusan',
-                'icon' => 'Building2',
-                'order' => 4,
-                'roles' => ['admin'],
-                'submenu' => [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Layanan Laboratorium', 'path' => '/dashboard/department/laboratory', 'order' => 2],
-                    ['id' => 43, 'name' => 'Layanan IT & Server', 'path' => '/dashboard/department/it-services', 'order' => 3],
-                    ['id' => 44, 'name' => 'Layanan Administrasi', 'path' => '/dashboard/department/administration', 'order' => 4],
-                    ['id' => 45, 'name' => 'Layanan Penelitian', 'path' => '/dashboard/department/research', 'order' => 5],
-                ]
-            ],
-            [
-                'id' => 6,
-                'name' => 'Validasi Permohonan',
-                'icon' => 'CheckCircle',
-                'path' => '/dashboard/validation',
-                'order' => 6,
-                'roles' => ['admin']
-            ],
-            [
-                'id' => 7,
-                'name' => 'Users',
-                'icon' => 'Users',
-                'path' => '/dashboard/users',
-                'order' => 7,
-                'roles' => ['admin']
-            ],
-            [
-                'id' => 8,
-                'name' => 'Reports',
-                'icon' => 'BarChart',
-                'path' => '/dashboard/reports',
-                'order' => 8,
-                'roles' => ['admin']
-            ],
-        ];
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $menu = Menu::find($id);
+
+        if (!$menu) {
+            return response()->json(['success' => false, 'message' => 'Menu not found'], 404);
+        }
+
+        if (!$this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $deletedCount = $this->deleteMenuWithChildren($menu);
+
+        return response()->json(['success' => true, 'message' => "Menu and {$deletedCount} children deleted successfully"]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/admin/menus/reorder",
+     *     operationId="reorderMenus",
+     *     summary="Reorder menus",
+     *     description="Bulk update menu order. Only menus that the user has authorization to manage will be updated.",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Array of menus with new order values",
+     *         @OA\JsonContent(
+     *             required={"menus"},
+     *             @OA\Property(
+     *                 property="menus",
+     *                 type="array",
+     *                 minItems=1,
+     *                 @OA\Items(
+     *                     required={"id","order"},
+     *                     @OA\Property(property="id", type="string", example="507f1f77bcf86cd799439011"),
+     *                     @OA\Property(property="order", type="integer", minimum=0, example=1)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Menus reordered successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menus reordered successfully")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Validation error"),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized")
+     * )
+     */
+    public function reorder(Request $request)
+    {
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'menus' => 'required|array',
+            'menus.*.id' => 'required|exists:menus,_id',
+            'menus.*.order' => 'required|integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 400);
+        }
+
+        $updatedCount = 0;
+        $unauthorizedMenus = [];
+        
+        foreach ($request->menus as $menuData) {
+            $menu = Menu::find($menuData['id']);
+            
+            if (!$menu) {
+                continue;
+            }
+            
+            if ($this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
+                $menu->update(['order' => $menuData['order']]);
+                $updatedCount++;
+            } else {
+                $unauthorizedMenus[] = $menuData['id'];
+            }
+        }
+        
+        if (count($unauthorizedMenus) > 0 && $updatedCount === 0) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Unauthorized. You do not have permission to reorder these menus.',
+                'unauthorized_menu_ids' => $unauthorizedMenus
+            ], 403);
+        }
+        
+        if (count($unauthorizedMenus) > 0) {
+            return response()->json([
+                'success' => true, 
+                'message' => "Partially reordered. {$updatedCount} menus updated, " . count($unauthorizedMenus) . " unauthorized menus skipped.",
+                'updated_count' => $updatedCount,
+                'unauthorized_menu_ids' => $unauthorizedMenus
+            ], 200);
+        }
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Menus reordered successfully',
+            'updated_count' => $updatedCount
+        ]);
+    }
+
+    private function getAdminType($user)
+    {
+        if (!$user || $user->role !== 'admin') {
+            return null;
+        }
+
+        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+        
+        if (empty($profile['faculty_code']) && empty($profile['department_code'])) {
+            return 'admin_univ';
+        } elseif (!empty($profile['faculty_code']) && empty($profile['department_code'])) {
+            return 'admin_fakultas';
+        } elseif (!empty($profile['department_code'])) {
+            return 'admin_jurusan';
+        }
+
+        return null;
+    }
+
+    private function canManageScope($user, $adminType, $scope, $facultyCode = null, $departmentCode = null)
+    {
+        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+
+        if ($adminType === 'admin_univ') {
+            return in_array($scope, ['universitas', 'update_data']);
+        } elseif ($adminType === 'admin_fakultas') {
+            if ($scope !== 'fakultas') {
+                return false;
+            }
+            return $facultyCode === ($profile['faculty_code'] ?? null);
+        } elseif ($adminType === 'admin_jurusan') {
+            if ($scope !== 'jurusan') {
+                return false;
+            }
+            return $departmentCode === ($profile['department_code'] ?? null);
+        }
+
+        return false;
+    }
+
+    private function buildHierarchy($menus, $parentId = null)
+    {
+        $branch = [];
+
+        foreach ($menus as $menu) {
+            if ($menu->parent_id == $parentId) {
+                $children = $this->buildHierarchy($menus, $menu->_id);
+                if ($children) {
+                    $menu->children = $children;
+                }
+                $branch[] = $menu;
+            }
+        }
+
+        return $branch;
+    }
+
+    private function deleteMenuWithChildren($menu)
+    {
+        $count = 0;
+        $children = Menu::where('parent_id', $menu->_id)->get();
+        
+        foreach ($children as $child) {
+            $count += $this->deleteMenuWithChildren($child);
+        }
+        
+        $menu->delete();
+        $count++;
+        
+        return $count;
     }
 }
