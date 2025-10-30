@@ -4,6 +4,7 @@ import SurveyTest from '../js/components/SurveyTest';
 import { Home, Login, NotFound, About } from '../pages';
 import FormBuilderPage from '../pages/FormBuilderPage'; // ← Import actual component
 import FormTakerPage from '../pages/FormTakerPage'; // ← Import actual component
+import OutputTemplatesPage from '../pages/OutputTemplatesPage';
 
 export const router = createBrowserRouter([
   {
@@ -15,6 +16,7 @@ export const router = createBrowserRouter([
       { path: 'survey-test', element: <SurveyTest /> },
       { path: 'create-form', element: <FormBuilderPage /> }, // ← Sekarang menggunakan komponen actual
       { path: 'form/:formId', element: <FormTakerPage /> }, // ← Sekarang menggunakan komponen actual
+      { path: 'output-templates', element: <OutputTemplatesPage /> },
       { path: '*', element: <NotFound /> }
     ]
   },
