@@ -18,24 +18,14 @@ class MenuSeeder extends Seeder
         // Clear existing menus
         Menu::truncate();
 
-        echo "Seeding initial menu categories...\n";
+        echo "Seeding menu categories...\n";
 
-        // Level 1 Categories - These are fixed and displayed based on user role
-        $menus = [
-            [
-                'name' => 'Dashboard',
-                'level' => 1,
-                'scope' => 'universitas', // Accessible to all
-                'type' => 'category',
-                'icon' => 'fas fa-home',
-                'parent_id' => null,
-                'route' => '/dashboard',
-                'form_id' => null,
-                'faculty_code' => null,
-                'department_code' => null,
-                'is_active' => true,
-                'order' => 1
-            ],
+        // ===========================================
+        // MANAGEABLE MENUS - Can be managed by Admin
+        // ===========================================
+        echo "\n📝 Creating MANAGEABLE menus (for Menu Management)...\n";
+        
+        $manageableMenus = [
             [
                 'name' => 'Layanan Universitas',
                 'level' => 1,
@@ -91,32 +81,24 @@ class MenuSeeder extends Seeder
                 'department_code' => null, // Will be set dynamically based on user's department
                 'is_active' => true,
                 'order' => 5
-            ],
-            [
-                'name' => 'Riwayat Permohonan',
-                'level' => 1,
-                'scope' => 'universitas',
-                'type' => 'category',
-                'icon' => 'fas fa-history',
-                'parent_id' => null,
-                'route' => '/history',
-                'form_id' => null,
-                'faculty_code' => null,
-                'department_code' => null,
-                'is_active' => true,
-                'order' => 6
             ]
         ];
 
-        foreach ($menus as $menuData) {
+        foreach ($manageableMenus as $menuData) {
             Menu::create($menuData);
             echo "  ✓ Created: {$menuData['name']} (Level {$menuData['level']}, Scope: {$menuData['scope']})\n";
         }
 
-        echo "\n✅ Successfully seeded " . count($menus) . " menu categories.\n";
+        echo "\n✅ Successfully seeded " . count($manageableMenus) . " MANAGEABLE menu categories.\n";
+        echo "\nAdmin Access Rights:\n";
+        echo "- 🎯 Admin Univ: Can manage 'Layanan Universitas' + 'Update Data'\n";
+        echo "- 🎯 Admin Fakultas: Can manage 'Layanan Fakultas' (their faculty only)\n";
+        echo "- 🎯 Admin Jurusan: Can manage 'Layanan Jurusan' (their department only)\n";
+        echo "\nFixed System Menus (NOT manageable):\n"; 
+        echo "- Dashboard: Fixed route to /dashboard\n";
+        echo "- Riwayat Permohonan: Fixed route to /history\n";
         echo "\nNote:\n";
         echo "- Level 2 and Level 3 menus should be created via the Menu Management API\n";
-        echo "- Layanan Fakultas and Layanan Jurusan menus will be filtered based on user profile\n";
         echo "- Update Data category can only contain Level 2 forms (no subcategories)\n";
     }
 }

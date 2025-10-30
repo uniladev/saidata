@@ -84,6 +84,9 @@ class MenuManagementController extends Controller
 
         $query = Menu::query();
 
+        // Exclude system menus from management (Dashboard, Riwayat Permohonan, etc.)
+        $query->where('scope', '!=', 'system');
+
         // Validate scope parameter against admin authorization
         $requestedScope = $request->input('scope');
         
