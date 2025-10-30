@@ -33,6 +33,20 @@ const FieldPropertiesPanel = ({ field, onClose, updateField, optionHandlers }) =
         {field.type !== 'section' && (
           <>
             <div>
+              <label className="block text-sm font-medium mb-1">Name</label>
+              <input
+                type="text"
+                value={field.name}
+                onChange={(e) => updateField(field.id, 'name', e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg font-mono text-sm"
+                placeholder="field_name"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Used to identify this field in submissions (alphanumeric and underscores only)
+              </p>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium mb-1">Placeholder</label>
               <input
                 type="text"
@@ -134,29 +148,15 @@ const FileOptions = ({ field, updateField }) => {
       icon: '🎵',
       value: 'audio/*',
       description: 'MP3, WAV, OGG'
-    },
-    {
-      label: 'Archives',
-      icon: '📦',
-      value: '.zip,.rar,.7z,.tar,.gz',
-      description: 'ZIP, RAR, 7Z'
-    },
-    {
-      label: 'PDF Only',
-      icon: '📕',
-      value: '.pdf',
-      description: 'PDF files only'
-    },
-    {
-      label: 'All Files',
-      icon: '📁',
-      value: '',
-      description: 'Any file type'
     }
   ];
 
   const currentAccept = field.fileOptions?.accept || '';
   
+  // Check if current value is a preset
+  const isPreset = fileTypePresets.some(preset => preset.value === currentAccept);
+  const isCustomValue = currentAccept && !isPreset;
+
   const handlePresetClick = (presetValue) => {
     updateField(field.id, 'fileOptions', {
       ...(field.fileOptions || {}),
@@ -172,16 +172,10 @@ const FileOptions = ({ field, updateField }) => {
     });
   };
 
-  // Check if current value matches any preset
-  const isCustomValue = !fileTypePresets.some(preset => preset.value === currentAccept);
-
   return (
     <div className="space-y-4 border-t pt-4">
-      <h4 className="font-medium text-gray-900">File Upload Options</h4>
-      
-      {/* File Type Selection */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
           Accepted File Types
         </label>
         
@@ -191,20 +185,15 @@ const FileOptions = ({ field, updateField }) => {
             const isSelected = currentAccept === preset.value;
             return (
               <button
-                key={preset.label}
+                key={preset.value}
                 type="button"
                 onClick={() => handlePresetClick(preset.value)}
-                className={`relative p-3 rounded-lg border-2 transition-all text-left ${
+                className={`p-3 rounded-lg border-2 transition-all text-left ${
                   isSelected
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
-                {isSelected && (
-                  <div className="absolute top-1 right-1">
-                    <Check className="w-4 h-4 text-blue-600" />
-                  </div>
-                )}
                 <div className="flex items-start space-x-2">
                   <span className="text-xl">{preset.icon}</span>
                   <div className="flex-1 min-w-0">
