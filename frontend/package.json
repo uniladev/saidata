@@ -22,12 +22,7 @@
     "pizzip": "^3.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-quill": "^2.0.0",
     "react-router-dom": "^7.9.4",
-    "survey-core": "^1.9.131",
-    "survey-creator-core": "^1.9.131",
-    "survey-creator-react": "^1.12.54",
-    "survey-react-ui": "^1.12.54",
     "tinymce": "^8.2.0"
   },
   "devDependencies": {
