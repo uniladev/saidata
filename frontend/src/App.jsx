@@ -22,7 +22,6 @@ const {
   NotFoundPage,
   MenuManagementPage,
   TablePage,
-  OutputTemplatesPage,
 } = {
   HomePage: lazy(() => import("./pages/guest/Home")),
   AboutPage: lazy(() => import("./pages/guest/About")),
@@ -36,7 +35,6 @@ const {
   NotFoundPage: lazy(() => import("./pages/NotFound")),
   MenuManagementPage: lazy(() => import("./pages/authenticated/Admin/MenuManagementPage")),
   TablePage: lazy(() => import("./pages/authenticated/Admin/TablePage")),
-  OutputTemplatesPage: lazy(() => import("./pages/output/OutputTemplatesPage")),
 };
 
 // Protected Route Component
@@ -98,7 +96,6 @@ export default function App() {
         <Route path="/menu" element={<MenuManagementPage />} />
         <Route path="/menu/:slug" element={<DocumentTemplates />} />
         <Route path="/table-demo" element={<TablePage />} />
-        <Route path="/output-templates" element={<OutputTemplatesPage />} />
       </Route>
 
       {/* 404 Not Found */}
