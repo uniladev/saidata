@@ -221,6 +221,32 @@ class AuthController extends Controller
                         'class' => 'department'
                     ],
                 ],
+                'admin_fmipa' => [
+                    'username' => 'admin_fmipa',
+                    'email' => 'admin.fmipa@test.com',
+                    'role' => 'admin',
+                    'profile' => [
+                        'name' => 'Admin FMIPA',
+                        'faculty_code' => 'FMIPA',
+                        'department_code' => null,
+                        'study_program_code' => null,
+                        'phone' => '081234567891',
+                        'class' => 'faculty'
+                    ],
+                ],
+                'admin_ilkom' => [
+                    'username' => 'admin_ilkom',
+                    'email' => 'admin.ilkom@test.com',
+                    'role' => 'admin',
+                    'profile' => [
+                        'name' => 'Admin Ilmu Komputer',
+                        'faculty_code' => 'FMIPA',
+                        'department_code' => 'ILKOM',
+                        'study_program_code' => null,
+                        'phone' => '081234567892',
+                        'class' => 'department'
+                    ],
+                ],
             ];
 
             $ssoData = $mockUsers[$username] ?? null;

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\FormSubmissionController;
-use App\Http\Controllers\Api\FormSubmissionPayloadController;
+// use App\Http\Controllers\Api\FormSubmissionPayloadController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\MenuManagementController;
@@ -29,11 +29,18 @@ Route::prefix('v1')->group(function () {
         
         // Menu routes
         Route::get('/menu', [MenuController::class, 'index']);
-        Route::get('/menu-management', [MenuManagementController::class, 'index']);
-        Route::post('/menu-management', [MenuManagementController::class, 'store']);       // <-- TAMBAHKAN INI
-        Route::put('/menu-management/{id}', [MenuManagementController::class, 'update']);    // <-- TAMBAHKAN INI
-        Route::delete('/menu-management/{id}', [MenuManagementController::class, 'destroy']); // <-- TAMBAHKAN INI
-        Route::put('/menu-management/reorder', [MenuManagementController::class, 'reorder']); // <-- TAMBAHKAN INI
+        
+        // Menu Management routes (Admin only)
+        Route::prefix('admin/menus')->group(function () {
+            Route::get('/', [MenuManagementController::class, 'index']);
+            Route::post('/', [MenuManagementController::class, 'store']);
+            Route::get('/{id}', [MenuManagementController::class, 'show']);
+            Route::put('/{id}', [MenuManagementController::class, 'update'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::delete('/{id}', [MenuManagementController::class, 'destroy'])
+                ->where('id', '[a-f0-9]{24}');
+            Route::post('/reorder', [MenuManagementController::class, 'reorder']);
+        });
         
         // Forms routes - Only MongoDB ObjectId
         Route::prefix('forms')->group(function () {
@@ -78,15 +85,15 @@ Route::prefix('v1')->group(function () {
                 ->where('id', '[a-f0-9]{24}');
             
             // Get payload by submission ID
-            Route::get('/{submissionId}/payload', [FormSubmissionPayloadController::class, 'show'])
-                ->where('submissionId', '[a-f0-9]{24}');
+            // Route::get('/{submissionId}/payload', [FormSubmissionPayloadController::class, 'show'])
+            //     ->where('submissionId', '[a-f0-9]{24}');
         });
 
         // Submission payloads routes (direct access)
-        Route::prefix('payloads')->group(function () {
-            Route::get('/{id}', [FormSubmissionPayloadController::class, 'showById'])
-                ->where('id', '[a-f0-9]{24}');
-        });
+        // Route::prefix('payloads')->group(function () {
+        //     Route::get('/{id}', [FormSubmissionPayloadController::class, 'showById'])
+        //         ->where('id', '[a-f0-9]{24}');
+        // });
 
         // User profiles routes
         Route::prefix('users')->group(function () {

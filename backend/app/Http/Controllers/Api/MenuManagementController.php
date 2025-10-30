@@ -3,1041 +3,791 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Menu;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log; // <-- TAMBAHKAN BARIS INI
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 /**
- * Controller ini khusus untuk halaman Menu Management.
- * Controller ini mengembalikan data menu yang SUDAH DIFILTER
- * berdasarkan role admin.
+ * @OA\Tag(
+ *     name="Menu Management",
+ *     description="API endpoints for managing hierarchical menu system with role-based access control"
+ * )
  */
 class MenuManagementController extends Controller
 {
     /**
      * @OA\Get(
-     * path="/api/v1/menu-management",
-     * tags={"Menu Management"},
-     * summary="Get dynamic menu for Management Page, filtered by admin role",
-     * description="Mengambil data menu dinamis untuk halaman manajemen, sudah difilter berdasarkan role/nama admin.",
-     * operationId="getDynamicManagementMenu",
-     * security={{"bearerAuth":{}}},
-     *
-     * @OA\Response(
-     * response=200,
-     * description="Berhasil mengambil data menu yang difilter",
-     * @OA\JsonContent(
-     * @OA\Property(property="success", type="boolean", example=true),
-     * @OA\Property(property="data", type="object", @OA\Property(property="menu", type="array", @OA\Items(type="object")))
-     * )
-     * ),
-     * @OA\Response(response=401, description="Unauthenticated")
+     *     path="/api/v1/admin/menus",
+     *     operationId="getMenus",
+     *     summary="Get all menus with hierarchy",
+     *     description="Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope.",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="scope",
+     *         in="query",
+     *         description="Filter by scope (universitas, fakultas, jurusan, update_data)",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="level",
+     *         in="query",
+     *         description="Filter by level (1, 2, 3)",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menus retrieved successfully"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="string", example="fixed_l1_layanan_universitas", description="Fixed L1 IDs use prefix 'fixed_l1_', database menus use MongoDB ObjectId"),
+     *                     @OA\Property(property="name", type="string", example="Layanan Universitas"),
+     *                     @OA\Property(property="level", type="integer", example=1),
+     *                     @OA\Property(property="scope", type="string", example="universitas"),
+     *                     @OA\Property(property="type", type="string", example="category"),
+     *                     @OA\Property(property="icon", type="string", example="fas fa-university"),
+     *                     @OA\Property(property="is_fixed", type="boolean", example=true, description="True for Level 1 fixed categories, false for manageable menus"),
+     *                     @OA\Property(property="order", type="integer", example=2),
+     *                     @OA\Property(
+     *                         property="children",
+     *                         type="array",
+     *                         @OA\Items(type="object")
+     *                     )
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized - Invalid token"),
+     *     @OA\Response(response=403, description="Forbidden - Not an admin user")
      * )
      */
     public function index(Request $request)
     {
         $user = Auth::user();
-        
-        if (!$user) {
-            Log::warning('MenuManagement: Request gagal, user unauthenticated.'); // <-- LOG
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthenticated'
-            ], 401);
-        }
-
-        if ($user->role !== 'admin') {
-            Log::warning('MenuManagement: Request gagal, user bukan admin.'); // <-- LOG
-             return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized',
-                'data' => ['menu' => []]
+                'message' => 'Unauthorized. Only admin users can access menu management.'
             ], 403);
         }
 
-        // 1. Dapatkan nama admin untuk filter
-        Log::debug('============================================');
-        Log::debug('MenuManagement: Memulai request...');
-
-        // Ambil data profile dengan aman (seperti di MenuController.php)
-        $profile = $user->profile ?? [];
-        if (is_object($profile)) {
-            $profile = (array) $profile;
-        }
-
-        // Ambil nama dari DALAM profile, BUKAN dari user root
-        $adminName = $profile['name'] ?? null; // <-- INI SOLUSINYA
-
-        // Log yang sudah aman dan benar
-        Log::debug("MenuManagement: User terdeteksi: " . $adminName);
-
-        // 2. Ambil data menu mentah lengkap (Base + Admin + Common)
-        // Ini adalah sumber data lengkap sebelum difilter
-        $allAdminMenus = $this->getCompleteAdminDataset();
-        Log::debug("MenuManagement: Total item mentah didapat: " . count($allAdminMenus)); // <-- LOG
-
-        // 3. Terapkan filter backend BARU berdasarkan permintaan spesifik
-        $filteredMenu = [];
-        switch ($adminName) {
-            case 'Administrator':
-                Log::debug("MenuManagement: Masuk case 'Administrator'"); // <-- LOG
-                // Super Admin: dapat semua menu
-                $filteredMenu = $allAdminMenus;
-                break;
-            
-            case 'Administrator Univ':
-                Log::debug("MenuManagement: Masuk case 'Administrator Univ'"); // <-- LOG
-                // HANYA 'Layanan Universitas' + item baru 'Update Data'
-                $filteredMenu = array_filter($allAdminMenus, function($menu) {
-                    return $menu['name'] === 'Layanan Universitas';
-                });
-                
-                // Tambahkan item baru 'Update Data' secara manual
-                $filteredMenu[] = [
-                    'id' => 9999, // ID dummy unik
-                    'name' => 'Update Data',
-                    'icon' => 'UploadCloud', // Icon contoh
-                    'path' => '/dashboard/update-data', // Path contoh
-                    'order' => 5, // Urutan (setelah Layanan Univ)
-                    'roles' => ['admin']
-                ];
-                break;
-
-            case 'Administrator Fakultas':
-                Log::debug("MenuManagement: Masuk case 'Administrator Fakultas'"); // <-- LOG
-                // HANYA 'Layanan Fakultas'
-                $filteredMenu = array_filter($allAdminMenus, function($menu) {
-                    return $menu['name'] === 'Layanan Fakultas';
-                });
-                break;
-            
-            case 'Administrator Jurusan':
-                Log::debug("MenuManagement: Masuk case 'Administrator Jurusan'"); // <-- LOG
-                // HANYA 'Layanan Jurusan'
-                $filteredMenu = array_filter($allAdminMenus, function($menu) {
-                    return $menu['name'] === 'Layanan Jurusan';
-                });
-                break;
-
-            default:
-            Log::debug("MenuManagement: Masuk case 'default' (admin tidak dikenal)"); // <-- LOG
-                // Admin tidak dikenal, kembalikan array kosong
-                $filteredMenu = []; 
-                break;
-        }
-
-        Log::debug("MenuManagement: Jumlah item setelah filter: " . count($filteredMenu)); // <-- LOG
-
-        // 4. Ubah hasil filter kembali menjadi array (bukan object)
-        $finalMenu = array_values($filteredMenu);
-
-        // Sort by order
-        usort($finalMenu, function($a, $b) {
-            return $a['order'] <=> $b['order'];
-        });
-
-        // 5. Ambil data user info (hanya untuk konsistensi)
-        $profile = $user->profile ?? [];
-        if (is_object($profile)) {
-            $profile = (array) $profile;
-        }
-        $facultyCode = $profile['faculty_code'] ?? null;
-        $departmentCode = $profile['department_code'] ?? null;
-        $studyProgramCode = $profile['study_program_code'] ?? null;
-
-        // 6. Kembalikan data yang SUDAH DIFILTER
-        Log::debug("MenuManagement: Mengirim " . count($finalMenu) . " item ke frontend."); // <-- LOG
-        Log::debug('============================================'); // <-- LOG
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'menu' => $finalMenu,
-                'user_info' => [
-                    'faculty' => $facultyCode,
-                    'faculty_code' => $facultyCode,
-                    'department' => $departmentCode,
-                    'department_code' => $departmentCode,
-                    'study_program' => $studyProgramCode,
-                    'study_program_code' => $studyProgramCode,
-                ]
-            ]
-        ]);
-    }
-
-    /**
-     * Fungsi helper BARU untuk menggabungkan semua dataset admin
-     * dari file MenuController.php yang asli
-     */
-    private function getCompleteAdminDataset()
-    {
-        // 1. Base menu items (dari index() asli)
-        $baseMenu = [
-            [
-                'id' => 1,
-                'name' => 'Dashboard',
-                'icon' => 'LayoutDashboard',
-                'path' => '/dashboard',
-                'order' => 1,
-                'roles' => ['admin', 'user']
-            ],
-            [
-            'id' => 90909,
-                'name' => 'DEVTEST (EDIT DI  BACKEND MENU CONTROLLER)',
-                'icon' => 'ClipboardList',
-                'order' => 2,
-                'roles' => ['admin', 'user'],
-                'submenu' => [
-                    ['id' => 2001, 'name' => 'Create Form', 'path' => '/forms/create', 'order' => 1],
-                    ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
-                    ['id' => 2003, 'name' => 'Menu Setting', 'path' => '/menu', 'order' => 3],
-                ]
-            ],
-        ];
-
-        // 2. Admin menu items (dari getAdminMenu() asli)
-        $adminMenu = $this->getAdminMenu();
-
-        // 3. Common menu items (dari index() asli)
-        $commonMenu = [
-            [
-                'id' => 100,
-                'name' => 'Riwayat Permohonan',
-                'icon' => 'ClipboardList',
-                'order' => 100,
-                'roles' => ['admin', 'user'],
-                'submenu' => [
-                    ['id' => 1001, 'name' => 'Semua Permohonan', 'path' => '/dashboard/requests', 'order' => 1],
-                    ['id' => 1002, 'name' => 'Permohonan Pending', 'path' => '/dashboard/requests/pending', 'order' => 2],
-                    ['id' => 1003, 'name' => 'Permohonan Disetujui', 'path' => '/dashboard/requests/approved', 'order' => 3],
-                    ['id' => 1004, 'name' => 'Permohonan Ditolak', 'path' => '/dashboard/requests/rejected', 'order' => 4],
-                ]
-            ],
-            [
-                'id' => 101,
-                'name' => 'Pengaturan',
-                'icon' => 'Settings',
-                'path' => '/dashboard/settings',
-                'order' => 101,
-                'roles' => ['admin', 'user']
-            ],
-            [
-                'id' => 102,
-                'name' => 'Bantuan',
-                'icon' => 'HelpCircle',
-                'path' => '/dashboard/help',
-                'order' => 102,
-                'roles' => ['admin', 'user']
-            ]
-        ];
-
-        // Gabungkan semua menjadi satu array mentah
-        return array_merge($baseMenu, $adminMenu, $commonMenu);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | FUNGSI-FUNGSI YANG DISALIN
-    |--------------------------------------------------------------------------
-    |
-    | Semua fungsi privat di bawah ini disalin langsung dari MenuController.php
-    | untuk memastikan getAdminMenu() berfungsi dengan baik.
-    |
-    */
-
-    /**
-     * Get menu for regular users (mahasiswa)
-     * (Disalin - tidak digunakan oleh index() di file ini, tapi ada untuk kelengkapan)
-     */
-    private function getUserMenu($facultyCode, $departmentCode, $studyProgramCode)
-    {
-        $menu = [];
-        $menu[] = [
-            'id' => 2, 'name' => 'Layanan Universitas', 'icon' => 'Building', 'order' => 2, 'roles' => ['user'],
-            'submenu' => [ /* ... */ ]
-        ];
-        if ($facultyCode) {
-            $menu[] = [
-                'id' => 3, 'name' => 'Layanan Fakultas', 'icon' => 'GraduationCap', 'order' => 3, 'roles' => ['user'],
-                'submenu' => $this->getFacultySubmenu($facultyCode)
-            ];
-        }
-        if ($departmentCode) {
-            $menu[] = [
-                'id' => 4, 'name' => 'Layanan Jurusan', 'icon' => 'BookOpen', 'order' => 4, 'roles' => ['user'],
-                'submenu' => $this->getDepartmentSubmenu($facultyCode, $departmentCode)
-            ];
-        }
-        return $menu;
-    }
-    
-    /**
-     * Get submenu for faculty
-     * (Disalin)
-     */
-    private function getFacultySubmenu($facultyCode)
-    {
-        // Submenu berbeda per fakultas
-        switch ($facultyCode) {
-            case 'FMIPA':
-                return [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                    ['id' => 33, 'name' => 'Layanan Penelitian', 'path' => '/dashboard/faculty/research', 'order' => 3],
-                    ['id' => 34, 'name' => 'Layanan Laboratorium', 'path' => '/dashboard/faculty/laboratory', 'order' => 4],
-                ];
-            // ... (case lain disalin dari file asli)
-            default:
-                return [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                ];
-        }
-    }
-
-    /**
-     * Get submenu for department
-     * (Disalin)
-     */
-    private function getDepartmentSubmenu($facultyCode, $departmentCode)
-    {
-        // Submenu berbeda per jurusan
-        $key = "{$facultyCode}_{$departmentCode}";
-        switch ($key) {
-            // FMIPA - Ilmu Komputer
-            case 'FMIPA_ILKOM':
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Lab Programming', 'path' => '/dashboard/department/programming-lab', 'order' => 2],
-                    ['id' => 43, 'name' => 'Lab Jaringan', 'path' => '/dashboard/department/network-lab', 'order' => 3],
-                    ['id' => 44, 'name' => 'Layanan Server & IT', 'path' => '/dashboard/department/it-services', 'order' => 4],
-                    ['id' => 45, 'name' => 'Bimbingan Tugas Akhir', 'path' => '/dashboard/department/thesis-guidance', 'order' => 5],
-                ];
-            // ... (case lain disalin dari file asli)
-            default:
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Layanan Administrasi', 'path' => '/dashboard/department/administration', 'order' => 2],
-                ];
-        }
-    }
-
-    /**
-     * Get department display name
-     * (Disalin)
-     */
-    private function getDepartmentDisplayName($departmentCode)
-    {
-        // ... (disalin dari file asli)
-    }
-
-    /**
-     * Get menu for admin users
-     * (Disalin - ini adalah data mentah yang kita filter)
-     */
-    private function getAdminMenu()
-    {
-        // --- INI ADALAH KODE YANG SUDAH DIPERBAIKI ---
-        return [
-            [
-                'id' => 2,
-                'name' => 'Layanan Universitas',
-                'icon' => 'Building',
-                'order' => 2,
-                'roles' => ['admin'],
-                'type' => 'category',
-                'submenu' => [
-                    [
-                        'id' => 21, 
-                        'name' => 'Layanan Akademik', 
-                        'path' => '/dashboard/university/academic', 
-                        'order' => 1,
-                        'type' => 'subcategory',
-                        'icon' => 'BookOpen',
-                        'roles' => ['admin'],
-                        'submenu' => [
-                            [
-                                'id' => 211,
-                                'name' => 'Pendaftaran Mahasiswa',
-                                'path' => '/dashboard/university/academic/enrollment',
-                                'order' => 1,
-                                'type' => 'subcategory',
-                                'icon' => 'UserPlus',
-                                'roles' => ['admin'],
-                                'submenu' => [
-                                    [
-                                        'id' => 2111,
-                                        'name' => 'Mahasiswa Baru',
-                                        'path' => '/dashboard/university/academic/enrollment/new',
-                                        'order' => 1,
-                                        'type' => 'subcategory',
-                                        'icon' => 'Users',
-                                        'roles' => ['admin'],
-                                        'submenu' => [
-                                            [
-                                                'id' => 21111,
-                                                'name' => 'Formulir Pendaftaran',
-                                                'path' => '/dashboard/university/academic/enrollment/new/form',
-                                                'order' => 1,
-                                                'type' => 'service',
-                                                'roles' => ['admin'],
-                                                'formId' => 1,
-                                                'outputConfig' => 'Generate PDF pendaftaran mahasiswa baru'
-                                            ],
-                                            [
-                                                'id' => 21112,
-                                                'name' => 'Verifikasi Dokumen',
-                                                'path' => '/dashboard/university/academic/enrollment/new/verify',
-                                                'order' => 2,
-                                                'type' => 'service',
-                                                'roles' => ['admin'],
-                                                'formId' => 2,
-                                                'outputConfig' => 'Generate surat verifikasi dokumen'
-                                            ]
-                                        ]
-                                    ],
-                                    [
-                                        'id' => 2112,
-                                        'name' => 'Transfer Mahasiswa',
-                                        'path' => '/dashboard/university/academic/enrollment/transfer',
-                                        'order' => 2,
-                                        'type' => 'service',
-                                        'roles' => ['admin'],
-                                        'formId' => 3,
-                                        'outputConfig' => 'Generate surat keterangan transfer'
-                                    ]
-                                ]
-                            ],
-                            [
-                                'id' => 212,
-                                'name' => 'Manajemen Kurikulum',
-                                'path' => '/dashboard/university/academic/curriculum',
-                                'order' => 2,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 4,
-                                'outputConfig' => 'Generate laporan kurikulum'
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => 22, 
-                        'name' => 'Layanan Keuangan', 
-                        'path' => '/dashboard/university/finance', 
-                        'order' => 2,
-                        'type' => 'subcategory',
-                        'icon' => 'DollarSign',
-                        'roles' => ['admin'],
-                        'submenu' => [
-                            [
-                                'id' => 221,
-                                'name' => 'Pembayaran SPP',
-                                'path' => '/dashboard/university/finance/tuition',
-                                'order' => 1,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 5,
-                                'outputConfig' => 'Generate kwitansi pembayaran SPP'
-                            ],
-                            [
-                                'id' => 222,
-                                'name' => 'Beasiswa',
-                                'path' => '/dashboard/university/finance/scholarship',
-                                'order' => 2,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 6,
-                                'outputConfig' => 'Generate surat keterangan beasiswa'
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => 23, 
-                        'name' => 'Layanan Umum', 
-                        'path' => '/dashboard/university/general', 
-                        'order' => 3,
-                        'type' => 'service',
-                        'roles' => ['admin'],
-                        'formId' => 7,
-                        'outputConfig' => 'Generate surat keterangan umum'
-                    ]
-                ]
-            ],
-            [
-                'id' => 3,
-                'name' => 'Layanan Fakultas',
-                'icon' => 'GraduationCap',
-                'order' => 3,
-                'roles' => ['admin'],
-                'type' => 'category',
-                'submenu' => [
-                    [
-                        'id' => 31, 
-                        'name' => 'Layanan Umum', 
-                        'path' => '/dashboard/faculty/general', 
-                        'order' => 1,
-                        'type' => 'subcategory',
-                        'icon' => 'FileText',
-                        'roles' => ['admin'],
-                        'submenu' => [
-                            [
-                                'id' => 311,
-                                'name' => 'Surat Keterangan',
-                                'path' => '/dashboard/faculty/general/certificate',
-                                'order' => 1,
-                                'type' => 'subcategory',
-                                'icon' => 'Award',
-                                'roles' => ['admin'],
-                                'submenu' => [
-                                    [
-                                        'id' => 3111,
-                                        'name' => 'Surat Aktif Kuliah',
-                                        'path' => '/dashboard/faculty/general/certificate/active',
-                                        'order' => 1,
-                                        'type' => 'service',
-                                        'roles' => ['admin'],
-                                        'formId' => 8,
-                                        'outputConfig' => 'Generate surat keterangan aktif kuliah'
-                                    ],
-                                    [
-                                        'id' => 3112,
-                                        'name' => 'Surat Keterangan Lulus',
-                                        'path' => '/dashboard/faculty/general/certificate/graduation',
-                                        'order' => 2,
-                                        'type' => 'service',
-                                        'roles' => ['admin'],
-                                        'formId' => 9,
-                                        'outputConfig' => 'Generate surat keterangan lulus'
-                                    ]
-                                ]
-                            ],
-                            [
-                                'id' => 312,
-                                'name' => 'Legalisir Dokumen',
-                                'path' => '/dashboard/faculty/general/legalization',
-                                'order' => 2,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 10,
-                                'outputConfig' => 'Generate tanda terima legalisir'
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => 32, 
-                        'name' => 'Layanan Akademik', 
-                        'path' => '/dashboard/faculty/academic', 
-                        'order' => 2,
-                        'type' => 'subcategory',
-                        'icon' => 'BookOpen',
-                        'roles' => ['admin'],
-                        'submenu' => [
-                            [
-                                'id' => 321,
-                                'name' => 'Perwalian',
-                                'path' => '/dashboard/faculty/academic/advisory',
-                                'order' => 1,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 11,
-                                'outputConfig' => 'Generate laporan perwalian'
-                            ],
-                            [
-                                'id' => 322,
-                                'name' => 'Ujian Proposal',
-                                'path' => '/dashboard/faculty/academic/proposal',
-                                'order' => 2,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 12,
-                                'outputConfig' => 'Generate form pendaftaran ujian proposal'
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => 33, 
-                        'name' => 'Layanan Keuangan', 
-                        'path' => '/dashboard/faculty/finance', 
-                        'order' => 3,
-                        'type' => 'service',
-                        'roles' => ['admin'],
-                        'formId' => 13,
-                        'outputConfig' => 'Generate laporan keuangan fakultas'
-                    ]
-                ]
-            ],
-            [
-                'id' => 4,
-                'name' => 'Layanan Jurusan',
-                'icon' => 'Building2',
-                'order' => 4,
-                'roles' => ['admin'],
-                'type' => 'category',
-                'submenu' => [
-                    [
-                        'id' => 41, 
-                        'name' => 'Layanan Akademik', 
-                        'path' => '/dashboard/department/academic', 
-                        'order' => 1,
-                        'type' => 'subcategory',
-                        'icon' => 'BookOpen',
-                        'roles' => ['admin'],
-                        'submenu' => [
-                            [
-                                'id' => 411,
-                                'name' => 'Tugas Akhir',
-                                'path' => '/dashboard/department/academic/thesis',
-                                'order' => 1,
-                                'type' => 'subcategory',
-                                'icon' => 'GraduationCap',
-                                'roles' => ['admin'],
-                                'submenu' => [
-                                    [
-                                        'id' => 4111,
-                                        'name' => 'Pendaftaran Tugas Akhir',
-                                        'path' => '/dashboard/department/academic/thesis/registration',
-                                        'order' => 1,
-                                        'type' => 'service',
-                                        'roles' => ['admin'],
-                                        'formId' => 14,
-                                        'outputConfig' => 'Generate form pendaftaran tugas akhir'
-                                    ],
-                                    [
-                                        'id' => 4112,
-                                        'name' => 'Seminar Proposal',
-                                        'path' => '/dashboard/department/academic/thesis/seminar',
-                                        'order' => 2,
-                                        'type' => 'service',
-                                        'roles' => ['admin'],
-                                        'formId' => 15,
-                                        'outputConfig' => 'Generate form pendaftaran seminar proposal'
-                                    ]
-                                ]
-                            ],
-                            [
-                                'id' => 412,
-                                'name' => 'Praktikum',
-                                'path' => '/dashboard/department/academic/practicum',
-                                'order' => 2,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 16,
-                                'outputConfig' => 'Generate jadwal praktikum'
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => 42, 
-                        'name' => 'Layanan Laboratorium', 
-                        'path' => '/dashboard/department/laboratory', 
-                        'order' => 2,
-                        'type' => 'subcategory',
-                        'icon' => 'Microscope',
-                        'roles' => ['admin'],
-                        'submenu' => [
-                            [
-                                'id' => 421,
-                                'name' => 'Peminjaman Alat',
-                                'path' => '/dashboard/department/laboratory/equipment',
-                                'order' => 1,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 17,
-                                'outputConfig' => 'Generate form peminjaman alat lab'
-                            ],
-                            [
-                                'id' => 422,
-                                'name' => 'Reservasi Ruang Lab',
-                                'path' => '/dashboard/department/laboratory/reservation',
-                                'order' => 2,
-                                'type' => 'service',
-                                'roles' => ['admin'],
-                                'formId' => 18,
-                                'outputConfig' => 'Generate konfirmasi reservasi ruang lab'
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => 43, 
-                        'name' => 'Layanan IT & Server', 
-                        'path' => '/dashboard/department/it-services', 
-                        'order' => 3,
-                        'type' => 'service',
-                        'roles' => ['admin'],
-                        'formId' => 19,
-                        'outputConfig' => 'Generate laporan layanan IT'
-                    ],
-                    [
-                        'id' => 44, 
-                        'name' => 'Layanan Administrasi', 
-                        'path' => '/dashboard/department/administration', 
-                        'order' => 4,
-                        'type' => 'service',
-                        'roles' => ['admin'],
-                        'formId' => 20,
-                        'outputConfig' => 'Generate dokumen administrasi'
-                    ],
-                    [
-                        'id' => 45, 
-                        'name' => 'Layanan Penelitian', 
-                        'path' => '/dashboard/department/research', 
-                        'order' => 5,
-                        'type' => 'service',
-                        'roles' => ['admin'],
-                        'formId' => 21,
-                        'outputConfig' => 'Generate laporan penelitian'
-                    ]
-                ]
-            ],
-            [
-                'id' => 6,
-                'name' => 'Validasi Permohonan',
-                'icon' => 'CheckCircle',
-                'path' => '/dashboard/validation',
-                'order' => 6,
-                'roles' => ['admin']
-            ],
-            [
-                'id' => 7,
-                'name' => 'Users',
-                'icon' => 'Users',
-                'path' => '/dashboard/users',
-                'order' => 7,
-                'roles' => ['admin']
-            ],
-            [
-                'id' => 8,
-                'name' => 'Reports',
-                'icon' => 'BarChart',
-                'path' => '/dashboard/reports',
-                'order' => 8,
-                'roles' => ['admin']
-            ],
-        ];
-
-        // Get dynamic items from session and add them to the structure
-        $dynamicItems = session('dynamic_menu_items', []);
+        // Get fixed L1 categories first
+        $fixedL1Categories = $this->getFixedL1Categories($adminType, $user);
         
-        Log::info('📊 Backend: Session data check', [
-            'dynamic_items_count' => count($dynamicItems),
-            'dynamic_items' => $dynamicItems
-        ]);
+        // Get manageable menus (L2 and L3 only) from database
+        $query = Menu::query();
         
-        $result = $staticData;
+        // Only get L2 and L3 menus (L1 is hardcoded)
+        $query->where('level', '>', 1);
         
-        foreach ($dynamicItems as $item) {
-            Log::info('🔄 Backend: Processing dynamic item', ['item' => $item]);
-            $result = $this->addItemToStructure($result, $item);
-        }
+        // Exclude system menus from management (Dashboard, Riwayat Permohonan, etc.)
+        $query->where('scope', '!=', 'system');
 
-        Log::info('📊 Backend: Final result after merging', [
-            'static_items' => count($staticData),
-            'dynamic_items' => count($dynamicItems),
-            'total_categories' => count($result)
-        ]);
-
-        return $result;
-    }
-
-    /**
-     * Helper method to add dynamic items to the menu structure
-     */
-    private function addItemToStructure($structure, $newItem)
-    {
-        Log::info('🔍 Backend: addItemToStructure called', [
-            'newItem_id' => $newItem['id'],
-            'newItem_name' => $newItem['name'],
-            'newItem_type' => $newItem['type'],
-            'newItem_categoryId' => $newItem['categoryId'] ?? 'null',
-            'newItem_parentId' => $newItem['parentId'] ?? 'null'
-        ]);
-
-        // If it's a top-level category
-        if (!isset($newItem['parentId']) || $newItem['parentId'] === null) {
-            $structure[] = $newItem;
-            Log::info('✅ Backend: Added as top-level category');
-            return $structure;
-        }
-
-        // Find the parent and add the item
-        foreach ($structure as &$category) {
-            Log::info('🔍 Backend: Checking category', [
-                'category_id' => $category['id'],
-                'category_name' => $category['name']
-            ]);
-
-            if ($category['id'] == $newItem['categoryId']) {
-                Log::info('✅ Backend: Found matching categoryId', ['category_id' => $category['id']]);
-                
-                // Add to category level
-                if ($newItem['parentId'] == $category['id']) {
-                    if (!isset($category['submenu'])) {
-                        $category['submenu'] = [];
-                    }
-                    $category['submenu'][] = $newItem;
-                    Log::info('✅ Backend: Added item to category level');
-                    return $structure;
-                }
-                
-                // Search in nested levels
-                if (isset($category['submenu'])) {
-                    Log::info('🔄 Backend: Searching in nested levels');
-                    $category['submenu'] = $this->addToNestedStructure($category['submenu'], $newItem);
-                }
-                return $structure;
+        // Validate scope parameter against admin authorization
+        $requestedScope = $request->input('scope');
+        
+        // Filter by scope based on admin type
+        if ($adminType === 'admin_univ') {
+            // Admin Univ can only access universitas and update_data
+            if ($requestedScope && !in_array($requestedScope, ['universitas', 'update_data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Admin Universitas can only access universitas and update_data scopes.'
+                ], 403);
             }
+            
+            $query->whereIn('scope', ['universitas', 'update_data']);
+            
+            if ($requestedScope) {
+                $query->where('scope', $requestedScope);
+            }
+        } elseif ($adminType === 'admin_fakultas') {
+            $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+            $facultyCode = $profile['faculty_code'] ?? null;
+            
+            if (!$facultyCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Faculty code not found in profile'
+                ], 400);
+            }
+            
+            // Admin Fakultas can only access fakultas scope
+            if ($requestedScope && $requestedScope !== 'fakultas') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Admin Fakultas can only access fakultas scope.'
+                ], 403);
+            }
+            
+            $query->where('scope', 'fakultas')->where('faculty_code', $facultyCode);
+        } elseif ($adminType === 'admin_jurusan') {
+            $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+            $departmentCode = $profile['department_code'] ?? null;
+            $facultyCode = $profile['faculty_code'] ?? null;
+            
+            if (!$departmentCode || !$facultyCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Department/Faculty code not found in profile'
+                ], 400);
+            }
+            
+            // Admin Jurusan can only access jurusan scope
+            if ($requestedScope && $requestedScope !== 'jurusan') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Admin Jurusan can only access jurusan scope.'
+                ], 403);
+            }
+            
+            $query->where('scope', 'jurusan')
+                  ->where('faculty_code', $facultyCode)
+                  ->where('department_code', $departmentCode);
         }
-        
-        Log::warning('⚠️ Backend: Parent not found for item', ['newItem' => $newItem]);
-        return $structure;
-    }
 
-    /**
-     * Helper method to add items to nested structure recursively
-     */
-    private function addToNestedStructure($submenu, $newItem)
-    {
-        Log::info('🔍 Backend: addToNestedStructure called', [
-            'submenu_count' => count($submenu),
-            'newItem_parentId' => $newItem['parentId']
-        ]);
-
-        foreach ($submenu as &$item) {
-            Log::info('🔍 Backend: Checking submenu item', [
-                'item_id' => $item['id'],
-                'item_name' => $item['name'],
-                'looking_for_parentId' => $newItem['parentId']
-            ]);
-
-            if ($item['id'] == $newItem['parentId']) {
-                if (!isset($item['submenu'])) {
-                    $item['submenu'] = [];
-                }
-                $item['submenu'][] = $newItem;
-                Log::info('✅ Backend: Added item to nested level', [
-                    'parent_id' => $item['id'],
-                    'parent_name' => $item['name']
+        if ($request->has('level')) {
+            $level = (int) $request->level;
+            if ($level === 1) {
+                // L1 is hardcoded, return only fixed categories
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Fixed L1 categories retrieved successfully',
+                    'data' => $fixedL1Categories
                 ]);
-                return $submenu;
+            }
+            $query->where('level', $level);
+        }
+
+        $manageableMenus = $query->orderBy('order')->get();
+        
+        // Combine fixed L1 with manageable L2/L3
+        $allMenus = collect($fixedL1Categories)->concat($manageableMenus);
+        $hierarchicalMenus = $this->buildHierarchy($allMenus);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Menus retrieved successfully',
+            'data' => $hierarchicalMenus
+        ]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/admin/menus",
+     *     operationId="createMenu",
+     *     summary="Create a new menu",
+     *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Menu data to create",
+     *         @OA\JsonContent(
+     *             required={"name","level","scope","type"},
+     *             @OA\Property(property="name", type="string", maxLength=255, example="Surat Keterangan Mahasiswa"),
+     *             @OA\Property(property="level", type="integer", minimum=2, maximum=3, example=2, description="Level 1 categories are fixed/hardcoded and cannot be created"),
+     *             @OA\Property(property="scope", type="string", enum={"universitas","fakultas","jurusan","update_data"}, example="universitas"),
+     *             @OA\Property(property="type", type="string", enum={"category","subcategory","form"}, example="form"),
+     *             @OA\Property(property="icon", type="string", maxLength=100, example="fas fa-file", nullable=true),
+     *             @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas", nullable=true, description="Can be MongoDB ObjectId or fixed L1 category ID (e.g., fixed_l1_layanan_fakultas)"),
+     *             @OA\Property(property="route", type="string", maxLength=255, example="/forms/surat-keterangan", nullable=true),
+     *             @OA\Property(property="form_id", type="string", example="507f1f77bcf86cd799439012", nullable=true),
+     *             @OA\Property(property="faculty_code", type="string", maxLength=10, example="FT", nullable=true),
+     *             @OA\Property(property="department_code", type="string", maxLength=10, example="IF", nullable=true),
+     *             @OA\Property(property="is_active", type="boolean", example=true, default=true),
+     *             @OA\Property(property="order", type="integer", minimum=0, example=1)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Menu created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menu created successfully"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 @OA\Property(property="_id", type="string", example="507f1f77bcf86cd799439013"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="level", type="integer"),
+     *                 @OA\Property(property="scope", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Validation error, invalid business rule, or attempt to create Level 1 category"),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized to create in this scope")
+     * )
+     */
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'level' => 'required|integer|min:2|max:3', // L1 tidak bisa dibuat (fixed)
+            'scope' => ['required', Rule::in(['universitas', 'fakultas', 'jurusan', 'update_data'])],
+            'type' => ['required', Rule::in(['category', 'subcategory', 'form'])],
+            'icon' => 'nullable|string|max:100',
+            'parent_id' => 'nullable|string', // Allow fixed L1 IDs or database ObjectIds
+            'route' => 'nullable|string|max:255',
+            'form_id' => 'nullable|exists:forms,_id',
+            'faculty_code' => 'nullable|string|max:10',
+            'department_code' => 'nullable|string|max:10',
+            'is_active' => 'boolean',
+            'order' => 'integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 400);
+        }
+
+        // Level 1 categories are fixed/hardcoded - cannot be created
+        if ($request->level === 1) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Level 1 categories are fixed and cannot be created. Only Level 2 and 3 menus can be managed.'
+            ], 400);
+        }
+
+        if (!$this->canManageScope($user, $adminType, $request->scope, $request->faculty_code, $request->department_code)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized scope'], 403);
+        }
+
+        if ($request->scope === 'update_data') {
+            if ($request->level !== 2 || $request->type !== 'form') {
+                return response()->json(['success' => false, 'message' => 'Update Data can only have Level 2 forms'], 400);
+            }
+        }
+
+        if ($request->level > 1 && $request->icon) {
+            return response()->json(['success' => false, 'message' => 'Only Level 1 can have icons'], 400);
+        }
+
+        if ($request->level === 3 && $request->type !== 'form') {
+            return response()->json(['success' => false, 'message' => 'Level 3 must be forms'], 400);
+        }
+
+        $menuData = $request->only(['name', 'level', 'scope', 'type', 'icon', 'parent_id', 'route', 'form_id', 'faculty_code', 'department_code', 'is_active', 'order']);
+        $menu = Menu::create($menuData);
+
+        return response()->json(['success' => true, 'message' => 'Menu created successfully', 'data' => $menu], 201);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/admin/menus/{id}",
+     *     operationId="showMenu",
+     *     summary="Get menu by ID",
+     *     description="Retrieve a specific menu item with its parent and children relationships",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Menu MongoDB ObjectId",
+     *         required=true,
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menu retrieved successfully"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="_id", type="string", example="507f1f77bcf86cd799439011"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="level", type="integer"),
+     *                 @OA\Property(property="parent", type="object"),
+     *                 @OA\Property(
+     *                     property="children",
+     *                     type="array",
+     *                     @OA\Items(type="object")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized"),
+     *     @OA\Response(response=404, description="Menu not found")
+     * )
+     */
+    public function show($id)
+    {
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Handle fixed L1 categories
+        if (str_starts_with($id, 'fixed_l1_')) {
+            $fixedL1Categories = $this->getFixedL1Categories($adminType, $user);
+            $fixedMenu = collect($fixedL1Categories)->firstWhere('id', $id);
+            
+            if (!$fixedMenu) {
+                return response()->json(['success' => false, 'message' => 'Fixed L1 category not found or not accessible'], 404);
             }
             
-            if (isset($item['submenu'])) {
-                Log::info('🔄 Backend: Going deeper into submenu');
-                $item['submenu'] = $this->addToNestedStructure($item['submenu'], $newItem);
+            // Get children from database
+            $children = Menu::where('parent_id', $id)
+                           ->where('scope', $fixedMenu['scope'])
+                           ->get();
+            
+            $fixedMenu['children'] = $children;
+            return response()->json(['success' => true, 'message' => 'Fixed L1 category retrieved successfully', 'data' => $fixedMenu]);
+        }
+
+        $menu = Menu::with(['parent', 'children'])->find($id);
+
+        if (!$menu) {
+            return response()->json(['success' => false, 'message' => 'Menu not found'], 404);
+        }
+
+        if (!$this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Menu retrieved successfully', 'data' => $menu]);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/api/v1/admin/menus/{id}",
+     *     operationId="updateMenu",
+     *     summary="Update menu",
+     *     description="Update an existing menu item. Only name, icon (level 1 only), route, form_id, is_active, and order can be updated.",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Menu MongoDB ObjectId",
+     *         required=true,
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Menu fields to update (partial update allowed)",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255, example="Updated Menu Name"),
+     *             @OA\Property(property="icon", type="string", maxLength=100, example="fas fa-star", nullable=true),
+     *             @OA\Property(property="route", type="string", maxLength=255, example="/forms/updated-route", nullable=true),
+     *             @OA\Property(property="form_id", type="string", nullable=true),
+     *             @OA\Property(property="is_active", type="boolean", example=true),
+     *             @OA\Property(property="order", type="integer", minimum=0, example=2)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Menu updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menu updated successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Validation error or invalid business rule"),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized"),
+     *     @OA\Response(response=404, description="Menu not found")
+     * )
+     */
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $menu = Menu::find($id);
+
+        if (!$menu) {
+            return response()->json(['success' => false, 'message' => 'Menu not found'], 404);
+        }
+
+        // Level 1 categories are fixed/hardcoded - cannot be updated
+        if ($menu->level === 1) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Level 1 categories are fixed and cannot be updated. Only Level 2 and 3 menus can be managed.'
+            ], 400);
+        }
+
+        if (!$this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'icon' => 'nullable|string|max:100',
+            'route' => 'nullable|string|max:255',
+            'form_id' => 'nullable|exists:forms,_id',
+            'is_active' => 'boolean',
+            'order' => 'integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 400);
+        }
+
+        if ($request->has('icon') && $menu->level > 1 && $request->icon) {
+            return response()->json(['success' => false, 'message' => 'Only Level 1 can have icons'], 400);
+        }
+
+        $menu->update($request->only(['name', 'icon', 'route', 'form_id', 'is_active', 'order']));
+
+        return response()->json(['success' => true, 'message' => 'Menu updated successfully', 'data' => $menu]);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/admin/menus/{id}",
+     *     operationId="deleteMenu",
+     *     summary="Delete menu with cascade",
+     *     description="Delete a menu item and all its children recursively (cascade delete). This is a permanent operation.",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Menu MongoDB ObjectId",
+     *         required=true,
+     *         @OA\Schema(type="string", pattern="^[a-f0-9]{24}$")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Menu deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menu and 3 children deleted successfully")
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized"),
+     *     @OA\Response(response=404, description="Menu not found")
+     * )
+     */
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $menu = Menu::find($id);
+
+        if (!$menu) {
+            return response()->json(['success' => false, 'message' => 'Menu not found'], 404);
+        }
+
+        // Level 1 categories are fixed/hardcoded - cannot be deleted
+        if ($menu->level === 1) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Level 1 categories are fixed and cannot be deleted. Only Level 2 and 3 menus can be managed.'
+            ], 400);
+        }
+
+        if (!$this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $deletedCount = $this->deleteMenuWithChildren($menu);
+
+        return response()->json(['success' => true, 'message' => "Menu and {$deletedCount} children deleted successfully"]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/admin/menus/reorder",
+     *     operationId="reorderMenus",
+     *     summary="Reorder menus",
+     *     description="Bulk update menu order. Only menus that the user has authorization to manage will be updated.",
+     *     tags={"Menu Management"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Array of menus with new order values",
+     *         @OA\JsonContent(
+     *             required={"menus"},
+     *             @OA\Property(
+     *                 property="menus",
+     *                 type="array",
+     *                 minItems=1,
+     *                 @OA\Items(
+     *                     required={"id","order"},
+     *                     @OA\Property(property="id", type="string", example="507f1f77bcf86cd799439011"),
+     *                     @OA\Property(property="order", type="integer", minimum=0, example=1)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Menus reordered successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Menus reordered successfully")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Validation error"),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized")
+     * )
+     */
+    public function reorder(Request $request)
+    {
+        $user = Auth::user();
+        $adminType = $this->getAdminType($user);
+
+        if (!$adminType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'menus' => 'required|array',
+            'menus.*.id' => 'required|exists:menus,_id',
+            'menus.*.order' => 'required|integer|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 400);
+        }
+
+        $updatedCount = 0;
+        $unauthorizedMenus = [];
+        
+        foreach ($request->menus as $menuData) {
+            $menu = Menu::find($menuData['id']);
+            
+            if (!$menu) {
+                continue;
+            }
+            
+            if ($this->canManageScope($user, $adminType, $menu->scope, $menu->faculty_code, $menu->department_code)) {
+                $menu->update(['order' => $menuData['order']]);
+                $updatedCount++;
+            } else {
+                $unauthorizedMenus[] = $menuData['id'];
             }
         }
         
-        Log::warning('⚠️ Backend: Parent not found in nested structure');
-        return $submenu;
-    }
-
-/**
- * Store a newly created menu item
- */
-public function store(Request $request)
-{
-    Log::info('🚀 Backend: MenuManagement store() method called');
-    Log::info('📦 Backend: Request data received:', $request->all());
-
-    $user = Auth::user();
-    Log::info('👤 Backend: Authenticated user:', ['id' => $user?->id, 'role' => $user?->role]);
-    
-    if (!$user || $user->role !== 'admin') {
-        Log::warning('MenuManagement Store: Unauthorized access attempt');
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized'
-        ], 403);
-    }
-
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'type' => 'required|in:category,subcategory,service',
-        'parentId' => 'nullable|integer',
-        'categoryId' => 'nullable|integer',
-        'path' => 'nullable|string|max:255',
-        'icon' => 'nullable|string|max:50',
-        'order' => 'required|integer|min:1',
-        'roles' => 'required|array',
-        'roles.*' => 'string|in:admin,user',
-        'formId' => 'nullable|integer',
-        'outputConfig' => 'nullable|string'
-    ]);
-
-    try {
-        $newId = time() + rand(1000, 9999);
+        if (count($unauthorizedMenus) > 0 && $updatedCount === 0) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Unauthorized. You do not have permission to reorder these menus.',
+                'unauthorized_menu_ids' => $unauthorizedMenus
+            ], 403);
+        }
         
-        $menuItem = array_merge(['id' => $newId], $validated, [
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-
-        // Store in session
-        $dynamicItems = session('dynamic_menu_items', []);
-        $dynamicItems[] = $menuItem;
-        session(['dynamic_menu_items' => $dynamicItems]);
-
-        Log::info('MenuManagement: New menu item created and stored in session', ['item' => $menuItem]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Menu item created successfully',
-            'data' => $menuItem
-        ], 201);
-
-    } catch (\Exception $e) {
-        Log::error('MenuManagement Store Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to create menu item'
-        ], 500);
-    }
-}
-
-/**
- * Update the specified menu item
- */
-public function update(Request $request, $id)
-{
-    $user = Auth::user();
-    
-    if (!$user || $user->role !== 'admin') {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized'
-        ], 403);
-    }
-
-    $validated = $request->validate([
-        'name' => 'sometimes|required|string|max:255',
-        'path' => 'nullable|string|max:255',
-        'icon' => 'nullable|string|max:50',
-        'order' => 'sometimes|required|integer|min:1',
-        'roles' => 'sometimes|required|array',
-        'roles.*' => 'string|in:admin,user',
-        'formId' => 'nullable|integer',
-        'outputConfig' => 'nullable|string'
-    ]);
-
-    try {
-        Log::info('MenuManagement: Menu item updated', ['id' => $id, 'data' => $validated]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Menu item updated successfully',
-            'data' => array_merge(['id' => $id], $validated)
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('MenuManagement Update Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to update menu item'
-        ], 500);
-    }
-}
-
-/**
- * Remove the specified menu item
- */
-public function destroy($id)
-{
-    $user = Auth::user();
-    
-    if (!$user || $user->role !== 'admin') {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized'
-        ], 403);
-    }
-
-    try {
-        Log::info('MenuManagement: Menu item deleted', ['id' => $id]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Menu item deleted successfully'
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('MenuManagement Delete Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to delete menu item'
-        ], 500);
-    }
-}
-
-/**
- * Reorder menu items
- */
-public function reorder(Request $request)
-{
-    $user = Auth::user();
-    
-    if (!$user || $user->role !== 'admin') {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized'
-        ], 403);
-    }
-
-    $validated = $request->validate([
-        'items' => 'required|array',
-        'items.*.id' => 'required|integer',
-        'items.*.order' => 'required|integer|min:1'
-    ]);
-
-    try {
-        foreach ($validated['items'] as $item) {
-            Log::info('MenuManagement: Reordering item', [
-                'id' => $item['id'], 
-                'new_order' => $item['order']
-            ]);
+        if (count($unauthorizedMenus) > 0) {
+            return response()->json([
+                'success' => true, 
+                'message' => "Partially reordered. {$updatedCount} menus updated, " . count($unauthorizedMenus) . " unauthorized menus skipped.",
+                'updated_count' => $updatedCount,
+                'unauthorized_menu_ids' => $unauthorizedMenus
+            ], 200);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Menu items reordered successfully'
+            'success' => true, 
+            'message' => 'Menus reordered successfully',
+            'updated_count' => $updatedCount
         ]);
-
-    } catch (\Exception $e) {
-        Log::error('MenuManagement Reorder Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to reorder menu items'
-        ], 500);
-    }
-}
-
-/**
- * Reorder nested menu items
- */
-public function reorderNested(Request $request)
-{
-    $user = Auth::user();
-    
-    if (!$user || $user->role !== 'admin') {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized'
-        ], 403);
     }
 
-    try {
-        $structure = $request->input('structure', []);
-        Log::info('MenuManagement: Nested structure reordered', ['structure_count' => count($structure)]);
+    private function getAdminType($user)
+    {
+        if (!$user || $user->role !== 'admin') {
+            return null;
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Nested menu items reordered successfully'
-        ]);
+        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+        
+        if (empty($profile['faculty_code']) && empty($profile['department_code'])) {
+            return 'admin_univ';
+        } elseif (!empty($profile['faculty_code']) && empty($profile['department_code'])) {
+            return 'admin_fakultas';
+        } elseif (!empty($profile['department_code'])) {
+            return 'admin_jurusan';
+        }
 
-    } catch (\Exception $e) {
-        Log::error('MenuManagement Reorder Nested Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to reorder nested menu items'
-        ], 500);
+        return null;
     }
-}
+
+    private function getFixedL1Categories($adminType, $user)
+    {
+        $fixedCategories = [];
+        $baseId = 'fixed_l1_'; // Prefix untuk ID virtual
+
+        if ($adminType === 'admin_univ') {
+            $fixedCategories = [
+                [
+                    'id' => $baseId . 'layanan_universitas',
+                    'name' => 'Layanan Universitas',
+                    'level' => 1,
+                    'scope' => 'universitas',
+                    'type' => 'category',
+                    'icon' => 'fas fa-university',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => null,
+                    'department_code' => null,
+                    'is_active' => true,
+                    'order' => 1,
+                    'is_fixed' => true,
+                    'children' => []
+                ],
+                [
+                    'id' => $baseId . 'update_data',
+                    'name' => 'Update Data',
+                    'level' => 1,
+                    'scope' => 'update_data',
+                    'type' => 'category',
+                    'icon' => 'fas fa-edit',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => null,
+                    'department_code' => null,
+                    'is_active' => true,
+                    'order' => 2,
+                    'is_fixed' => true,
+                    'children' => []
+                ]
+            ];
+        } elseif ($adminType === 'admin_fakultas') {
+            $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+            $facultyCode = $profile['faculty_code'] ?? null;
+            
+            $fixedCategories = [
+                [
+                    'id' => $baseId . 'layanan_fakultas',
+                    'name' => 'Layanan Fakultas',
+                    'level' => 1,
+                    'scope' => 'fakultas',
+                    'type' => 'category',
+                    'icon' => 'fas fa-building',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => $facultyCode,
+                    'department_code' => null,
+                    'is_active' => true,
+                    'order' => 1,
+                    'is_fixed' => true,
+                    'children' => []
+                ]
+            ];
+        } elseif ($adminType === 'admin_jurusan') {
+            $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+            $facultyCode = $profile['faculty_code'] ?? null;
+            $departmentCode = $profile['department_code'] ?? null;
+            
+            $fixedCategories = [
+                [
+                    'id' => $baseId . 'layanan_jurusan',
+                    'name' => 'Layanan Jurusan',
+                    'level' => 1,
+                    'scope' => 'jurusan',
+                    'type' => 'category',
+                    'icon' => 'fas fa-graduation-cap',
+                    'parent_id' => null,
+                    'route' => null,
+                    'form_id' => null,
+                    'faculty_code' => $facultyCode,
+                    'department_code' => $departmentCode,
+                    'is_active' => true,
+                    'order' => 1,
+                    'is_fixed' => true,
+                    'children' => []
+                ]
+            ];
+        }
+
+        return $fixedCategories;
+    }
+
+    private function canManageScope($user, $adminType, $scope, $facultyCode = null, $departmentCode = null)
+    {
+        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+
+        if ($adminType === 'admin_univ') {
+            return in_array($scope, ['universitas', 'update_data']);
+        } elseif ($adminType === 'admin_fakultas') {
+            if ($scope !== 'fakultas') {
+                return false;
+            }
+            return $facultyCode === ($profile['faculty_code'] ?? null);
+        } elseif ($adminType === 'admin_jurusan') {
+            if ($scope !== 'jurusan') {
+                return false;
+            }
+            return $departmentCode === ($profile['department_code'] ?? null);
+        }
+
+        return false;
+    }
+
+    private function buildHierarchy($menus, $parentId = null)
+    {
+        $branch = [];
+
+        foreach ($menus as $menu) {
+            // Handle both array (fixed L1) and object (database menus)
+            $menuParentId = is_array($menu) ? ($menu['parent_id'] ?? null) : $menu->parent_id;
+            $menuId = is_array($menu) ? $menu['id'] : $menu->_id;
+            
+            if ($menuParentId == $parentId) {
+                $children = $this->buildHierarchy($menus, $menuId);
+                if ($children) {
+                    if (is_array($menu)) {
+                        $menu['children'] = $children;
+                    } else {
+                        $menu->children = $children;
+                    }
+                }
+                $branch[] = $menu;
+            }
+        }
+
+        return $branch;
+    }
+
+    private function deleteMenuWithChildren($menu)
+    {
+        $count = 0;
+        $children = Menu::where('parent_id', $menu->_id)->get();
+        
+        foreach ($children as $child) {
+            $count += $this->deleteMenuWithChildren($child);
+        }
+        
+        $menu->delete();
+        $count++;
+        
+        return $count;
+    }
 }
