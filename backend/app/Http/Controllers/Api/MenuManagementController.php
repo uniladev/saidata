@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 /**
  * @OA\Tag(
  *     name="Menu Management",
- *     description="API endpoints for managing hierarchical menu system with role-based access control"
+ *     description="API endpoints for managing hierarchical menu system with profile.class-based authorization. University admin (profile.class='university') manages universitas+update_data scopes, Faculty admin (profile.class='faculty') manages fakultas scope with faculty_code validation, Department admin (profile.class='department') manages jurusan scope with faculty_code+department_code validation."
  * )
  */
 class MenuManagementController extends Controller
@@ -21,14 +21,14 @@ class MenuManagementController extends Controller
      * @OA\Get(
      *     path="/api/v1/management/menu",
      *     operationId="getMenus",
-     *     summary="Get all menus with hierarchy",
-     *     description="Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope. When level parameter is used: level=1 returns only fixed L1 categories (no children), level=2 returns only L2 menus from database, level=3 returns only L3 menus from database. Without level parameter, returns complete hierarchy (L1 with L2/L3 children).",
+     *     summary="Get all menus with hierarchy (Admin Only)",
+     *     description="Retrieve menu hierarchy with role-based access control using profile.class field. Admin authorization: University admin (profile.class='university') manages universitas + update_data scopes, Faculty admin (profile.class='faculty') manages fakultas scope with faculty_code filter, Department admin (profile.class='department') manages jurusan scope with faculty_code + department_code filter. Level 1 categories are hardcoded, Level 2-3 items are manageable from database.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="scope",
      *         in="query",
-     *         description="Filter by scope (universitas, fakultas, jurusan, update_data). Admin can only access scopes they manage.",
+     *         description="Filter by scope. Authorization rules: University admin (profile.class='university') → universitas+update_data, Faculty admin (profile.class='faculty') → fakultas (with faculty_code), Department admin (profile.class='department') → jurusan (with faculty_code+department_code)",
      *         required=false,
      *         @OA\Schema(type="string", enum={"universitas", "fakultas", "jurusan", "update_data"})
      *     ),
@@ -106,10 +106,10 @@ class MenuManagementController extends Controller
      *     ),
      *     @OA\Response(
      *         response=403, 
-     *         description="Forbidden - Not an admin user or trying to access unauthorized scope",
+     *         description="Forbidden - Not an admin user or trying to access unauthorized scope based on profile.class",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Unauthorized. Admin Fakultas can only access fakultas scope.")
+     *             @OA\Property(property="message", type="string", example="Unauthorized. Faculty admin (profile.class='faculty') can only access fakultas scope for their faculty_code.")
      *         )
      *     )
      * )
@@ -141,9 +141,9 @@ class MenuManagementController extends Controller
         // Validate scope parameter against admin authorization
         $requestedScope = $request->input('scope');
         
-        // Filter by scope based on admin type
-        if ($adminType === 'admin_univ') {
-            // Admin Univ can only access universitas and update_data
+        // Filter by scope based on admin class and authorization
+        if ($adminType === 'university') {
+            // Admin University can manage universitas and update_data scopes
             if ($requestedScope && !in_array($requestedScope, ['universitas', 'update_data'])) {
                 return response()->json([
                     'success' => false,
@@ -156,18 +156,18 @@ class MenuManagementController extends Controller
             if ($requestedScope) {
                 $query->where('scope', $requestedScope);
             }
-        } elseif ($adminType === 'admin_fakultas') {
+        } elseif ($adminType === 'faculty') {
             $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
             $facultyCode = $profile['faculty_code'] ?? null;
             
             if (!$facultyCode) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Faculty code not found in profile'
+                    'message' => 'Faculty code not found in admin profile. Admin fakultas must have faculty_code.'
                 ], 400);
             }
             
-            // Admin Fakultas can only access fakultas scope
+            // Admin Faculty can only access fakultas scope with their faculty_code
             if ($requestedScope && $requestedScope !== 'fakultas') {
                 return response()->json([
                     'success' => false,
@@ -176,7 +176,7 @@ class MenuManagementController extends Controller
             }
             
             $query->where('scope', 'fakultas')->where('faculty_code', $facultyCode);
-        } elseif ($adminType === 'admin_jurusan') {
+        } elseif ($adminType === 'department') {
             $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
             $departmentCode = $profile['department_code'] ?? null;
             $facultyCode = $profile['faculty_code'] ?? null;
@@ -184,11 +184,11 @@ class MenuManagementController extends Controller
             if (!$departmentCode || !$facultyCode) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Department/Faculty code not found in profile'
+                    'message' => 'Department/Faculty code not found in admin profile. Admin department must have both codes.'
                 ], 400);
             }
             
-            // Admin Jurusan can only access jurusan scope
+            // Admin Department can only access jurusan scope with their department_code and faculty_code
             if ($requestedScope && $requestedScope !== 'jurusan') {
                 return response()->json([
                     'success' => false,
@@ -231,8 +231,8 @@ class MenuManagementController extends Controller
      * @OA\Post(
      *     path="/api/v1/management/menu",
      *     operationId="createMenu",
-     *     summary="Create a new menu",
-     *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons. Level 3 can be both subcategory or form types for flexible hierarchy.",
+     *     summary="Create a new menu (Admin Only - Role-based Authorization)",
+     *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Authorization based on profile.class: University admin creates universitas+update_data scope menus, Faculty admin creates fakultas scope menus (with faculty_code validation), Department admin creates jurusan scope menus (with faculty_code+department_code validation). Level 3 can be both subcategory or form types for flexible hierarchy.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
@@ -242,7 +242,7 @@ class MenuManagementController extends Controller
      *             required={"name","level","scope","type"},
      *             @OA\Property(property="name", type="string", maxLength=255, example="Surat Keterangan Mahasiswa"),
      *             @OA\Property(property="level", type="integer", minimum=2, maximum=3, example=2, description="Level 1 categories are fixed/hardcoded and cannot be created"),
-     *             @OA\Property(property="scope", type="string", enum={"universitas","fakultas","jurusan","update_data"}, example="universitas"),
+     *             @OA\Property(property="scope", type="string", enum={"universitas","fakultas","jurusan","update_data"}, example="universitas", description="Scope must match admin authorization: profile.class='university' → universitas/update_data, profile.class='faculty' → fakultas, profile.class='department' → jurusan"),
      *             @OA\Property(property="type", type="string", enum={"category","subcategory","form"}, example="form"),
      *             @OA\Property(property="icon", type="string", maxLength=100, example="fas fa-file", nullable=true),
      *             @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas", nullable=true, description="Can be MongoDB ObjectId or fixed L1 category ID (e.g., fixed_l1_layanan_fakultas)"),
@@ -270,7 +270,7 @@ class MenuManagementController extends Controller
      *         )
      *     ),
      *     @OA\Response(response=400, description="Validation error, invalid business rule, or attempt to create Level 1 category"),
-     *     @OA\Response(response=403, description="Forbidden - Not authorized to create in this scope")
+     *     @OA\Response(response=403, description="Forbidden - Not authorized to create in this scope based on profile.class or organizational code mismatch")
      * )
      */
     public function store(Request $request)
@@ -416,8 +416,8 @@ class MenuManagementController extends Controller
      * @OA\Put(
      *     path="/api/v1/management/menu/{id}",
      *     operationId="updateMenu",
-     *     summary="Update menu",
-     *     description="Update an existing menu item. Only name, icon (level 1 only), route, form_id, is_active, and order can be updated.",
+     *     summary="Update menu (Admin Only - Role-based Authorization)",
+     *     description="Update an existing menu item with profile.class-based authorization. Admin can only update menus within their authorized scope (University admin: universitas+update_data, Faculty admin: fakultas with faculty_code match, Department admin: jurusan with faculty_code+department_code match). Only name, icon, route, form_id, is_active, and order can be updated.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -449,7 +449,7 @@ class MenuManagementController extends Controller
      *         )
      *     ),
      *     @OA\Response(response=400, description="Validation error or invalid business rule"),
-     *     @OA\Response(response=403, description="Forbidden - Not authorized"),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized to update this menu based on profile.class and organizational scope"),
      *     @OA\Response(response=404, description="Menu not found")
      * )
      */
@@ -506,8 +506,8 @@ class MenuManagementController extends Controller
      * @OA\Delete(
      *     path="/api/v1/management/menu/{id}",
      *     operationId="deleteMenu",
-     *     summary="Delete menu with cascade",
-     *     description="Delete a menu item and all its children recursively (cascade delete). This is a permanent operation.",
+     *     summary="Delete menu with cascade (Admin Only - Role-based Authorization)",
+     *     description="Delete a menu item and all its children recursively (cascade delete) with profile.class-based authorization. Admin can only delete menus within their authorized scope based on organizational hierarchy. This is a permanent operation.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
@@ -525,7 +525,7 @@ class MenuManagementController extends Controller
      *             @OA\Property(property="message", type="string", example="Menu and 3 children deleted successfully")
      *         )
      *     ),
-     *     @OA\Response(response=403, description="Forbidden - Not authorized"),
+     *     @OA\Response(response=403, description="Forbidden - Not authorized to delete this menu based on profile.class and organizational scope"),
      *     @OA\Response(response=404, description="Menu not found")
      * )
      */
@@ -667,14 +667,11 @@ class MenuManagementController extends Controller
 
         $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
         
-        // Use profile.class field to determine admin type
+        // Use profile.class field to determine admin level
         $adminClass = $profile['class'] ?? null;
         
-        if (in_array($adminClass, ['admin_univ', 'admin_fakultas', 'admin_jurusan'])) {
-            return $adminClass;
-        }
-
-        return null;
+        // Return the class directly for better logic flow
+        return $adminClass; // 'university', 'faculty', 'department'
     }
 
     private function getFixedL1Categories($adminType, $user)
@@ -682,7 +679,7 @@ class MenuManagementController extends Controller
         $fixedCategories = [];
         $baseId = 'fixed_l1_'; // Prefix untuk ID virtual
 
-        if ($adminType === 'admin_univ') {
+        if ($adminType === 'university') {
             $fixedCategories = [
                 [
                     'id' => $baseId . 'layanan_universitas',
@@ -719,7 +716,7 @@ class MenuManagementController extends Controller
                     'children' => []
                 ]
             ];
-        } elseif ($adminType === 'admin_fakultas') {
+        } elseif ($adminType === 'faculty') {
             $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
             $facultyCode = $profile['faculty_code'] ?? null;
             
@@ -742,7 +739,7 @@ class MenuManagementController extends Controller
                     'children' => []
                 ]
             ];
-        } elseif ($adminType === 'admin_jurusan') {
+        } elseif ($adminType === 'department') {
             $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
             $facultyCode = $profile['faculty_code'] ?? null;
             $departmentCode = $profile['department_code'] ?? null;
@@ -775,18 +772,22 @@ class MenuManagementController extends Controller
     {
         $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
 
-        if ($adminType === 'admin_univ') {
+        if ($adminType === 'university') {
+            // University admin can manage universitas and update_data scopes
             return in_array($scope, ['universitas', 'update_data']);
-        } elseif ($adminType === 'admin_fakultas') {
+        } elseif ($adminType === 'faculty') {
+            // Faculty admin can only manage fakultas scope with matching faculty_code
             if ($scope !== 'fakultas') {
                 return false;
             }
             return $facultyCode === ($profile['faculty_code'] ?? null);
-        } elseif ($adminType === 'admin_jurusan') {
+        } elseif ($adminType === 'department') {
+            // Department admin can only manage jurusan scope with matching department and faculty codes
             if ($scope !== 'jurusan') {
                 return false;
             }
-            return $departmentCode === ($profile['department_code'] ?? null);
+            return $departmentCode === ($profile['department_code'] ?? null) && 
+                   $facultyCode === ($profile['faculty_code'] ?? null);
         }
 
         return false;

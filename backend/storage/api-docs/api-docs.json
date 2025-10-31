@@ -21,8 +21,8 @@
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Login via SSO",
-                "description": "Authenticate user with campus SSO credentials and receive JWT tokens",
+                "summary": "Login via SSO with Role-based Authorization",
+                "description": "Authenticate user with campus SSO credentials and receive JWT tokens. Returns user profile with organizational attributes. For admin users, profile.class field determines authorization scope: university, faculty, or department level access.",
                 "operationId": "login",
                 "requestBody": {
                     "description": "User credentials",
@@ -92,7 +92,48 @@
                                                 },
                                                 "role": {
                                                     "type": "string",
+                                                    "enum": [
+                                                        "user",
+                                                        "admin"
+                                                    ],
                                                     "example": "user"
+                                                },
+                                                "profile": {
+                                                    "description": "User profile with organizational attributes. For admin users, includes class field for authorization.",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Dafahan"
+                                                        },
+                                                        "faculty_code": {
+                                                            "type": "string",
+                                                            "example": "FMIPA",
+                                                            "nullable": true
+                                                        },
+                                                        "department_code": {
+                                                            "type": "string",
+                                                            "example": "ILKOM",
+                                                            "nullable": true
+                                                        },
+                                                        "study_program_code": {
+                                                            "type": "string",
+                                                            "example": "ILKOM-S1",
+                                                            "nullable": true
+                                                        },
+                                                        "class": {
+                                                            "description": "Admin class for authorization (only present for admin users)",
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "university",
+                                                                "faculty",
+                                                                "department"
+                                                            ],
+                                                            "example": "faculty",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -190,8 +231,8 @@
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Get current user",
-                "description": "Get authenticated user information",
+                "summary": "Get current user information",
+                "description": "Get authenticated user information including profile with organizational attributes. For admin users, profile.class determines authorization level (university, faculty, department).",
                 "operationId": "me",
                 "responses": {
                     "200": {
@@ -220,7 +261,42 @@
                                                 },
                                                 "role": {
                                                     "type": "string",
+                                                    "enum": [
+                                                        "user",
+                                                        "admin"
+                                                    ],
                                                     "example": "user"
+                                                },
+                                                "profile": {
+                                                    "description": "User profile with organizational data and admin class",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Dafahan"
+                                                        },
+                                                        "faculty_code": {
+                                                            "type": "string",
+                                                            "example": "FMIPA",
+                                                            "nullable": true
+                                                        },
+                                                        "department_code": {
+                                                            "type": "string",
+                                                            "example": "ILKOM",
+                                                            "nullable": true
+                                                        },
+                                                        "class": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "university",
+                                                                "faculty",
+                                                                "department"
+                                                            ],
+                                                            "example": "faculty",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -2112,11 +2188,11 @@
                     "Menu"
                 ],
                 "summary": "Get dynamic menu structure for sidebar navigation",
-                "description": "Returns menu structure based on user role and attributes. For students (role=user), menus are fetched from database filtered by faculty_code, department_code. For admins, menus are fetched from database based on their admin type (university/faculty/department) and managed scope.",
+                "description": "Returns menu structure based on user role. For students (role=user), menus are dynamically loaded from database filtered by faculty_code, department_code. For admins (role=admin), menus are hardcoded management tools only - admin users cannot use service menus, they only manage them.",
                 "operationId": "getSidebarMenu",
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved menu structure",
+                        "description": "Successfully retrieved menu structure. Content varies by user role: Admin users get hardcoded management menus (Dashboard, DEVTEST tools, Validation, Settings, Help), Student users get dynamic service menus filtered by organizational attributes (faculty_code, department_code).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2199,7 +2275,7 @@
                                                     }
                                                 },
                                                 "user_info": {
-                                                    "description": "User's organizational attributes",
+                                                    "description": "User's organizational attributes and admin class",
                                                     "properties": {
                                                         "faculty": {
                                                             "type": "string",
@@ -2229,6 +2305,17 @@
                                                         "study_program_code": {
                                                             "type": "string",
                                                             "example": "ILKOM-S1",
+                                                            "nullable": true
+                                                        },
+                                                        "class": {
+                                                            "description": "Admin class for authorization (only present for admin users)",
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "university",
+                                                                "faculty",
+                                                                "department"
+                                                            ],
+                                                            "example": "faculty",
                                                             "nullable": true
                                                         }
                                                     },
@@ -2276,14 +2363,14 @@
                 "tags": [
                     "Menu Management"
                 ],
-                "summary": "Get all menus with hierarchy",
-                "description": "Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope. When level parameter is used: level=1 returns only fixed L1 categories (no children), level=2 returns only L2 menus from database, level=3 returns only L3 menus from database. Without level parameter, returns complete hierarchy (L1 with L2/L3 children).",
+                "summary": "Get all menus with hierarchy (Admin Only)",
+                "description": "Retrieve menu hierarchy with role-based access control using profile.class field. Admin authorization: University admin (profile.class='university') manages universitas + update_data scopes, Faculty admin (profile.class='faculty') manages fakultas scope with faculty_code filter, Department admin (profile.class='department') manages jurusan scope with faculty_code + department_code filter. Level 1 categories are hardcoded, Level 2-3 items are manageable from database.",
                 "operationId": "getMenus",
                 "parameters": [
                     {
                         "name": "scope",
                         "in": "query",
-                        "description": "Filter by scope (universitas, fakultas, jurusan, update_data). Admin can only access scopes they manage.",
+                        "description": "Filter by scope. Authorization rules: University admin (profile.class='university') → universitas+update_data, Faculty admin (profile.class='faculty') → fakultas (with faculty_code), Department admin (profile.class='department') → jurusan (with faculty_code+department_code)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -2408,7 +2495,7 @@
                                                         "example": 2
                                                     },
                                                     "children": {
-                                                        "description": "Child menu items (only present in hierarchical response without level parameter)",
+                                                        "description": "Child menu items (L2/L3 nested hierarchy, only present without level parameter)",
                                                         "type": "array",
                                                         "items": {
                                                             "properties": {
@@ -2418,15 +2505,58 @@
                                                                 },
                                                                 "name": {
                                                                     "type": "string",
-                                                                    "example": "Permohonan Surat Keterangan"
+                                                                    "example": "Layanan Akademik"
                                                                 },
                                                                 "level": {
                                                                     "type": "integer",
                                                                     "example": 2
                                                                 },
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "category",
+                                                                        "subcategory",
+                                                                        "form"
+                                                                    ],
+                                                                    "example": "category"
+                                                                },
                                                                 "parent_id": {
                                                                     "type": "string",
                                                                     "example": "fixed_l1_layanan_fakultas"
+                                                                },
+                                                                "children": {
+                                                                    "description": "L3 nested children (if L2 is category)",
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "properties": {
+                                                                            "_id": {
+                                                                                "type": "string",
+                                                                                "example": "672313923808a3af4e0806c9"
+                                                                            },
+                                                                            "name": {
+                                                                                "type": "string",
+                                                                                "example": "Transkrip dan Ijazah"
+                                                                            },
+                                                                            "level": {
+                                                                                "type": "integer",
+                                                                                "example": 3
+                                                                            },
+                                                                            "type": {
+                                                                                "type": "string",
+                                                                                "enum": [
+                                                                                    "subcategory",
+                                                                                    "form"
+                                                                                ],
+                                                                                "example": "subcategory"
+                                                                            },
+                                                                            "parent_id": {
+                                                                                "type": "string",
+                                                                                "example": "672313923808a3af4e0806c8"
+                                                                            }
+                                                                        },
+                                                                        "type": "object"
+                                                                    },
+                                                                    "nullable": true
                                                                 }
                                                             },
                                                             "type": "object"
@@ -2463,7 +2593,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden - Not an admin user or trying to access unauthorized scope",
+                        "description": "Forbidden - Not an admin user or trying to access unauthorized scope based on profile.class",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2474,7 +2604,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Unauthorized. Admin Fakultas can only access fakultas scope."
+                                            "example": "Unauthorized. Faculty admin (profile.class='faculty') can only access fakultas scope for their faculty_code."
                                         }
                                     },
                                     "type": "object"
@@ -2493,8 +2623,8 @@
                 "tags": [
                     "Menu Management"
                 ],
-                "summary": "Create a new menu",
-                "description": "Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
+                "summary": "Create a new menu (Admin Only - Role-based Authorization)",
+                "description": "Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Authorization based on profile.class: University admin creates universitas+update_data scope menus, Faculty admin creates fakultas scope menus (with faculty_code validation), Department admin creates jurusan scope menus (with faculty_code+department_code validation). Level 3 can be both subcategory or form types for flexible hierarchy.",
                 "operationId": "createMenu",
                 "requestBody": {
                     "description": "Menu data to create",
@@ -2522,6 +2652,7 @@
                                         "example": 2
                                     },
                                     "scope": {
+                                        "description": "Scope must match admin authorization: profile.class='university' → universitas/update_data, profile.class='faculty' → fakultas, profile.class='department' → jurusan",
                                         "type": "string",
                                         "enum": [
                                             "universitas",
@@ -2634,7 +2765,7 @@
                         "description": "Validation error, invalid business rule, or attempt to create Level 1 category"
                     },
                     "403": {
-                        "description": "Forbidden - Not authorized to create in this scope"
+                        "description": "Forbidden - Not authorized to create in this scope based on profile.class or organizational code mismatch"
                     }
                 },
                 "security": [
@@ -2726,8 +2857,8 @@
                 "tags": [
                     "Menu Management"
                 ],
-                "summary": "Update menu",
-                "description": "Update an existing menu item. Only name, icon (level 1 only), route, form_id, is_active, and order can be updated.",
+                "summary": "Update menu (Admin Only - Role-based Authorization)",
+                "description": "Update an existing menu item with profile.class-based authorization. Admin can only update menus within their authorized scope (University admin: universitas+update_data, Faculty admin: fakultas with faculty_code match, Department admin: jurusan with faculty_code+department_code match). Only name, icon, route, form_id, is_active, and order can be updated.",
                 "operationId": "updateMenu",
                 "parameters": [
                     {
@@ -2812,7 +2943,7 @@
                         "description": "Validation error or invalid business rule"
                     },
                     "403": {
-                        "description": "Forbidden - Not authorized"
+                        "description": "Forbidden - Not authorized to update this menu based on profile.class and organizational scope"
                     },
                     "404": {
                         "description": "Menu not found"
@@ -2828,8 +2959,8 @@
                 "tags": [
                     "Menu Management"
                 ],
-                "summary": "Delete menu with cascade",
-                "description": "Delete a menu item and all its children recursively (cascade delete). This is a permanent operation.",
+                "summary": "Delete menu with cascade (Admin Only - Role-based Authorization)",
+                "description": "Delete a menu item and all its children recursively (cascade delete) with profile.class-based authorization. Admin can only delete menus within their authorized scope based on organizational hierarchy. This is a permanent operation.",
                 "operationId": "deleteMenu",
                 "parameters": [
                     {
@@ -2865,7 +2996,7 @@
                         }
                     },
                     "403": {
-                        "description": "Forbidden - Not authorized"
+                        "description": "Forbidden - Not authorized to delete this menu based on profile.class and organizational scope"
                     },
                     "404": {
                         "description": "Menu not found"
@@ -3373,7 +3504,7 @@
                 "type": "object"
             },
             "Submenu": {
-                "description": "Submenu item (L2/L3 from database)",
+                "description": "Submenu item (L2/L3 from database with nested hierarchy support)",
                 "properties": {
                     "id": {
                         "description": "MongoDB ObjectId",
@@ -3383,23 +3514,74 @@
                     "name": {
                         "description": "Display name",
                         "type": "string",
-                        "example": "Surat Aktif Kuliah"
+                        "example": "Layanan Akademik"
                     },
                     "path": {
-                        "description": "Route path",
+                        "description": "Route path (null for categories with submenu)",
                         "type": "string",
-                        "example": "/forms/surat-aktif-kuliah"
+                        "example": "/forms/surat-aktif-kuliah",
+                        "nullable": true
                     },
                     "order": {
                         "description": "Display order",
                         "type": "integer",
                         "example": 1
+                    },
+                    "type": {
+                        "description": "Menu item type",
+                        "type": "string",
+                        "enum": [
+                            "category",
+                            "subcategory",
+                            "form"
+                        ],
+                        "example": "category"
+                    },
+                    "submenu": {
+                        "description": "L3 children (only present if this L2 item has nested items)",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "MongoDB ObjectId of L3 menu",
+                                    "type": "string",
+                                    "example": "672313923808a3af4e0806c9"
+                                },
+                                "name": {
+                                    "description": "L3 item name",
+                                    "type": "string",
+                                    "example": "Transkrip dan Ijazah"
+                                },
+                                "path": {
+                                    "description": "Route path",
+                                    "type": "string",
+                                    "example": "/forms/transkrip",
+                                    "nullable": true
+                                },
+                                "order": {
+                                    "description": "Display order within L2",
+                                    "type": "integer",
+                                    "example": 1
+                                },
+                                "type": {
+                                    "description": "L3 item type",
+                                    "type": "string",
+                                    "enum": [
+                                        "subcategory",
+                                        "form"
+                                    ],
+                                    "example": "subcategory"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "nullable": true
                     }
                 },
                 "type": "object"
             },
             "UserOrganizationalInfo": {
-                "description": "User's organizational attributes from profile",
+                "description": "User's organizational attributes and admin class from profile",
                 "properties": {
                     "faculty": {
                         "type": "string",
@@ -3430,6 +3612,17 @@
                         "type": "string",
                         "example": "ILKOM-S1",
                         "nullable": true
+                    },
+                    "class": {
+                        "description": "Admin class determining authorization scope (only for admin users)",
+                        "type": "string",
+                        "enum": [
+                            "university",
+                            "faculty",
+                            "department"
+                        ],
+                        "example": "faculty",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -3451,7 +3644,7 @@
         },
         {
             "name": "Menu Management",
-            "description": "API endpoints for managing hierarchical menu system with role-based access control"
+            "description": "API endpoints for managing hierarchical menu system with profile.class-based authorization. University admin (profile.class='university') manages universitas+update_data scopes, Faculty admin (profile.class='faculty') manages fakultas scope with faculty_code validation, Department admin (profile.class='department') manages jurusan scope with faculty_code+department_code validation."
         },
         {
             "name": "Forms",

@@ -29,8 +29,8 @@ class AuthController extends Controller
     /**
      * @OA\Post(
      *     path="/api/v1/auth/login",
-     *     summary="Login via SSO",
-     *     description="Authenticate user with campus SSO credentials and receive JWT tokens",
+     *     summary="Login via SSO with Role-based Authorization",
+     *     description="Authenticate user with campus SSO credentials and receive JWT tokens. Returns user profile with organizational attributes. For admin users, profile.class field determines authorization scope: university, faculty, or department level access.",
      *     operationId="login",
      *     tags={"Authentication"},
      *     @OA\RequestBody(
@@ -54,7 +54,18 @@ class AuthController extends Controller
      *                 @OA\Property(property="id", type="string", example="68ee2e761fa10bc4f109c732"),
      *                 @OA\Property(property="name", type="string", example="Dafahan"),
      *                 @OA\Property(property="email", type="string", example="dafahan@example.com"),
-     *                 @OA\Property(property="role", type="string", example="user")
+     *                 @OA\Property(property="role", type="string", example="user", enum={"user", "admin"}),
+     *                 @OA\Property(
+     *                     property="profile",
+     *                     type="object",
+     *                     nullable=true,
+     *                     description="User profile with organizational attributes. For admin users, includes class field for authorization.",
+     *                     @OA\Property(property="name", type="string", example="Dafahan"),
+     *                     @OA\Property(property="faculty_code", type="string", nullable=true, example="FMIPA"),
+     *                     @OA\Property(property="department_code", type="string", nullable=true, example="ILKOM"),
+     *                     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1"),
+     *                     @OA\Property(property="class", type="string", nullable=true, enum={"university", "faculty", "department"}, example="faculty", description="Admin class for authorization (only present for admin users)")
+     *                 )
      *             )
      *         ),
      *         @OA\Header(
@@ -170,18 +181,7 @@ class AuthController extends Controller
                         'phone' => '081234567893',
                     ],
                 ],
-                'admin' => [
-                    'username' => 'admin',
-                    'email' => 'admin@unila.ac.id',
-                    'role' => 'admin',
-                    'profile' => [
-                        'name' => 'Administrator',
-                        'faculty_code' => 'FMIPA',
-                        'department_code' => 'ILKOM',
-                        'study_program_code' => 'ILKOM-S1',
-                        'phone' => '081234567890',
-                    ],
-                ],
+                
                 'admin_univ' => [
                     'username' => 'admin_univ',
                     'email' => 'admin2@unila.ac.id',
@@ -200,8 +200,8 @@ class AuthController extends Controller
                     'email' => 'admin3@unila.ac.id',
                     'role' => 'admin',
                     'profile' => [
-                        'name' => 'Administrator Fakultas',
-                        'faculty_code' => 'FT',
+                        'name' => 'Administrator Fakultas FMIPA',
+                        'faculty_code' => 'FMIPA',
                         'department_code' => null,
                         'study_program_code' => null,
                         'phone' => '081234567878',
@@ -218,32 +218,6 @@ class AuthController extends Controller
                         'department_code' => 'ILKOM',
                         'study_program_code' => null,
                         'phone' => '081234567812',
-                        'class' => 'department'
-                    ],
-                ],
-                'admin_fmipa' => [
-                    'username' => 'admin_fmipa',
-                    'email' => 'admin.fmipa@test.com',
-                    'role' => 'admin',
-                    'profile' => [
-                        'name' => 'Admin FMIPA',
-                        'faculty_code' => 'FMIPA',
-                        'department_code' => null,
-                        'study_program_code' => null,
-                        'phone' => '081234567891',
-                        'class' => 'faculty'
-                    ],
-                ],
-                'admin_ilkom' => [
-                    'username' => 'admin_ilkom',
-                    'email' => 'admin.ilkom@test.com',
-                    'role' => 'admin',
-                    'profile' => [
-                        'name' => 'Admin Ilmu Komputer',
-                        'faculty_code' => 'FMIPA',
-                        'department_code' => 'ILKOM',
-                        'study_program_code' => null,
-                        'phone' => '081234567892',
                         'class' => 'department'
                     ],
                 ],
@@ -319,8 +293,8 @@ class AuthController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/auth/me",
-     *     summary="Get current user",
-     *     description="Get authenticated user information",
+     *     summary="Get current user information",
+     *     description="Get authenticated user information including profile with organizational attributes. For admin users, profile.class determines authorization level (university, faculty, department).",
      *     operationId="me",
      *     tags={"Authentication"},
      *     security={{"bearerAuth":{}}},
@@ -335,7 +309,17 @@ class AuthController extends Controller
      *                 @OA\Property(property="id", type="string", example="68ee2e761fa10bc4f109c732"),
      *                 @OA\Property(property="name", type="string", example="Dafahan"),
      *                 @OA\Property(property="email", type="string", example="dafahan@example.com"),
-     *                 @OA\Property(property="role", type="string", example="user")
+     *                 @OA\Property(property="role", type="string", example="user", enum={"user", "admin"}),
+     *                 @OA\Property(
+     *                     property="profile",
+     *                     type="object",
+     *                     nullable=true,
+     *                     description="User profile with organizational data and admin class",
+     *                     @OA\Property(property="name", type="string", example="Dafahan"),
+     *                     @OA\Property(property="faculty_code", type="string", nullable=true, example="FMIPA"),
+     *                     @OA\Property(property="department_code", type="string", nullable=true, example="ILKOM"),
+     *                     @OA\Property(property="class", type="string", nullable=true, enum={"university", "faculty", "department"}, example="faculty")
+     *                 )
      *             )
      *         )
      *     ),
