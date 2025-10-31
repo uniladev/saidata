@@ -59,21 +59,21 @@ const sampleMenuData = [
         name: 'Create Form', 
         path: '/forms/create', 
         order: 1, 
-        roles: ['admin_univ'] 
+        roles: ['admin'] 
       },
       { 
         id: 22, 
         name: 'Forms', 
         path: '/forms', 
         order: 2, 
-        roles: ['admin_univ'] 
+        roles: ['admin'] 
       },
       { 
         id: 23, 
         name: 'Layanan Umum', 
         path: '/dashboard/university/general', 
         order: 3, 
-        roles: ['admin_univ'] 
+        roles: ['admin'] 
       },
     ]
   },
@@ -89,21 +89,21 @@ const sampleMenuData = [
         name: 'Layanan Umum', 
         path: '/dashboard/faculty/general', 
         order: 1, 
-        roles: ['admin_univ','admin_fakultas'] 
+        roles: ['admin'] 
       },
       { 
         id: 32, 
         name: 'Layanan Akademik', 
         path: '/dashboard/faculty/academic', 
         order: 2, 
-        roles: ['admin_univ','admin_fakultas'] 
+        roles: ['admin'] 
       },
       { 
         id: 33, 
         name: 'Layanan Keuangan', 
         path: '/dashboard/faculty/finance', 
         order: 3, 
-        roles: ['admin_univ','admin_fakultas'] 
+        roles: ['admin'] 
       },
     ]
   },
@@ -119,35 +119,35 @@ const sampleMenuData = [
         name: 'Layanan Akademik', 
         path: '/dashboard/department/academic', 
         order: 1, 
-        roles: ['admin_univ','admin_jurusan'] 
+        roles: ['admin'] 
       },
       { 
         id: 42, 
         name: 'Layanan Laboratorium', 
         path: '/dashboard/department/laboratory', 
         order: 2, 
-        roles: ['admin_univ','admin_jurusan'] 
+        roles: ['admin'] 
       },
       { 
         id: 43, 
         name: 'Layanan IT & Server', 
         path: '/dashboard/department/it-services', 
         order: 3, 
-        roles: ['admin_univ','admin_jurusan'] 
+        roles: ['admin'] 
       },
       { 
         id: 44, 
         name: 'Layanan Administrasi', 
         path: '/dashboard/department/administration', 
         order: 4, 
-        roles: ['admin_univ','admin_jurusan'] 
+        roles: ['admin'] 
       },
       { 
         id: 45, 
         name: 'Layanan Penelitian', 
         path: '/dashboard/department/research', 
         order: 5, 
-        roles: ['admin_univ','admin_jurusan'] 
+        roles: ['admin'] 
       }
     ]
   },
@@ -250,7 +250,8 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
         const menuData = response.data.data.menu || [];
 
         // --- NEW: filter menu by user role (including nested submenu/services) ---
-        const userRole = (user?.role || 'user').toLowerCase();
+        const userRole = (user?.role || 'user').toLowerCase().trim();
+        console.log('👤 User role (normalized):', userRole);
 
         const filteredMenus = (menuData || [])
           .filter(menu => !menu.roles || menu.roles.map(r=>r.toLowerCase()).includes(userRole))
@@ -409,7 +410,7 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
               
               return (
                 <div key={item.id}>
-                  {item.submenu ? (
+                  {Array.isArray(item.submenu) && item.submenu.length > 0 ? (
                     // Menu with submenu
                     <div>
                       <button

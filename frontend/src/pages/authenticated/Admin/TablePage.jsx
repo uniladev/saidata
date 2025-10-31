@@ -1,6 +1,6 @@
 // frontend/src/pages/authenticated/Admin/TablePage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -10,42 +10,46 @@ import {
   ChevronLeft, 
   ChevronRight 
 } from 'lucide-react';
-
-// === 1. DATA DUMMY ===
-const dummyData = [
-  { id: 1, nama_prestasi: 'Juara 1 Lomba Web Design Nasional', tingkat: 'Nasional', capaian: 'Juara 1', jenis: 'Individu', dosen_pembimbing: 'Dr. Budi Santoso, M.Kom.', tanggal: '2024-05-15' },
-  { id: 2, nama_prestasi: 'Finalis Gemastik Divisi UX Design', tingkat: 'Nasional', capaian: 'Finalis', jenis: 'Tim', dosen_pembimbing: 'Dr. Retno Wulansari, M.T.', tanggal: '2023-11-20' },
-  { id: 3, nama_prestasi: 'Juara 2 Lomba Competitive Programming', tingkat: 'Universitas', capaian: 'Juara 2', jenis: 'Individu', dosen_pembimbing: 'Prof. Dr. Ir. Eko Indrajit', tanggal: '2024-03-10' },
-  { id: 4, nama_prestasi: 'Hackathon Merdeka 4th Place', tingkat: 'Nasional', capaian: 'Juara 4', jenis: 'Tim', dosen_pembimbing: 'Dr. Budi Santoso, M.Kom.', tanggal: '2023-08-17' },
-  { id: 5, nama_prestasi: 'Best Paper KNTI', tingkat: 'Nasional', capaian: 'Best Paper', jenis: 'Tim', dosen_pembimbing: 'Dr. Retno Wulansari, M.T.', tanggal: '2023-07-02' },
-  { id: 6, nama_prestasi: 'Lomba Cipta Inovasi Unila', tingkat: 'Universitas', capaian: 'Juara 1', jenis: 'Individu', dosen_pembimbing: 'Prof. Dr. Ir. Eko Indrajit', tanggal: '2024-01-22' },
-  { id: 7, nama_prestasi: 'Juara Harapan 1 Data Mining', tingkat: 'Provinsi', capaian: 'Harapan 1', jenis: 'Tim', dosen_pembimbing: 'Dr. Budi Santoso, M.Kom.', tanggal: '2023-09-05' },
-  { id: 8, nama_prestasi: 'Kontestan ICPC Regional', tingkat: 'Regional', capaian: 'Peserta', jenis: 'Tim', dosen_pembimbing: 'Dr. Retno Wulansari, M.T.', tanggal: '2023-10-11' },
-  { id: 9, nama_prestasi: 'Lomba Esai Ilmiah', tingkat: 'Universitas', capaian: 'Juara 3', jenis: 'Individu', dosen_pembimbing: 'Prof. Dr. Ir. Eko Indrajit', tanggal: '2023-04-19' },
-  { id: 10, nama_prestasi: 'UI/UX Design Competition', tingkat: 'Nasional', capaian: 'Peserta', jenis: 'Tim', dosen_pembimbing: 'Dr. Budi Santoso, M.Kom.', tanggal: '2023-06-30' },
-  { id: 11, nama_prestasi: 'Juara 1 Catur Cepat', tingkat: 'Fakultas', capaian: 'Juara 1', jenis: 'Individu', dosen_pembimbing: '-', tanggal: '2024-02-14' },
-];
+import api from '../../../config/api';
 
 // === 2. "OTAK" TABEL (KOLOM DINAMIS) ===
 // 'key' adalah nama properti di dummyData
 // 'label' adalah teks yang akan tampil di header tabel
 const columns = [
-  { key: 'nama_prestasi', label: 'Nama Prestasi' },
-  { key: 'tingkat', label: 'Tingkat' },
-  { key: 'capaian', label: 'Capaian' },
-  { key: 'jenis', label: 'Jenis' },
-  { key: 'dosen_pembimbing', label: 'Dosen Pembimbing' },
-  { key: 'tanggal', label: 'Tanggal' },
+  { key: 'title', label: 'Nama Prestasi' },
+  { key: 'type', label: 'Tingkat' },
+  { key: 'is_active', label: 'Capaian' },
+  { key: 'created_by', label: 'Jenis' },
+  { key: 'updated_by', label: 'Dosen Pembimbing' },
+  { key: 'created_at', label: 'Tanggal' },
 ];
 
 const TablePage = () => {
   const navigate = useNavigate();
 
   // === STATE MANAGEMENT ===
-  const [prestasiList, setPrestasiList] = useState(dummyData);
+  const [prestasiList, setPrestasiList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10); 
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  // === DATA FETCHING ===
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/forms');
+        // The backend returns { success, data: [...] }
+        setPrestasiList(Array.isArray(res.data.data) ? res.data.data : []);
+      } catch (err) {
+        setPrestasiList([]);
+        alert('Gagal mengambil data dari server.');
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   // === DATA MANIPULATION (LOGIC) ===
 
@@ -70,11 +74,16 @@ const TablePage = () => {
   /**
    * Menghapus data dari state LOKAL (dummy)
    */
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-      const newList = prestasiList.filter(item => item.id !== id);
-      setPrestasiList(newList);
-      alert('Data (dummy) berhasil dihapus dari tampilan.');
+      try {
+        const res = await fetch(`/api/v1/forms/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Gagal menghapus data');
+        setPrestasiList(prev => prev.filter(item => item.id !== id));
+        alert('Data berhasil dihapus.');
+      } catch (err) {
+        alert('Gagal menghapus data dari server.');
+      }
     }
   };
 
@@ -150,8 +159,10 @@ const TablePage = () => {
 
         {/* --- TABEL UTAMA (DINAMIS) --- */}
         <div className="overflow-x-auto">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Memuat data...</div>
+          ) : (
           <table className="min-w-full divide-y divide-gray-200">
-            
             {/* === 3. HEADER TABEL DINAMIS === */}
             <thead className="bg-gray-50">
               <tr>
@@ -189,7 +200,7 @@ const TablePage = () => {
                 </tr>
               ) : (
                 paginatedPrestasi.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={item.id || index} className="hover:bg-gray-50 transition-colors">
                     
                     {/* Sel "No" statis */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -238,8 +249,8 @@ const TablePage = () => {
                 ))
               )}
             </tbody>
-            
           </table>
+              )}
         </div>
 
         {/* --- FOOTER PAGINASI --- */}
