@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -130,11 +131,26 @@ class MenuController extends Controller
      *
      * @OA\Schema(
      *     schema="Submenu",
-     *     description="Submenu item (L2/L3 from database)",
+     *     description="Submenu item (L2/L3 from database with nested hierarchy support)",
      *     @OA\Property(property="id", type="string", description="MongoDB ObjectId", example="672313923808a3af4e0806c8"),
-     *     @OA\Property(property="name", type="string", description="Display name", example="Surat Aktif Kuliah"),
-     *     @OA\Property(property="path", type="string", description="Route path", example="/forms/surat-aktif-kuliah"),
-     *     @OA\Property(property="order", type="integer", description="Display order", example=1)
+     *     @OA\Property(property="name", type="string", description="Display name", example="Layanan Akademik"),
+     *     @OA\Property(property="path", type="string", nullable=true, description="Route path (null for categories with submenu)", example="/forms/surat-aktif-kuliah"),
+     *     @OA\Property(property="order", type="integer", description="Display order", example=1),
+     *     @OA\Property(property="type", type="string", enum={"category", "subcategory", "form"}, description="Menu item type", example="category"),
+     *     @OA\Property(
+     *         property="submenu",
+     *         type="array",
+     *         nullable=true,
+     *         description="L3 children (only present if this L2 item has nested items)",
+     *         @OA\Items(
+     *             type="object",
+     *             @OA\Property(property="id", type="string", description="MongoDB ObjectId of L3 menu", example="672313923808a3af4e0806c9"),
+     *             @OA\Property(property="name", type="string", description="L3 item name", example="Transkrip dan Ijazah"),
+     *             @OA\Property(property="path", type="string", nullable=true, description="Route path", example="/forms/transkrip"),
+     *             @OA\Property(property="order", type="integer", description="Display order within L2", example=1),
+     *             @OA\Property(property="type", type="string", enum={"subcategory", "form"}, description="L3 item type", example="subcategory")
+     *         )
+     *     )
      * )
      *
      * @OA\Schema(
@@ -169,7 +185,7 @@ class MenuController extends Controller
         $departmentCode = $profile['department_code'] ?? null;
         $studyProgramCode = $profile['study_program_code'] ?? null;
 
-        // Base menu items for all users
+        // Base menu items - Dashboard untuk semua user
         $menuItems = [
             [
                 'id' => 1,
@@ -178,43 +194,51 @@ class MenuController extends Controller
                 'path' => '/dashboard',
                 'order' => 1,
                 'roles' => ['admin', 'user']
-            ],
-            [
-            'id' => 90909,
-                'name' => 'DEVTEST (EDIT DI  BACKEND MENU CONTROLLER)',
+            ]
+        ];
+
+        // Menu berdasarkan role
+        if ($user->role === 'admin') {
+            // ADMIN: Hanya menu manajemen, tidak bisa mengajukan layanan
+            $menuItems[] = [
+                'id' => 90909,
+                'name' => 'DEVTEST',
                 'icon' => 'ClipboardList',
                 'order' => 2,
-                'roles' => ['admin', 'user'],
+                'roles' => ['admin'],
                 'submenu' => [
                     ['id' => 2001, 'name' => 'Create Form', 'path' => '/forms/create', 'order' => 1],
                     ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
                     ['id' => 2003, 'name' => 'Menu Setting', 'path' => '/menu', 'order' => 3],
                     ['id' => 2004, 'name' => 'Table', 'path' => '/table-demo', 'order' => 4, 'submenu' => [['id' => 3001, 'name' => 'Basic Table', 'path' => '/table-demo/basic', 'order' => 1], ['id' => 3002, 'name' => 'Data Table', 'path' => '/table-demo/data-table', 'order' => 2]]],
                 ]
-            ],
-        ];
-
-        // Menu layanan berdasarkan role
-        if ($user->role === 'user') {
+            ];
+            
+            $menuItems[] = [
+                'id' => 6,
+                'name' => 'Validasi Permohonan',
+                'icon' => 'CheckCircle',
+                'path' => '/dashboard/validation',
+                'order' => 3,
+                'roles' => ['admin']
+            ];
+            
+        } elseif ($user->role === 'user') {
+            // MAHASISWA: Menu layanan untuk mengajukan permohonan
             $menuItems = array_merge($menuItems, $this->getUserMenu($facultyCode, $departmentCode, $studyProgramCode));
-        } elseif ($user->role === 'admin') {
-            $menuItems = array_merge($menuItems, $this->getAdminMenu());
+            
+            // Riwayat permohonan hanya untuk mahasiswa (tanpa dropdown)
+            $menuItems[] = [
+                'id' => 100,
+                'name' => 'Riwayat Permohonan',
+                'icon' => 'History',
+                'path' => '/dashboard/requests',
+                'order' => 100,
+                'roles' => ['user']
+            ];
         }
 
-        // Common menu items for all users
-        $menuItems[] = [
-            'id' => 100,
-            'name' => 'Riwayat Permohonan',
-            'icon' => 'ClipboardList',
-            'order' => 100,
-            'roles' => ['admin', 'user'],
-            'submenu' => [
-                ['id' => 1001, 'name' => 'Semua Permohonan', 'path' => '/dashboard/requests', 'order' => 1],
-                ['id' => 1002, 'name' => 'Permohonan Pending', 'path' => '/dashboard/requests/pending', 'order' => 2],
-                ['id' => 1003, 'name' => 'Permohonan Disetujui', 'path' => '/dashboard/requests/approved', 'order' => 3],
-                ['id' => 1004, 'name' => 'Permohonan Ditolak', 'path' => '/dashboard/requests/rejected', 'order' => 4],
-            ]
-        ];
+        // Common menu items untuk semua user (di paling bawah)
 
         $menuItems[] = [
             'id' => 101,
@@ -262,132 +286,107 @@ class MenuController extends Controller
     {
         $menu = [];
 
-        // Menu Layanan Universitas (untuk semua mahasiswa)
-        $menu[] = [
-            'id' => 2,
-            'name' => 'Layanan Universitas',
-            'icon' => 'Building',
-            'order' => 2,
-            'roles' => ['user'],
-            'submenu' => [
-                ['id' => 21, 'name' => 'Layanan Akademik', 'path' => '/dashboard/university/academic', 'order' => 1],
-                ['id' => 22, 'name' => 'Layanan Keuangan', 'path' => '/dashboard/university/finance', 'order' => 2],
-                ['id' => 23, 'name' => 'Layanan Umum', 'path' => '/dashboard/university/general', 'order' => 3],
+        // Fixed L1 categories untuk mahasiswa dengan submenu dari database
+        $fixedL1Categories = [
+            [
+                'id' => 'fixed_l1_layanan_universitas',
+                'name' => 'Layanan Universitas',
+                'icon' => 'Building',
+                'scope' => 'universitas',
+                'order' => 2
+            ],
+            [
+                'id' => 'fixed_l1_layanan_fakultas',
+                'name' => 'Layanan Fakultas',
+                'icon' => 'GraduationCap',
+                'scope' => 'fakultas',
+                'order' => 3
+            ],
+            [
+                'id' => 'fixed_l1_layanan_jurusan',
+                'name' => 'Layanan Jurusan',
+                'icon' => 'BookOpen',
+                'scope' => 'jurusan',
+                'order' => 4
+            ],
+            [
+                'id' => 'fixed_l1_update_data',
+                'name' => 'Update Data',
+                'icon' => 'Edit',
+                'scope' => 'update_data',
+                'order' => 5
             ]
         ];
 
-        // Menu Layanan Fakultas (custom per fakultas)
-        if ($facultyCode) {
-            $menu[] = [
-                'id' => 3,
-                'name' => 'Layanan Fakultas',
-                'icon' => 'GraduationCap',
-                'order' => 3,
-                'roles' => ['user'],
-                'submenu' => $this->getFacultySubmenu($facultyCode)
-            ];
-        }
-
-        // Menu Layanan Jurusan (custom per jurusan)
-        if ($departmentCode) {
-            $menu[] = [
-                'id' => 4,
-                'name' => 'Layanan Jurusan',
-                'icon' => 'BookOpen',
-                'order' => 4,
-                'roles' => ['user'],
-                'submenu' => $this->getDepartmentSubmenu($facultyCode, $departmentCode)
-            ];
+        foreach ($fixedL1Categories as $category) {
+            $submenu = [];
+            
+            // Query database untuk L2/L3 submenu berdasarkan scope
+            $query = Menu::where('parent_id', $category['id'])
+                         ->where('scope', $category['scope'])
+                         ->where('is_active', true);
+            
+            // Filter berdasarkan fakultas/jurusan untuk mahasiswa
+            if ($category['scope'] === 'fakultas' && $facultyCode) {
+                $query->where('faculty_code', $facultyCode);
+            } elseif ($category['scope'] === 'jurusan' && $departmentCode && $facultyCode) {
+                $query->where('faculty_code', $facultyCode)
+                      ->where('department_code', $departmentCode);
+            }
+            
+            $dbMenus = $query->orderBy('order')->get();
+            
+            // Convert database menus to submenu format and build hierarchy for L3
+            foreach ($dbMenus as $dbMenu) {
+                $menuItem = [
+                    'id' => (string) $dbMenu->_id,
+                    'name' => $dbMenu->name,
+                    'path' => $dbMenu->route,
+                    'order' => $dbMenu->order,
+                    'type' => $dbMenu->type
+                ];
+                
+                // If this is L2, get its L3 children
+                if ($dbMenu->level == 2) {
+                    $l3Children = Menu::where('parent_id', $dbMenu->_id)
+                                     ->where('is_active', true)
+                                     ->orderBy('order')
+                                     ->get();
+                    
+                    if ($l3Children->isNotEmpty()) {
+                        $menuItem['submenu'] = [];
+                        foreach ($l3Children as $l3Menu) {
+                            $menuItem['submenu'][] = [
+                                'id' => (string) $l3Menu->_id,
+                                'name' => $l3Menu->name,
+                                'path' => $l3Menu->route,
+                                'order' => $l3Menu->order,
+                                'type' => $l3Menu->type
+                            ];
+                        }
+                    }
+                }
+                
+                $submenu[] = $menuItem;
+            }
+            
+            // Hanya tampilkan kategori jika ada submenu atau untuk universitas/update_data (selalu tampil)
+            if (!empty($submenu) || in_array($category['scope'], ['universitas', 'update_data'])) {
+                $menu[] = [
+                    'id' => $category['id'],
+                    'name' => $category['name'],
+                    'icon' => $category['icon'],
+                    'order' => $category['order'],
+                    'roles' => ['user'],
+                    'submenu' => $submenu
+                ];
+            }
         }
 
         return $menu;
     }
     
-    /**
-     * Get submenu for faculty
-     */
-    private function getFacultySubmenu($facultyCode)
-    {
-        // Submenu berbeda per fakultas
-        switch ($facultyCode) {
-            case 'FMIPA':
-                return [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                    ['id' => 33, 'name' => 'Layanan Penelitian', 'path' => '/dashboard/faculty/research', 'order' => 3],
-                    ['id' => 34, 'name' => 'Layanan Laboratorium', 'path' => '/dashboard/faculty/laboratory', 'order' => 4],
-                ];
-            
-            case 'FK':
-                return [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                    ['id' => 33, 'name' => 'Layanan Klinik', 'path' => '/dashboard/faculty/clinic', 'order' => 3],
-                    ['id' => 34, 'name' => 'Layanan Praktek', 'path' => '/dashboard/faculty/practice', 'order' => 4],
-                ];
-            
-            default:
-                return [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                ];
-        }
-    }
 
-    /**
-     * Get submenu for department
-     */
-    private function getDepartmentSubmenu($facultyCode, $departmentCode)
-    {
-        // Submenu berbeda per jurusan
-        $key = "{$facultyCode}_{$departmentCode}";
-        
-        switch ($key) {
-            // FMIPA - Biologi
-            case 'FMIPA_BIO':
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Layanan Lab Biologi', 'path' => '/dashboard/department/bio-lab', 'order' => 2],
-                    ['id' => 43, 'name' => 'Penelitian Biologi', 'path' => '/dashboard/department/bio-research', 'order' => 3],
-                    ['id' => 44, 'name' => 'Praktikum Lapangan', 'path' => '/dashboard/department/field-practice', 'order' => 4],
-                ];
-            
-            // FMIPA - Ilmu Komputer
-            case 'FMIPA_ILKOM':
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Lab Programming', 'path' => '/dashboard/department/programming-lab', 'order' => 2],
-                    ['id' => 43, 'name' => 'Lab Jaringan', 'path' => '/dashboard/department/network-lab', 'order' => 3],
-                    ['id' => 44, 'name' => 'Layanan Server & IT', 'path' => '/dashboard/department/it-services', 'order' => 4],
-                    ['id' => 45, 'name' => 'Bimbingan Tugas Akhir', 'path' => '/dashboard/department/thesis-guidance', 'order' => 5],
-                ];
-            
-            // FMIPA - Matematika
-            case 'FMIPA_MAT':
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Lab Matematika', 'path' => '/dashboard/department/math-lab', 'order' => 2],
-                    ['id' => 43, 'name' => 'Konsultasi Statistik', 'path' => '/dashboard/department/statistics-consultation', 'order' => 3],
-                    ['id' => 44, 'name' => 'Bimbingan Tugas Akhir', 'path' => '/dashboard/department/thesis-guidance', 'order' => 4],
-                ];
-            
-            // FK - Farmasi
-            case 'FK_FARM':
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Lab Farmasi', 'path' => '/dashboard/department/pharmacy-lab', 'order' => 2],
-                    ['id' => 43, 'name' => 'Praktek Apoteker', 'path' => '/dashboard/department/pharmacist-practice', 'order' => 3],
-                    ['id' => 44, 'name' => 'Konsultasi Obat', 'path' => '/dashboard/department/drug-consultation', 'order' => 4],
-                ];
-            
-            // Default untuk jurusan lain
-            default:
-                return [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Layanan Administrasi', 'path' => '/dashboard/department/administration', 'order' => 2],
-                ];
-        }
-    }
 
     /**
      * Get department display name

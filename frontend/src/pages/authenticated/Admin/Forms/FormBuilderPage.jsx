@@ -1,17 +1,17 @@
 // frontend/src/pages/authenticated/Admin/FormBuilderPage.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import FormBuilderHeader from '../../../components/formBuilder/FormBuilderHeader';
-import FieldTypeSidebar from '../../../components/formBuilder/FieldTypeSidebar';
-import FormCanvas from '../../../components/formBuilder/FormCanvas';
-import FieldPropertiesPanel from '../../../components/formBuilder/FieldPropertiesPanel';
-import FormPreview from '../../../components/formBuilder/FormPreview';
-import JsonViewer from '../../../components/formBuilder/JsonViewer';
-import FormVersionHistory from '../../../components/formBuilder/FormVersionHistory';
-import { useFormBuilder } from '../../../hooks/useFormBuilder';
-import { FIELD_TYPES } from '../../../constants/fieldTypes';
-import { useAuth } from '../../../context/AuthContext';
-import api from '../../../config/api';
+import FormBuilderHeader from '../../../../components/formBuilder/FormBuilderHeader';
+import FieldTypeSidebar from '../../../../components/formBuilder/FieldTypeSidebar';
+import FormCanvas from '../../../../components/formBuilder/FormCanvas';
+import FieldPropertiesPanel from '../../../../components/formBuilder/FieldPropertiesPanel';
+import FormPreview from '../../../../components/formBuilder/FormPreview';
+import JsonViewer from '../../../../components/formBuilder/JsonViewer';
+import FormVersionHistory from '../../../../components/formBuilder/FormVersionHistory';
+import { useFormBuilder } from '../../../../hooks/useFormBuilder';
+import { FIELD_TYPES } from '../../../../constants/fieldTypes';
+import { useAuth } from '../../../../context/AuthContext';
+import api from '../../../../config/api';
 
 function FormBuilderPage() {
   const navigate = useNavigate();

@@ -25,15 +25,17 @@ class MenuSeeder extends Seeder
         // =======================================================
         echo "\n📝 Creating MANAGEABLE menus (L2/L3 only - L1 is fixed)...\n";
         
-        // Sample L2 menus for different scopes (parent_id will use fixed L1 IDs)
+        // =====================================================
+        // L2 MENUS - UNIVERSITAS SCOPE
+        // =====================================================
         $sampleL2Menus = [
-            // Universitas scope examples
+            // Layanan Akademik Universitas
             [
-                'name' => 'Surat Rekomendasi',
+                'name' => 'Layanan Akademik',
                 'level' => 2,
                 'scope' => 'universitas',
                 'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_universitas', // Reference to fixed L1
+                'parent_id' => 'fixed_l1_layanan_universitas',
                 'route' => null,
                 'form_id' => null,
                 'faculty_code' => null,
@@ -41,13 +43,90 @@ class MenuSeeder extends Seeder
                 'is_active' => true,
                 'order' => 1
             ],
-            // Update data scope example
+            // Layanan Kemahasiswaan Universitas
+            [
+                'name' => 'Layanan Kemahasiswaan',
+                'level' => 2,
+                'scope' => 'universitas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_universitas',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 2
+            ],
+            // Layanan Umum Universitas
+            [
+                'name' => 'Layanan Umum',
+                'level' => 2,
+                'scope' => 'universitas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_universitas',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 3
+            ],
+
+            // =====================================================
+            // L2 MENUS - FAKULTAS SCOPE (FMIPA)
+            // =====================================================
+            // Layanan Akademik Fakultas
+            [
+                'name' => 'Layanan Akademik',
+                'level' => 2,
+                'scope' => 'fakultas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_fakultas',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+            // Layanan Kemahasiswaan Fakultas
+            [
+                'name' => 'Layanan Kemahasiswaan',
+                'level' => 2,
+                'scope' => 'fakultas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_fakultas',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 2
+            ],
+            // Layanan Umum Fakultas
+            [
+                'name' => 'Layanan Umum',
+                'level' => 2,
+                'scope' => 'fakultas',
+                'type' => 'category',
+                'parent_id' => 'fixed_l1_layanan_fakultas',
+                'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 3
+            ],
+
+            // =====================================================
+            // UPDATE DATA SCOPE
+            // =====================================================
             [
                 'name' => 'Update Profile',
                 'level' => 2,
                 'scope' => 'update_data',
                 'type' => 'form',
-                'parent_id' => 'fixed_l1_update_data', // Reference to fixed L1
+                'parent_id' => 'fixed_l1_update_data',
                 'route' => '/forms/update-profile',
                 'form_id' => null,
                 'faculty_code' => null,
@@ -57,174 +136,179 @@ class MenuSeeder extends Seeder
             ]
         ];
 
-        // Sample fakultas scope L2 menus
-        $fakultasL2Menus = [
-            // FMIPA examples
+        // Create L2 menus first and store IDs for L3 references
+        echo "Creating L2 menus...\n";
+        $createdL2Menus = [];
+        foreach ($sampleL2Menus as $menuData) {
+            $menu = Menu::create($menuData);
+            $createdL2Menus[$menuData['name'] . '_' . $menuData['scope']] = $menu->_id;
+            echo "✓ Created L2: {$menuData['name']} ({$menuData['scope']})\n";
+        }
+
+        // =====================================================
+        // L3 MENUS - UNIVERSITAS SCOPE
+        // =====================================================
+        $sampleL3Menus = [
+            // Layanan Akademik Universitas - L3 Subcategory
             [
-                'name' => 'Permohonan Surat Keterangan',
-                'level' => 2,
-                'scope' => 'fakultas',
-                'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_fakultas', // Reference to fixed L1
+                'name' => 'Transkrip dan Ijazah',
+                'level' => 3,
+                'scope' => 'universitas',
+                'type' => 'subcategory',
+                'parent_id' => $createdL2Menus['Layanan Akademik_universitas'],
                 'route' => null,
                 'form_id' => null,
-                'faculty_code' => 'FMIPA',
+                'faculty_code' => null,
                 'department_code' => null,
                 'is_active' => true,
                 'order' => 1
             ],
+            // Layanan Akademik Universitas - L3 Direct Form
+            [
+                'name' => 'Surat Keterangan Aktif Mahasiswa',
+                'level' => 3,
+                'scope' => 'universitas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Akademik_universitas'],
+                'route' => '/forms/surat-aktif-mahasiswa',
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 2
+            ],
+
+            // Layanan Kemahasiswaan Universitas - L3 Direct Forms
+            [
+                'name' => 'Surat Rekomendasi Beasiswa',
+                'level' => 3,
+                'scope' => 'universitas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Kemahasiswaan_universitas'],
+                'route' => '/forms/rekomendasi-beasiswa',
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+            [
+                'name' => 'Permohonan Cuti Akademik',
+                'level' => 3,
+                'scope' => 'universitas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Kemahasiswaan_universitas'],
+                'route' => '/forms/cuti-akademik',
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 2
+            ],
+
+            // Layanan Umum Universitas - L3 Direct Forms
+            [
+                'name' => 'Surat Keterangan Kelakuan Baik',
+                'level' => 3,
+                'scope' => 'universitas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Umum_universitas'],
+                'route' => '/forms/kelakuan-baik',
+                'form_id' => null,
+                'faculty_code' => null,
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+
+            // =====================================================
+            // L3 MENUS - FAKULTAS SCOPE (FMIPA)
+            // =====================================================
+            // Layanan Akademik Fakultas - L3 Subcategory
             [
                 'name' => 'Legalisir Dokumen',
-                'level' => 2,
+                'level' => 3,
                 'scope' => 'fakultas',
-                'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_fakultas',
+                'type' => 'subcategory',
+                'parent_id' => $createdL2Menus['Layanan Akademik_fakultas'],
                 'route' => null,
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+            // Layanan Akademik Fakultas - L3 Direct Form
+            [
+                'name' => 'Surat Keterangan Mahasiswa Aktif',
+                'level' => 3,
+                'scope' => 'fakultas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Akademik_fakultas'],
+                'route' => '/forms/surat-mahasiswa-aktif-fakultas',
                 'form_id' => null,
                 'faculty_code' => 'FMIPA',
                 'department_code' => null,
                 'is_active' => true,
                 'order' => 2
             ],
-            // FK examples
+
+            // Layanan Kemahasiswaan Fakultas - L3 Direct Forms
             [
-                'name' => 'Surat Rekomendasi',
-                'level' => 2,
+                'name' => 'Permohonan Organisasi Mahasiswa',
+                'level' => 3,
                 'scope' => 'fakultas',
-                'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_fakultas',
-                'route' => null,
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Kemahasiswaan_fakultas'],
+                'route' => '/forms/organisasi-mahasiswa',
                 'form_id' => null,
-                'faculty_code' => 'FK',
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ],
+            [
+                'name' => 'Surat Rekomendasi Kegiatan',
+                'level' => 3,
+                'scope' => 'fakultas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Kemahasiswaan_fakultas'],
+                'route' => '/forms/rekomendasi-kegiatan',
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 2
+            ],
+
+            // Layanan Umum Fakultas - L3 Direct Forms
+            [
+                'name' => 'Surat Keterangan Penelitian',
+                'level' => 3,
+                'scope' => 'fakultas',
+                'type' => 'form',
+                'parent_id' => $createdL2Menus['Layanan Umum_fakultas'],
+                'route' => '/forms/keterangan-penelitian',
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
                 'department_code' => null,
                 'is_active' => true,
                 'order' => 1
             ]
         ];
 
-        // Sample jurusan scope L2 menus
-        $jurusanL2Menus = [
-            // ILKOM examples
-            [
-                'name' => 'Surat Aktif Kuliah',
-                'level' => 2,
-                'scope' => 'jurusan',
-                'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_jurusan', // Reference to fixed L1
-                'route' => null,
-                'form_id' => null,
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'ILKOM',
-                'is_active' => true,
-                'order' => 1
-            ],
-            [
-                'name' => 'Verifikasi Dokumen',
-                'level' => 2,
-                'scope' => 'jurusan',
-                'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_jurusan',
-                'route' => null,
-                'form_id' => null,
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'ILKOM',
-                'is_active' => true,
-                'order' => 2
-            ],
-            // BIO examples
-            [
-                'name' => 'Surat Keterangan',
-                'level' => 2,
-                'scope' => 'jurusan',
-                'type' => 'category',
-                'parent_id' => 'fixed_l1_layanan_jurusan',
-                'route' => null,
-                'form_id' => null,
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'BIO',
-                'is_active' => true,
-                'order' => 1
-            ]
-        ];
-
-        // Combine all manageable menus (L2 only for demo)
-        $manageableMenus = array_merge($sampleL2Menus, $fakultasL2Menus, $jurusanL2Menus);
-
-        foreach ($manageableMenus as $menuData) {
-            $menu = Menu::create($menuData);
-            echo "  ✓ Created: {$menuData['name']} (Level {$menuData['level']}, Scope: {$menuData['scope']})\n";
-            
-            // Store IDs for creating L3 submenus
-            if ($menuData['scope'] === 'fakultas' && $menuData['faculty_code'] === 'FMIPA' && $menuData['name'] === 'Permohonan Surat Keterangan') {
-                $fmipaL2Id = $menu->_id;
-            }
-            if ($menuData['scope'] === 'jurusan' && $menuData['department_code'] === 'ILKOM' && $menuData['name'] === 'Surat Aktif Kuliah') {
-                $ilkomL2Id = $menu->_id;
-            }
-        }
-
-        echo "\n✅ Successfully seeded " . count($manageableMenus) . " MANAGEABLE menu items (L2 samples).\n";
-        
-        // =======================================================
-        // SAMPLE L3 MENUS (Forms)
-        // =======================================================
-        echo "\n📝 Creating sample L3 menus (Forms)...\n";
-        
-        $sampleL3Menus = [];
-        
-        // Add L3 forms under FMIPA L2 if it exists
-        if (isset($fmipaL2Id)) {
-            $sampleL3Menus[] = [
-                'name' => 'Surat Aktif Kuliah',
-                'level' => 3,
-                'scope' => 'fakultas',
-                'type' => 'form',
-                'parent_id' => $fmipaL2Id,
-                'route' => '/forms/surat-aktif-kuliah',
-                'form_id' => null,
-                'faculty_code' => 'FMIPA',
-                'department_code' => null,
-                'is_active' => true,
-                'order' => 1
-            ];
-            $sampleL3Menus[] = [
-                'name' => 'Surat Keterangan Lulus',
-                'level' => 3,
-                'scope' => 'fakultas',
-                'type' => 'form',
-                'parent_id' => $fmipaL2Id,
-                'route' => '/forms/surat-keterangan-lulus',
-                'form_id' => null,
-                'faculty_code' => 'FMIPA',
-                'department_code' => null,
-                'is_active' => true,
-                'order' => 2
-            ];
-        }
-        
-        // Add L3 forms under ILKOM L2 if it exists
-        if (isset($ilkomL2Id)) {
-            $sampleL3Menus[] = [
-                'name' => 'Surat Aktif Kuliah (ILKOM)',
-                'level' => 3,
-                'scope' => 'jurusan',
-                'type' => 'form',
-                'parent_id' => $ilkomL2Id,
-                'route' => '/forms/ilkom-aktif-kuliah',
-                'form_id' => null,
-                'faculty_code' => 'FMIPA',
-                'department_code' => 'ILKOM',
-                'is_active' => true,
-                'order' => 1
-            ];
-        }
-        
+        // =====================================================
+        // CREATE L3 MENUS
+        // =====================================================
+        echo "\nCreating L3 menus...\n";
         foreach ($sampleL3Menus as $menuData) {
-            Menu::create($menuData);
-            echo "  ✓ Created: {$menuData['name']} (Level {$menuData['level']}, Type: {$menuData['type']})\n";
+            $menu = Menu::create($menuData);
+            echo "✓ Created L3: {$menuData['name']} ({$menuData['scope']}) - Type: {$menuData['type']}\n";
         }
         
-        echo "\n✅ Successfully seeded " . count($sampleL3Menus) . " L3 form menus.\n";
+        echo "\n✅ Successfully seeded:\n";
+        echo "- " . count($sampleL2Menus) . " L2 menus (categories)\n";
+        echo "- " . count($sampleL3Menus) . " L3 menus (subcategories + forms)\n";
 
         echo "\n🔒 FIXED L1 Categories (Hardcoded - NOT in database):\n";
         echo "- 'Layanan Universitas' (Admin Univ only)\n";
