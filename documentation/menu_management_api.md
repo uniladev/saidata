@@ -56,10 +56,10 @@ Sistem menu management dengan hierarki 3 level dan role-based access control (RB
 
 ## API Endpoints
 
-Base URL: `/api/v1/admin/menus`
+Base URL: `/api/v1/management/menu`
 
 ### 1. Get All Menus (Index)
-**GET** `/api/v1/admin/menus`
+**GET** `/api/v1/management/menu`
 
 **Authorization**: Bearer Token (admin only)
 
@@ -90,7 +90,7 @@ Base URL: `/api/v1/admin/menus`
 ```
 
 ### 2. Create Menu
-**POST** `/api/v1/admin/menus`
+**POST** `/api/v1/management/menu`
 
 **Authorization**: Bearer Token (admin only)
 
@@ -140,7 +140,7 @@ Base URL: `/api/v1/admin/menus`
 ```
 
 ### 3. Get Menu by ID
-**GET** `/api/v1/admin/menus/{id}`
+**GET** `/api/v1/management/menu/{id}`
 
 **Authorization**: Bearer Token (admin only)
 
@@ -159,7 +159,7 @@ Base URL: `/api/v1/admin/menus`
 ```
 
 ### 4. Update Menu
-**PUT** `/api/v1/admin/menus/{id}`
+**PUT** `/api/v1/management/menu/{id}`
 
 **Authorization**: Bearer Token (admin only)
 
@@ -190,7 +190,7 @@ Base URL: `/api/v1/admin/menus`
 ```
 
 ### 5. Delete Menu (Cascade)
-**DELETE** `/api/v1/admin/menus/{id}`
+**DELETE** `/api/v1/management/menu/{id}`
 
 **Authorization**: Bearer Token (admin only)
 
@@ -203,7 +203,7 @@ Base URL: `/api/v1/admin/menus`
 ```
 
 ### 6. Reorder Menus
-**POST** `/api/v1/admin/menus/reorder`
+**POST** `/api/v1/management/menu/reorder`
 
 **Authorization**: Bearer Token (admin only)
 
@@ -284,7 +284,7 @@ Base URL: `/api/v1/admin/menus`
 
 ### Example 1: Admin Univ menambah form di "Update Data"
 ```bash
-POST /api/v1/admin/menus
+POST /api/v1/management/menu
 Authorization: Bearer {token}
 
 {
@@ -301,7 +301,7 @@ Authorization: Bearer {token}
 
 ### Example 2: Admin Fakultas menambah subcategory
 ```bash
-POST /api/v1/admin/menus
+POST /api/v1/management/menu
 Authorization: Bearer {token}
 
 {
@@ -318,7 +318,7 @@ Authorization: Bearer {token}
 
 ### Example 3: Admin Jurusan menambah form di subcategory
 ```bash
-POST /api/v1/admin/menus
+POST /api/v1/management/menu
 Authorization: Bearer {token}
 
 {
@@ -353,7 +353,7 @@ Authorization: Bearer {token}
 1. **Menu Level 1** sudah di-seed otomatis saat menjalankan `MenuSeeder`
 2. **Level 2 dan 3** harus dibuat melalui API Management
 3. **Frontend** akan membaca menu dari endpoint `/api/v1/menu` (MenuController) yang sudah filter sesuai role user
-4. **Admin** mengelola menu melalui endpoint `/api/v1/admin/menus` (MenuManagementController)
+4. **Admin** mengelola menu melalui endpoint `/api/v1/management/menu` (MenuManagementController)
 5. **Cascade delete** akan menghapus semua children secara rekursif
 
 ## Model Relationships

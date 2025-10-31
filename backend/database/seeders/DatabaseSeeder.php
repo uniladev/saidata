@@ -15,8 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UniversityDataSeeder::class,
-            SystemMenuSeeder::class,  // Fixed system menus first
-            MenuSeeder::class,        // Then manageable menus
+            MenuSeeder::class,        // Manageable menus for students
         ]);
 
         // Create test admin users for Menu Management testing

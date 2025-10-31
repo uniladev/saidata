@@ -31,7 +31,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/menu', [MenuController::class, 'index']);
         
         // Menu Management routes (Admin only)
-        Route::prefix('admin/menus')->group(function () {
+        Route::prefix('management/menu')->group(function () {
             Route::get('/', [MenuManagementController::class, 'index']);
             Route::post('/', [MenuManagementController::class, 'store']);
             Route::get('/{id}', [MenuManagementController::class, 'show']);

@@ -151,11 +151,80 @@ class MenuSeeder extends Seeder
         $manageableMenus = array_merge($sampleL2Menus, $fakultasL2Menus, $jurusanL2Menus);
 
         foreach ($manageableMenus as $menuData) {
-            Menu::create($menuData);
+            $menu = Menu::create($menuData);
             echo "  ✓ Created: {$menuData['name']} (Level {$menuData['level']}, Scope: {$menuData['scope']})\n";
+            
+            // Store IDs for creating L3 submenus
+            if ($menuData['scope'] === 'fakultas' && $menuData['faculty_code'] === 'FMIPA' && $menuData['name'] === 'Permohonan Surat Keterangan') {
+                $fmipaL2Id = $menu->_id;
+            }
+            if ($menuData['scope'] === 'jurusan' && $menuData['department_code'] === 'ILKOM' && $menuData['name'] === 'Surat Aktif Kuliah') {
+                $ilkomL2Id = $menu->_id;
+            }
         }
 
         echo "\n✅ Successfully seeded " . count($manageableMenus) . " MANAGEABLE menu items (L2 samples).\n";
+        
+        // =======================================================
+        // SAMPLE L3 MENUS (Forms)
+        // =======================================================
+        echo "\n📝 Creating sample L3 menus (Forms)...\n";
+        
+        $sampleL3Menus = [];
+        
+        // Add L3 forms under FMIPA L2 if it exists
+        if (isset($fmipaL2Id)) {
+            $sampleL3Menus[] = [
+                'name' => 'Surat Aktif Kuliah',
+                'level' => 3,
+                'scope' => 'fakultas',
+                'type' => 'form',
+                'parent_id' => $fmipaL2Id,
+                'route' => '/forms/surat-aktif-kuliah',
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 1
+            ];
+            $sampleL3Menus[] = [
+                'name' => 'Surat Keterangan Lulus',
+                'level' => 3,
+                'scope' => 'fakultas',
+                'type' => 'form',
+                'parent_id' => $fmipaL2Id,
+                'route' => '/forms/surat-keterangan-lulus',
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => null,
+                'is_active' => true,
+                'order' => 2
+            ];
+        }
+        
+        // Add L3 forms under ILKOM L2 if it exists
+        if (isset($ilkomL2Id)) {
+            $sampleL3Menus[] = [
+                'name' => 'Surat Aktif Kuliah (ILKOM)',
+                'level' => 3,
+                'scope' => 'jurusan',
+                'type' => 'form',
+                'parent_id' => $ilkomL2Id,
+                'route' => '/forms/ilkom-aktif-kuliah',
+                'form_id' => null,
+                'faculty_code' => 'FMIPA',
+                'department_code' => 'ILKOM',
+                'is_active' => true,
+                'order' => 1
+            ];
+        }
+        
+        foreach ($sampleL3Menus as $menuData) {
+            Menu::create($menuData);
+            echo "  ✓ Created: {$menuData['name']} (Level {$menuData['level']}, Type: {$menuData['type']})\n";
+        }
+        
+        echo "\n✅ Successfully seeded " . count($sampleL3Menus) . " L3 form menus.\n";
 
         echo "\n🔒 FIXED L1 Categories (Hardcoded - NOT in database):\n";
         echo "- 'Layanan Universitas' (Admin Univ only)\n";

@@ -19,25 +19,25 @@ class MenuManagementController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/admin/menus",
+     *     path="/api/v1/management/menu",
      *     operationId="getMenus",
      *     summary="Get all menus with hierarchy",
-     *     description="Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope.",
+     *     description="Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope. When level parameter is used: level=1 returns only fixed L1 categories (no children), level=2 returns only L2 menus from database, level=3 returns only L3 menus from database. Without level parameter, returns complete hierarchy (L1 with L2/L3 children).",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="scope",
      *         in="query",
-     *         description="Filter by scope (universitas, fakultas, jurusan, update_data)",
+     *         description="Filter by scope (universitas, fakultas, jurusan, update_data). Admin can only access scopes they manage.",
      *         required=false,
-     *         @OA\Schema(type="string")
+     *         @OA\Schema(type="string", enum={"universitas", "fakultas", "jurusan", "update_data"})
      *     ),
      *     @OA\Parameter(
      *         name="level",
      *         in="query",
-     *         description="Filter by level (1, 2, 3)",
+     *         description="Filter by level. level=1 returns fixed L1 categories only (flat, no children). level=2 returns L2 menus from database only. level=3 returns L3 menus from database only. Without this parameter, returns complete hierarchy with L1 as parent and L2/L3 as nested children.",
      *         required=false,
-     *         @OA\Schema(type="integer")
+     *         @OA\Schema(type="integer", enum={1, 2, 3})
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -48,27 +48,55 @@ class MenuManagementController extends Controller
      *             @OA\Property(
      *                 property="data",
      *                 type="array",
+     *                 description="Array of menu items. Structure depends on level parameter: level=1 returns flat array of L1 only, level=2/3 returns flat array of L2/L3 only, no level returns hierarchical structure with children",
      *                 @OA\Items(
      *                     type="object",
      *                     @OA\Property(property="id", type="string", example="fixed_l1_layanan_universitas", description="Fixed L1 IDs use prefix 'fixed_l1_', database menus use MongoDB ObjectId"),
      *                     @OA\Property(property="name", type="string", example="Layanan Universitas"),
-     *                     @OA\Property(property="level", type="integer", example=1),
-     *                     @OA\Property(property="scope", type="string", example="universitas"),
-     *                     @OA\Property(property="type", type="string", example="category"),
-     *                     @OA\Property(property="icon", type="string", example="fas fa-university"),
-     *                     @OA\Property(property="is_fixed", type="boolean", example=true, description="True for Level 1 fixed categories, false for manageable menus"),
+     *                     @OA\Property(property="level", type="integer", example=1, description="Menu level: 1=Fixed category, 2=Subcategory, 3=Form"),
+     *                     @OA\Property(property="scope", type="string", example="universitas", enum={"universitas", "fakultas", "jurusan", "update_data"}),
+     *                     @OA\Property(property="type", type="string", example="category", enum={"category", "subcategory", "form"}),
+     *                     @OA\Property(property="icon", type="string", example="fas fa-university", nullable=true, description="Only L1 categories have icons"),
+     *                     @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas", nullable=true, description="For L2/L3: references parent menu (fixed L1 ID or ObjectId)"),
+     *                     @OA\Property(property="route", type="string", example="/forms/surat-keterangan", nullable=true),
+     *                     @OA\Property(property="form_id", type="string", nullable=true),
+     *                     @OA\Property(property="faculty_code", type="string", example="FMIPA", nullable=true),
+     *                     @OA\Property(property="department_code", type="string", example="ILKOM", nullable=true),
+     *                     @OA\Property(property="is_fixed", type="boolean", example=true, description="True for Level 1 fixed categories, false for manageable L2/L3 menus"),
+     *                     @OA\Property(property="is_active", type="boolean", example=true),
      *                     @OA\Property(property="order", type="integer", example=2),
      *                     @OA\Property(
      *                         property="children",
      *                         type="array",
-     *                         @OA\Items(type="object")
+     *                         description="Child menu items (only present in hierarchical response without level parameter)",
+     *                         @OA\Items(
+     *                             type="object",
+     *                             @OA\Property(property="_id", type="string", example="672313923808a3af4e0806c8"),
+     *                             @OA\Property(property="name", type="string", example="Permohonan Surat Keterangan"),
+     *                             @OA\Property(property="level", type="integer", example=2),
+     *                             @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas")
+     *                         )
      *                     )
      *                 )
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=401, description="Unauthorized - Invalid token"),
-     *     @OA\Response(response=403, description="Forbidden - Not an admin user")
+     *     @OA\Response(
+     *         response=401, 
+     *         description="Unauthorized - Invalid JWT token",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Unauthenticated")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403, 
+     *         description="Forbidden - Not an admin user or trying to access unauthorized scope",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Unauthorized. Admin Fakultas can only access fakultas scope.")
+     *         )
+     *     )
      * )
      */
     public function index(Request $request)
@@ -186,7 +214,7 @@ class MenuManagementController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/v1/admin/menus",
+     *     path="/api/v1/management/menu",
      *     operationId="createMenu",
      *     summary="Create a new menu",
      *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
@@ -292,7 +320,7 @@ class MenuManagementController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/admin/menus/{id}",
+     *     path="/api/v1/management/menu/{id}",
      *     operationId="showMenu",
      *     summary="Get menu by ID",
      *     description="Retrieve a specific menu item with its parent and children relationships",
@@ -372,7 +400,7 @@ class MenuManagementController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/v1/admin/menus/{id}",
+     *     path="/api/v1/management/menu/{id}",
      *     operationId="updateMenu",
      *     summary="Update menu",
      *     description="Update an existing menu item. Only name, icon (level 1 only), route, form_id, is_active, and order can be updated.",
@@ -462,7 +490,7 @@ class MenuManagementController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/admin/menus/{id}",
+     *     path="/api/v1/management/menu/{id}",
      *     operationId="deleteMenu",
      *     summary="Delete menu with cascade",
      *     description="Delete a menu item and all its children recursively (cascade delete). This is a permanent operation.",
@@ -521,7 +549,7 @@ class MenuManagementController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/v1/admin/menus/reorder",
+     *     path="/api/v1/management/menu/reorder",
      *     operationId="reorderMenus",
      *     summary="Reorder menus",
      *     description="Bulk update menu order. Only menus that the user has authorization to manage will be updated.",

@@ -2111,12 +2111,12 @@
                 "tags": [
                     "Menu"
                 ],
-                "summary": "Get dynamic menu based on user's faculty, department, and study program",
-                "description": "Mengambil data menu dinamis berdasarkan fakultas, jurusan, dan program studi pengguna yang sedang login.",
-                "operationId": "getDynamicMenu",
+                "summary": "Get dynamic menu structure for sidebar navigation",
+                "description": "Returns menu structure based on user role and attributes. For students (role=user), menus are fetched from database filtered by faculty_code, department_code. For admins, menus are fetched from database based on their admin type (university/faculty/department) and managed scope.",
+                "operationId": "getSidebarMenu",
                 "responses": {
                     "200": {
-                        "description": "Berhasil mengambil data menu",
+                        "description": "Successfully retrieved menu structure",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2128,53 +2128,65 @@
                                         "data": {
                                             "properties": {
                                                 "menu": {
+                                                    "description": "Array of menu items sorted by order",
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
                                                             "id": {
-                                                                "type": "integer",
-                                                                "example": 1
+                                                                "description": "Menu ID. Can be integer for fixed menus or string for database menus (e.g., fixed_l1_layanan_fakultas or MongoDB ObjectId)",
+                                                                "type": "string",
+                                                                "example": "fixed_l1_layanan_fakultas"
                                                             },
                                                             "name": {
+                                                                "description": "Menu display name",
                                                                 "type": "string",
-                                                                "example": "Dashboard"
+                                                                "example": "Layanan Fakultas"
                                                             },
                                                             "icon": {
+                                                                "description": "Icon name (Lucide React icon)",
                                                                 "type": "string",
-                                                                "example": "LayoutDashboard"
+                                                                "example": "GraduationCap"
                                                             },
                                                             "path": {
+                                                                "description": "Route path for menu without submenu",
                                                                 "type": "string",
                                                                 "example": "/dashboard"
                                                             },
                                                             "order": {
+                                                                "description": "Display order",
                                                                 "type": "integer",
-                                                                "example": 1
+                                                                "example": 2
                                                             },
                                                             "roles": {
+                                                                "description": "Allowed roles for this menu",
                                                                 "type": "array",
                                                                 "items": {
                                                                     "type": "string",
-                                                                    "example": "user"
+                                                                    "example": "admin"
                                                                 }
                                                             },
                                                             "submenu": {
+                                                                "description": "Child menu items (L2/L3 menus from database)",
                                                                 "type": "array",
                                                                 "items": {
                                                                     "properties": {
                                                                         "id": {
-                                                                            "type": "integer",
-                                                                            "example": 2001
+                                                                            "description": "MongoDB ObjectId of L2/L3 menu",
+                                                                            "type": "string",
+                                                                            "example": "672313923808a3af4e0806c8"
                                                                         },
                                                                         "name": {
+                                                                            "description": "Submenu display name",
                                                                             "type": "string",
-                                                                            "example": "Create Form"
+                                                                            "example": "Permohonan Surat Keterangan"
                                                                         },
                                                                         "path": {
+                                                                            "description": "Route path",
                                                                             "type": "string",
-                                                                            "example": "/forms/create"
+                                                                            "example": "/forms/surat-keterangan"
                                                                         },
                                                                         "order": {
+                                                                            "description": "Display order within submenu",
                                                                             "type": "integer",
                                                                             "example": 1
                                                                         }
@@ -2187,30 +2199,37 @@
                                                     }
                                                 },
                                                 "user_info": {
+                                                    "description": "User's organizational attributes",
                                                     "properties": {
                                                         "faculty": {
                                                             "type": "string",
-                                                            "example": "FMIPA"
+                                                            "example": "FMIPA",
+                                                            "nullable": true
                                                         },
                                                         "faculty_code": {
                                                             "type": "string",
-                                                            "example": "FMIPA"
+                                                            "example": "FMIPA",
+                                                            "nullable": true
                                                         },
                                                         "department": {
                                                             "type": "string",
-                                                            "example": "ILKOM"
+                                                            "example": "ILKOM",
+                                                            "nullable": true
                                                         },
                                                         "department_code": {
                                                             "type": "string",
-                                                            "example": "ILKOM"
+                                                            "example": "ILKOM",
+                                                            "nullable": true
                                                         },
                                                         "study_program": {
                                                             "type": "string",
-                                                            "example": "S1 Ilmu Komputer"
+                                                            "example": "ILKOM-S1",
+                                                            "nullable": true
                                                         },
                                                         "study_program_code": {
                                                             "type": "string",
-                                                            "example": "ILKOM01"
+                                                            "example": "ILKOM-S1",
+                                                            "nullable": true
                                                         }
                                                     },
                                                     "type": "object"
@@ -2225,7 +2244,7 @@
                         }
                     },
                     "401": {
-                        "description": "Unauthenticated",
+                        "description": "Unauthenticated - No valid JWT token provided",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2252,31 +2271,42 @@
                 ]
             }
         },
-        "/api/v1/admin/menus": {
+        "/api/v1/management/menu": {
             "get": {
                 "tags": [
                     "Menu Management"
                 ],
                 "summary": "Get all menus with hierarchy",
-                "description": "Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope.",
+                "description": "Retrieve menu hierarchy with fixed Level 1 categories and manageable Level 2-3 items. Level 1 categories are hardcoded with generic names (e.g., 'Layanan Fakultas') but content is filtered by admin scope. When level parameter is used: level=1 returns only fixed L1 categories (no children), level=2 returns only L2 menus from database, level=3 returns only L3 menus from database. Without level parameter, returns complete hierarchy (L1 with L2/L3 children).",
                 "operationId": "getMenus",
                 "parameters": [
                     {
                         "name": "scope",
                         "in": "query",
-                        "description": "Filter by scope (universitas, fakultas, jurusan, update_data)",
+                        "description": "Filter by scope (universitas, fakultas, jurusan, update_data). Admin can only access scopes they manage.",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "universitas",
+                                "fakultas",
+                                "jurusan",
+                                "update_data"
+                            ]
                         }
                     },
                     {
                         "name": "level",
                         "in": "query",
-                        "description": "Filter by level (1, 2, 3)",
+                        "description": "Filter by level. level=1 returns fixed L1 categories only (flat, no children). level=2 returns L2 menus from database only. level=3 returns L3 menus from database only. Without this parameter, returns complete hierarchy with L1 as parent and L2/L3 as nested children.",
                         "required": false,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2,
+                                3
+                            ]
                         }
                     }
                 ],
@@ -2296,6 +2326,7 @@
                                             "example": "Menus retrieved successfully"
                                         },
                                         "data": {
+                                            "description": "Array of menu items. Structure depends on level parameter: level=1 returns flat array of L1 only, level=2/3 returns flat array of L2/L3 only, no level returns hierarchical structure with children",
                                             "type": "array",
                                             "items": {
                                                 "properties": {
@@ -2309,23 +2340,66 @@
                                                         "example": "Layanan Universitas"
                                                     },
                                                     "level": {
+                                                        "description": "Menu level: 1=Fixed category, 2=Subcategory, 3=Form",
                                                         "type": "integer",
                                                         "example": 1
                                                     },
                                                     "scope": {
                                                         "type": "string",
+                                                        "enum": [
+                                                            "universitas",
+                                                            "fakultas",
+                                                            "jurusan",
+                                                            "update_data"
+                                                        ],
                                                         "example": "universitas"
                                                     },
                                                     "type": {
                                                         "type": "string",
+                                                        "enum": [
+                                                            "category",
+                                                            "subcategory",
+                                                            "form"
+                                                        ],
                                                         "example": "category"
                                                     },
                                                     "icon": {
+                                                        "description": "Only L1 categories have icons",
                                                         "type": "string",
-                                                        "example": "fas fa-university"
+                                                        "example": "fas fa-university",
+                                                        "nullable": true
+                                                    },
+                                                    "parent_id": {
+                                                        "description": "For L2/L3: references parent menu (fixed L1 ID or ObjectId)",
+                                                        "type": "string",
+                                                        "example": "fixed_l1_layanan_fakultas",
+                                                        "nullable": true
+                                                    },
+                                                    "route": {
+                                                        "type": "string",
+                                                        "example": "/forms/surat-keterangan",
+                                                        "nullable": true
+                                                    },
+                                                    "form_id": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "faculty_code": {
+                                                        "type": "string",
+                                                        "example": "FMIPA",
+                                                        "nullable": true
+                                                    },
+                                                    "department_code": {
+                                                        "type": "string",
+                                                        "example": "ILKOM",
+                                                        "nullable": true
                                                     },
                                                     "is_fixed": {
-                                                        "description": "True for Level 1 fixed categories, false for manageable menus",
+                                                        "description": "True for Level 1 fixed categories, false for manageable L2/L3 menus",
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "is_active": {
                                                         "type": "boolean",
                                                         "example": true
                                                     },
@@ -2334,8 +2408,27 @@
                                                         "example": 2
                                                     },
                                                     "children": {
+                                                        "description": "Child menu items (only present in hierarchical response without level parameter)",
                                                         "type": "array",
                                                         "items": {
+                                                            "properties": {
+                                                                "_id": {
+                                                                    "type": "string",
+                                                                    "example": "672313923808a3af4e0806c8"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Permohonan Surat Keterangan"
+                                                                },
+                                                                "level": {
+                                                                    "type": "integer",
+                                                                    "example": 2
+                                                                },
+                                                                "parent_id": {
+                                                                    "type": "string",
+                                                                    "example": "fixed_l1_layanan_fakultas"
+                                                                }
+                                                            },
                                                             "type": "object"
                                                         }
                                                     }
@@ -2350,10 +2443,44 @@
                         }
                     },
                     "401": {
-                        "description": "Unauthorized - Invalid token"
+                        "description": "Unauthorized - Invalid JWT token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Forbidden - Not an admin user"
+                        "description": "Forbidden - Not an admin user or trying to access unauthorized scope",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthorized. Admin Fakultas can only access fakultas scope."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -2517,7 +2644,7 @@
                 ]
             }
         },
-        "/api/v1/admin/menus/{id}": {
+        "/api/v1/management/menu/{id}": {
             "get": {
                 "tags": [
                     "Menu Management"
@@ -2751,7 +2878,7 @@
                 ]
             }
         },
-        "/api/v1/admin/menus/reorder": {
+        "/api/v1/management/menu/reorder": {
             "post": {
                 "tags": [
                     "Menu Management"
@@ -3167,6 +3294,142 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "SidebarMenuResponse": {
+                "description": "Response structure for sidebar menu endpoint",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "data": {
+                        "properties": {
+                            "menu": {
+                                "description": "Complete menu structure for sidebar navigation",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MenuItem"
+                                }
+                            },
+                            "user_info": {
+                                "$ref": "#/components/schemas/UserOrganizationalInfo"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "MenuItem": {
+                "description": "Single menu item in sidebar navigation",
+                "properties": {
+                    "id": {
+                        "description": "Menu identifier",
+                        "type": "string",
+                        "example": "fixed_l1_layanan_fakultas"
+                    },
+                    "name": {
+                        "description": "Display name",
+                        "type": "string",
+                        "example": "Layanan Fakultas"
+                    },
+                    "icon": {
+                        "description": "Lucide React icon name",
+                        "type": "string",
+                        "example": "GraduationCap"
+                    },
+                    "path": {
+                        "description": "Route path (optional if has submenu)",
+                        "type": "string",
+                        "example": "/dashboard"
+                    },
+                    "order": {
+                        "description": "Display order",
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "roles": {
+                        "description": "Allowed user roles",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "admin",
+                                "user"
+                            ]
+                        }
+                    },
+                    "submenu": {
+                        "description": "Child menu items",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Submenu"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Submenu": {
+                "description": "Submenu item (L2/L3 from database)",
+                "properties": {
+                    "id": {
+                        "description": "MongoDB ObjectId",
+                        "type": "string",
+                        "example": "672313923808a3af4e0806c8"
+                    },
+                    "name": {
+                        "description": "Display name",
+                        "type": "string",
+                        "example": "Surat Aktif Kuliah"
+                    },
+                    "path": {
+                        "description": "Route path",
+                        "type": "string",
+                        "example": "/forms/surat-aktif-kuliah"
+                    },
+                    "order": {
+                        "description": "Display order",
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "UserOrganizationalInfo": {
+                "description": "User's organizational attributes from profile",
+                "properties": {
+                    "faculty": {
+                        "type": "string",
+                        "example": "FMIPA",
+                        "nullable": true
+                    },
+                    "faculty_code": {
+                        "type": "string",
+                        "example": "FMIPA",
+                        "nullable": true
+                    },
+                    "department": {
+                        "type": "string",
+                        "example": "ILKOM",
+                        "nullable": true
+                    },
+                    "department_code": {
+                        "type": "string",
+                        "example": "ILKOM",
+                        "nullable": true
+                    },
+                    "study_program": {
+                        "type": "string",
+                        "example": "ILKOM-S1",
+                        "nullable": true
+                    },
+                    "study_program_code": {
+                        "type": "string",
+                        "example": "ILKOM-S1",
+                        "nullable": true
                     }
                 },
                 "type": "object"

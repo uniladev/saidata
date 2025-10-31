@@ -12,14 +12,14 @@ class MenuController extends Controller
      * @OA\Get(
      *     path="/api/v1/menu",
      *     tags={"Menu"},
-     *     summary="Get dynamic menu based on user's faculty, department, and study program",
-     *     description="Mengambil data menu dinamis berdasarkan fakultas, jurusan, dan program studi pengguna yang sedang login.",
-     *     operationId="getDynamicMenu",
+     *     summary="Get dynamic menu structure for sidebar navigation",
+     *     description="Returns menu structure based on user role and attributes. For students (role=user), menus are fetched from database filtered by faculty_code, department_code. For admins, menus are fetched from database based on their admin type (university/faculty/department) and managed scope.",
+     *     operationId="getSidebarMenu",
      *     security={{"bearerAuth":{}}},
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Berhasil mengambil data menu",
+     *         description="Successfully retrieved menu structure",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(
@@ -28,27 +28,30 @@ class MenuController extends Controller
      *                 @OA\Property(
      *                     property="menu",
      *                     type="array",
+     *                     description="Array of menu items sorted by order",
      *                     @OA\Items(
      *                         type="object",
-     *                         @OA\Property(property="id", type="integer", example=1),
-     *                         @OA\Property(property="name", type="string", example="Dashboard"),
-     *                         @OA\Property(property="icon", type="string", example="LayoutDashboard"),
-     *                         @OA\Property(property="path", type="string", example="/dashboard"),
-     *                         @OA\Property(property="order", type="integer", example=1),
+     *                         @OA\Property(property="id", type="string", description="Menu ID. Can be integer for fixed menus or string for database menus (e.g., fixed_l1_layanan_fakultas or MongoDB ObjectId)", example="fixed_l1_layanan_fakultas"),
+     *                         @OA\Property(property="name", type="string", description="Menu display name", example="Layanan Fakultas"),
+     *                         @OA\Property(property="icon", type="string", description="Icon name (Lucide React icon)", example="GraduationCap"),
+     *                         @OA\Property(property="path", type="string", description="Route path for menu without submenu", example="/dashboard"),
+     *                         @OA\Property(property="order", type="integer", description="Display order", example=2),
      *                         @OA\Property(
      *                             property="roles",
      *                             type="array",
-     *                             @OA\Items(type="string", example="user")
+     *                             description="Allowed roles for this menu",
+     *                             @OA\Items(type="string", example="admin")
      *                         ),
      *                         @OA\Property(
      *                             property="submenu",
      *                             type="array",
+     *                             description="Child menu items (L2/L3 menus from database)",
      *                             @OA\Items(
      *                                 type="object",
-     *                                 @OA\Property(property="id", type="integer", example=2001),
-     *                                 @OA\Property(property="name", type="string", example="Create Form"),
-     *                                 @OA\Property(property="path", type="string", example="/forms/create"),
-     *                                 @OA\Property(property="order", type="integer", example=1)
+     *                                 @OA\Property(property="id", type="string", description="MongoDB ObjectId of L2/L3 menu", example="672313923808a3af4e0806c8"),
+     *                                 @OA\Property(property="name", type="string", description="Submenu display name", example="Permohonan Surat Keterangan"),
+     *                                 @OA\Property(property="path", type="string", description="Route path", example="/forms/surat-keterangan"),
+     *                                 @OA\Property(property="order", type="integer", description="Display order within submenu", example=1)
      *                             )
      *                         )
      *                     )
@@ -56,12 +59,13 @@ class MenuController extends Controller
      *                 @OA\Property(
      *                     property="user_info",
      *                     type="object",
-     *                     @OA\Property(property="faculty", type="string", example="FMIPA"),
-     *                     @OA\Property(property="faculty_code", type="string", example="FMIPA"),
-     *                     @OA\Property(property="department", type="string", example="ILKOM"),
-     *                     @OA\Property(property="department_code", type="string", example="ILKOM"),
-     *                     @OA\Property(property="study_program", type="string", example="S1 Ilmu Komputer"),
-     *                     @OA\Property(property="study_program_code", type="string", example="ILKOM01")
+     *                     description="User's organizational attributes",
+     *                     @OA\Property(property="faculty", type="string", nullable=true, example="FMIPA"),
+     *                     @OA\Property(property="faculty_code", type="string", nullable=true, example="FMIPA"),
+     *                     @OA\Property(property="department", type="string", nullable=true, example="ILKOM"),
+     *                     @OA\Property(property="department_code", type="string", nullable=true, example="ILKOM"),
+     *                     @OA\Property(property="study_program", type="string", nullable=true, example="ILKOM-S1"),
+     *                     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1")
      *                 )
      *             )
      *         )
@@ -69,12 +73,79 @@ class MenuController extends Controller
      *
      *     @OA\Response(
      *         response=401,
-     *         description="Unauthenticated",
+     *         description="Unauthenticated - No valid JWT token provided",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="message", type="string", example="Unauthenticated")
      *         )
      *     )
+     * )
+     *
+     * @OA\Schema(
+     *     schema="SidebarMenuResponse",
+     *     description="Response structure for sidebar menu endpoint",
+     *     @OA\Property(
+     *         property="success",
+     *         type="boolean",
+     *         example=true
+     *     ),
+     *     @OA\Property(
+     *         property="data",
+     *         type="object",
+     *         @OA\Property(
+     *             property="menu",
+     *             type="array",
+     *             description="Complete menu structure for sidebar navigation",
+     *             @OA\Items(ref="#/components/schemas/MenuItem")
+     *         ),
+     *         @OA\Property(
+     *             property="user_info",
+     *             type="object",
+     *             ref="#/components/schemas/UserOrganizationalInfo"
+     *         )
+     *     )
+     * )
+     *
+     * @OA\Schema(
+     *     schema="MenuItem",
+     *     description="Single menu item in sidebar navigation",
+     *     @OA\Property(property="id", type="string", description="Menu identifier", example="fixed_l1_layanan_fakultas"),
+     *     @OA\Property(property="name", type="string", description="Display name", example="Layanan Fakultas"),
+     *     @OA\Property(property="icon", type="string", description="Lucide React icon name", example="GraduationCap"),
+     *     @OA\Property(property="path", type="string", description="Route path (optional if has submenu)", example="/dashboard"),
+     *     @OA\Property(property="order", type="integer", description="Display order", example=2),
+     *     @OA\Property(
+     *         property="roles",
+     *         type="array",
+     *         description="Allowed user roles",
+     *         @OA\Items(type="string", enum={"admin", "user"})
+     *     ),
+     *     @OA\Property(
+     *         property="submenu",
+     *         type="array",
+     *         description="Child menu items",
+     *         @OA\Items(ref="#/components/schemas/Submenu")
+     *     )
+     * )
+     *
+     * @OA\Schema(
+     *     schema="Submenu",
+     *     description="Submenu item (L2/L3 from database)",
+     *     @OA\Property(property="id", type="string", description="MongoDB ObjectId", example="672313923808a3af4e0806c8"),
+     *     @OA\Property(property="name", type="string", description="Display name", example="Surat Aktif Kuliah"),
+     *     @OA\Property(property="path", type="string", description="Route path", example="/forms/surat-aktif-kuliah"),
+     *     @OA\Property(property="order", type="integer", description="Display order", example=1)
+     * )
+     *
+     * @OA\Schema(
+     *     schema="UserOrganizationalInfo",
+     *     description="User's organizational attributes from profile",
+     *     @OA\Property(property="faculty", type="string", nullable=true, example="FMIPA"),
+     *     @OA\Property(property="faculty_code", type="string", nullable=true, example="FMIPA"),
+     *     @OA\Property(property="department", type="string", nullable=true, example="ILKOM"),
+     *     @OA\Property(property="department_code", type="string", nullable=true, example="ILKOM"),
+     *     @OA\Property(property="study_program", type="string", nullable=true, example="ILKOM-S1"),
+     *     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1")
      * )
      */
     public function index(Request $request)
@@ -337,72 +408,132 @@ class MenuController extends Controller
     }
     /**
      * Get menu for admin users
+     * Fetch from database based on admin type and their managed scope
      */
     private function getAdminMenu()
     {
-        return [
-            [
-                'id' => 2,
-                'name' => 'Layanan Universitas',
-                'icon' => 'Building',
-                'order' => 2,
-                'roles' => ['admin'],
-                'submenu' => [
-                    ['id' => 21, 'name' => 'Layanan Akademik', 'path' => '/dashboard/university/academic', 'order' => 1],
-                    ['id' => 22, 'name' => 'Layanan Keuangan', 'path' => '/dashboard/university/finance', 'order' => 2],
-                    ['id' => 23, 'name' => 'Layanan Umum', 'path' => '/dashboard/university/general', 'order' => 3],
-                ]
-            ],
-            [
-                'id' => 3,
-                'name' => 'Layanan Fakultas',
-                'icon' => 'GraduationCap',
-                'order' => 3,
-                'roles' => ['admin'],
-                'submenu' => [
-                    ['id' => 31, 'name' => 'Layanan Umum', 'path' => '/dashboard/faculty/general', 'order' => 1],
-                    ['id' => 32, 'name' => 'Layanan Akademik', 'path' => '/dashboard/faculty/academic', 'order' => 2],
-                    ['id' => 33, 'name' => 'Layanan Keuangan', 'path' => '/dashboard/faculty/finance', 'order' => 3],
-                ]
-            ],
-            [
-                'id' => 4,
-                'name' => 'Layanan Jurusan',
-                'icon' => 'Building2',
-                'order' => 4,
-                'roles' => ['admin'],
-                'submenu' => [
-                    ['id' => 41, 'name' => 'Layanan Akademik', 'path' => '/dashboard/department/academic', 'order' => 1],
-                    ['id' => 42, 'name' => 'Layanan Laboratorium', 'path' => '/dashboard/department/laboratory', 'order' => 2],
-                    ['id' => 43, 'name' => 'Layanan IT & Server', 'path' => '/dashboard/department/it-services', 'order' => 3],
-                    ['id' => 44, 'name' => 'Layanan Administrasi', 'path' => '/dashboard/department/administration', 'order' => 4],
-                    ['id' => 45, 'name' => 'Layanan Penelitian', 'path' => '/dashboard/department/research', 'order' => 5],
-                ]
-            ],
-            [
-                'id' => 6,
-                'name' => 'Validasi Permohonan',
-                'icon' => 'CheckCircle',
-                'path' => '/dashboard/validation',
-                'order' => 6,
-                'roles' => ['admin']
-            ],
-            [
-                'id' => 7,
-                'name' => 'Users',
-                'icon' => 'Users',
-                'path' => '/dashboard/users',
-                'order' => 7,
-                'roles' => ['admin']
-            ],
-            [
-                'id' => 8,
-                'name' => 'Reports',
-                'icon' => 'BarChart',
-                'path' => '/dashboard/reports',
-                'order' => 8,
-                'roles' => ['admin']
-            ],
+        $user = Auth::user();
+        $profile = $user->profile ?? [];
+        if (is_object($profile)) {
+            $profile = (array) $profile;
+        }
+        
+        $facultyCode = $profile['faculty_code'] ?? null;
+        $departmentCode = $profile['department_code'] ?? null;
+        
+        // Determine admin type
+        $adminType = $this->getAdminType($user);
+        
+        $menu = [];
+        
+        // Get fixed L1 categories and their children from database
+        if ($adminType === 'admin_univ') {
+            // Admin Univ gets Layanan Universitas + Update Data
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_universitas', 'Layanan Universitas', 'Building', 2, 'universitas');
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_update_data', 'Update Data', 'Edit', 3, 'update_data');
+            
+        } elseif ($adminType === 'admin_fakultas') {
+            // Admin Fakultas gets Layanan Fakultas (filtered by their faculty_code)
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_fakultas', 'Layanan Fakultas', 'GraduationCap', 2, 'fakultas', $facultyCode);
+            
+        } elseif ($adminType === 'admin_jurusan') {
+            // Admin Jurusan gets Layanan Jurusan (filtered by their department_code)
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_jurusan', 'Layanan Jurusan', 'Building2', 2, 'jurusan', $facultyCode, $departmentCode);
+        }
+        
+        // Add admin-specific menus
+        $menu[] = [
+            'id' => 6,
+            'name' => 'Validasi Permohonan',
+            'icon' => 'CheckCircle',
+            'path' => '/dashboard/validation',
+            'order' => 6,
+            'roles' => ['admin']
         ];
+        
+        $menu[] = [
+            'id' => 7,
+            'name' => 'Users',
+            'icon' => 'Users',
+            'path' => '/dashboard/users',
+            'order' => 7,
+            'roles' => ['admin']
+        ];
+        
+        $menu[] = [
+            'id' => 8,
+            'name' => 'Reports',
+            'icon' => 'BarChart',
+            'path' => '/dashboard/reports',
+            'order' => 8,
+            'roles' => ['admin']
+        ];
+        
+        return $menu;
+    }
+    
+    /**
+     * Build menu structure from database based on fixed L1 category
+     */
+    private function buildMenuFromDatabase($fixedL1Id, $name, $icon, $order, $scope, $facultyCode = null, $departmentCode = null)
+    {
+        // Get L2 menus from database
+        $query = \App\Models\Menu::where('parent_id', $fixedL1Id)
+                                  ->where('scope', $scope)
+                                  ->where('level', 2);
+        
+        // Filter by faculty/department code
+        if ($facultyCode) {
+            $query->where('faculty_code', $facultyCode);
+        }
+        if ($departmentCode) {
+            $query->where('department_code', $departmentCode);
+        }
+        
+        $l2Menus = $query->orderBy('order')->get();
+        
+        // Build submenu array
+        $submenu = [];
+        foreach ($l2Menus as $l2Menu) {
+            $submenu[] = [
+                'id' => $l2Menu->_id,
+                'name' => $l2Menu->name,
+                'path' => $l2Menu->route ?? '/dashboard/menu/' . $l2Menu->_id,
+                'order' => $l2Menu->order
+            ];
+        }
+        
+        return [
+            'id' => $fixedL1Id,
+            'name' => $name,
+            'icon' => $icon,
+            'order' => $order,
+            'roles' => ['admin'],
+            'submenu' => $submenu
+        ];
+    }
+    
+    /**
+     * Determine admin type based on profile class
+     */
+    private function getAdminType($user)
+    {
+        if (!$user || $user->role !== 'admin') {
+            return null;
+        }
+
+        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+        $class = $profile['class'] ?? null;
+        
+        // Determine by class field
+        if ($class === 'university') {
+            return 'admin_univ';
+        } elseif ($class === 'faculty') {
+            return 'admin_fakultas';
+        } elseif ($class === 'department') {
+            return 'admin_jurusan';
+        }
+
+        return null;
     }
 }
