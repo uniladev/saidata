@@ -1,26 +1,43 @@
-import React, { useState, useCallback, useRef } from "react";
-import { saveAs } from "file-saver";
-import * as docx from "docx";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import mammoth from "mammoth";
 
 const OutputTemplatesPage = () => {
-  const [docData, setDocData] = useState(null);
+  const [docContent, setDocContent] = useState("");
   const [fileName, setFileName] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState("");
-  const [previewHtml, setPreviewHtml] = useState("");
-  const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rawFile, setRawFile] = useState(null);
   
-  const fileInputRef = useRef(null);
-  const textareaRef = useRef(null);
+  const contentRef = useRef(null);
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-  // 🔹 Read DOCX file using docx library
+  // 🔹 Fix bold rendering after content loads
+  useEffect(() => {
+    if (docContent && contentRef.current) {
+      // Force bold on all strong/b tags
+      const boldElements = contentRef.current.querySelectorAll('strong, b');
+      boldElements.forEach(el => {
+        el.style.fontWeight = '700';
+      });
+      
+      // Force bold on headings
+      const headings = contentRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      headings.forEach(el => {
+        el.style.fontWeight = '700';
+      });
+      
+      console.log(`✅ Applied bold to ${boldElements.length} elements`);
+    }
+  }, [docContent]);
+
+  // 🔹 Convert DOCX
   const handleFile = async (file) => {
     if (!file) return;
     
     if (file.size > MAX_FILE_SIZE) {
-      setError("❌ File maksimal 5MB!");
+      setError("❌ File maksimal 10MB!");
       return;
     }
     
@@ -30,114 +47,53 @@ const OutputTemplatesPage = () => {
     }
 
     try {
+      setLoading(true);
       setError("");
       setFileName(file.name);
+      setRawFile(file);
       
       const arrayBuffer = await file.arrayBuffer();
       
-      // Store original file for manipulation
-      setDocData({
-        originalFile: arrayBuffer,
-        file: file
-      });
+      const options = {
+        styleMap: [
+          "b => strong",
+          "strong => strong",
+          "p[style-name='Heading 1'] => h1:fresh",
+          "p[style-name='Heading 2'] => h2:fresh",
+          "p[style-name='Heading 3'] => h3:fresh",
+          "p[style-name='Heading 4'] => h4:fresh",
+          "p[style-name='Title'] => h1.doc-title:fresh",
+          "p[style-name='Subtitle'] => h2.doc-subtitle:fresh",
+          "p[style-name='Normal'] => p.doc-normal:fresh",
+        ],
+        convertImage: mammoth.images.imgElement((image) => {
+          return image.read("base64").then((imageBuffer) => {
+            return {
+              src: `data:${image.contentType};base64,${imageBuffer}`
+            };
+          });
+        }),
+        includeDefaultStyleMap: true,
+      };
 
-      // Create preview using docx-preview
-      await createPreview(arrayBuffer);
+      const result = await mammoth.convertToHtml({ arrayBuffer }, options);
+      
+      console.log("📄 Conversion complete");
+      console.log("HTML sample:", result.value.substring(0, 500));
+      
+      let html = result.value;
+      html = html.replace(/<o:p>.*?<\/o:p>/g, "");
+      
+      setDocContent(html);
+      setLoading(false);
       
     } catch (err) {
-      console.error("Error reading DOCX:", err);
-      setError("Gagal membaca file DOCX 😭");
+      console.error("❌ Error:", err);
+      setError("Gagal membaca file DOCX");
+      setLoading(false);
     }
   };
 
-  // 🔹 Create HTML preview of DOCX
-  const createPreview = async (arrayBuffer) => {
-    try {
-      // For preview, we'll use a simple text extraction
-      // In production, you might want to use docx-preview library for better rendering
-      const textContent = await extractTextFromDocx(arrayBuffer);
-      setPreviewHtml(textContent);
-    } catch (err) {
-      console.error("Preview error:", err);
-      setPreviewHtml("<p>Preview tidak tersedia</p>");
-    }
-  };
-
-  // 🔹 Extract text from DOCX (simple version)
-  const extractTextFromDocx = async (arrayBuffer) => {
-    // This is a simplified version
-    // For production, use docx-preview or mammoth for better preview
-    const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(arrayBuffer);
-    const xml = await zip.file("word/document.xml").async("text");
-    
-    // Extract text from XML (basic)
-    const text = xml
-      .replace(/<w:t[^>]*>/g, '')
-      .replace(/<\/w:t>/g, ' ')
-      .replace(/<[^>]+>/g, '')
-      .trim();
-    
-    return `<div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; line-height: 1.6;">${text}</div>`;
-  };
-
-  // 🔹 Edit content (simple textarea for now)
-  const handleEditContent = (newContent) => {
-    setPreviewHtml(newContent);
-  };
-
-  // 🔹 Download modified DOCX with preserved structure
-  const handleDownload = async () => {
-    if (!docData) {
-      setError("Belum ada konten untuk disimpan 😑");
-      return;
-    }
-
-    try {
-      // Method 1: If you only edited text, recreate DOCX with same structure
-      // Method 2: For complex editing, use docx library to build new document
-      
-      if (editMode && textareaRef.current) {
-        // User edited in textarea - create new DOCX
-        await createNewDocx(textareaRef.current.value);
-      } else {
-        // No edit or simple preview - save original
-        const blob = new Blob([docData.originalFile], {
-          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        });
-        const downloadFileName = fileName ? `Edited_${fileName}` : "Edited_template.docx";
-        saveAs(blob, downloadFileName);
-      }
-      
-      console.log("✅ File downloaded");
-    } catch (err) {
-      console.error("Download error:", err);
-      setError("Gagal mendownload file 😭");
-    }
-  };
-
-  // 🔹 Create new DOCX from edited content
-  const createNewDocx = async (content) => {
-    const doc = new docx.Document({
-      sections: [{
-        properties: {},
-        children: content.split('\n').map(line => 
-          new docx.Paragraph({
-            children: [new docx.TextRun(line || " ")],
-            spacing: {
-              after: 200,
-            },
-          })
-        ),
-      }],
-    });
-
-    const blob = await docx.Packer.toBlob(doc);
-    const downloadFileName = fileName ? `Edited_${fileName}` : "Edited_template.docx";
-    saveAs(blob, downloadFileName);
-  };
-
-  // 🔹 Drag & Drop handlers
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -152,134 +108,263 @@ const OutputTemplatesPage = () => {
     if (file) handleFile(file);
   }, []);
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen flex flex-col md:flex-row gap-6">
-      {/* Sidebar Upload */}
-      <div className="md:w-1/3 bg-white rounded-2xl shadow p-6 flex flex-col justify-between">
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">
-            🧩 DOCX Template Editor
-          </h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Upload DOCX file untuk edit dengan struktur yang tetap terjaga
-          </p>
+  const handleDownload = () => {
+    if (!rawFile) return;
+    const url = URL.createObjectURL(rawFile);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
-          <div
-            onDragEnter={handleDrag}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-              dragActive
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300 bg-gray-100"
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".docx"
-              id="fileInput"
-              onChange={(e) => handleFile(e.target.files[0])}
-              className="hidden"
-            />
-            <label htmlFor="fileInput" className="block text-gray-700 cursor-pointer">
-              {fileName ? (
-                <>
-                  <p className="font-semibold text-blue-600 mb-2">📄 {fileName}</p>
-                  <p className="text-sm text-gray-500">
-                    Klik atau drag file baru untuk replace
-                  </p>
-                </>
-              ) : (
-                <div>
-                  <div className="text-4xl mb-3">📂</div>
-                  <p className="font-medium">Drag & drop file .docx</p>
-                  <p className="text-sm text-gray-500 mt-2">atau klik untuk memilih</p>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            📄 Document Viewer (Mammoth)
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Preview with enhanced bold rendering
+          </p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* 📂 Sidebar */}
+          <div className="lg:w-80 flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
+              
+              <div
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                className={`
+                  border-2 border-dashed rounded-xl p-8 text-center 
+                  cursor-pointer transition-all duration-300
+                  ${dragActive 
+                    ? "border-blue-500 bg-blue-50 scale-105 shadow-lg" 
+                    : "border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50"
+                  }
+                `}
+              >
+                <input
+                  type="file"
+                  accept=".docx"
+                  id="fileInput"
+                  onChange={(e) => handleFile(e.target.files[0])}
+                  className="hidden"
+                />
+                <label htmlFor="fileInput" className="block cursor-pointer">
+                  {fileName ? (
+                    <div className="space-y-2">
+                      <div className="text-5xl">📗</div>
+                      <p className="font-semibold text-blue-600 break-words text-sm px-2">
+                        {fileName}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Click to change file
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-6xl">📂</div>
+                      <p className="text-base font-semibold text-gray-700">
+                        Drop DOCX here
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        or click to browse
+                      </p>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {error && (
+                <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                  <p className="text-red-600 text-sm font-medium">{error}</p>
                 </div>
               )}
-            </label>
+
+              {docContent && (
+                <div className="mt-6 space-y-3">
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">✅</span>
+                      <div>
+                        <p className="text-sm font-semibold text-green-700">
+                          Preview Ready
+                        </p>
+                        <p className="text-xs text-green-600">
+                          {(docContent.length / 1024).toFixed(1)}KB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleDownload}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white 
+                             px-4 py-3 rounded-lg shadow-md transition-all
+                             font-semibold flex items-center justify-center gap-2"
+                  >
+                    <span>💾</span>
+                    Download Original
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {error && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+          {/* 📖 Preview Area */}
+          <div className="flex-1">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              
+              {loading ? (
+                <div className="flex items-center justify-center h-96 p-8">
+                  <div className="text-center space-y-4">
+                    <div className="animate-spin text-6xl">📄</div>
+                    <p className="text-gray-700 font-semibold text-lg">
+                      Processing document...
+                    </p>
+                  </div>
+                </div>
+                
+              ) : docContent ? (
+                <div className="h-full overflow-auto bg-gray-50" style={{ maxHeight: '85vh' }}>
+                  
+                  <div className="max-w-4xl mx-auto p-6 md:p-10">
+                    <div 
+                      className="bg-white shadow-lg rounded-lg p-8 md:p-12 min-h-screen"
+                      style={{
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.08)'
+                      }}
+                    >
+                      {/* Document Content */}
+                      <div 
+                        ref={contentRef}
+                        className="document-content"
+                        dangerouslySetInnerHTML={{ __html: docContent }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+              ) : (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center text-gray-400 p-8">
+                    <div className="text-7xl mb-4">📄</div>
+                    <p className="text-xl font-semibold text-gray-600">
+                      No Document Loaded
+                    </p>
+                    <p className="text-sm mt-2 text-gray-500">
+                      Upload a .docx file to view
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-
-          {/* Debug info */}
-          {docData && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs">
-              <p className="font-semibold text-blue-800 mb-2">📊 File Info:</p>
-              <p className="text-gray-600">Size: {(docData.file.size / 1024).toFixed(2)} KB</p>
-              <p className="text-gray-600">Type: {docData.file.type}</p>
-              <p className="text-green-600 mt-2">✅ File loaded successfully</p>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 space-y-3">
-          {docData && (
-            <button
-              onClick={() => setEditMode(!editMode)}
-              className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow transition"
-            >
-              {editMode ? "👁️ Preview Mode" : "✏️ Edit Mode"}
-            </button>
-          )}
-          
-          <button
-            onClick={handleDownload}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed transition"
-            disabled={!docData}
-          >
-            💾 Download DOCX
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* Preview/Edit Area */}
-      <div className="flex-1 bg-white rounded-2xl shadow p-6 flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-700">
-            {editMode ? "✍️ Edit Dokumen" : "👁️ Preview Dokumen"}
-          </h3>
-          {docData && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              Mode: {editMode ? "Edit" : "Preview"}
-            </span>
-          )}
-        </div>
+      {/* 🎨 BULLETPROOF Styling */}
+      <style>{`
+        /* Reset any interference */
+        .document-content * {
+          all: revert;
+        }
 
-        {docData ? (
-          editMode ? (
-            // Edit Mode - Textarea
-            <textarea
-              ref={textareaRef}
-              defaultValue={previewHtml.replace(/<[^>]+>/g, '')}
-              onChange={(e) => handleEditContent(e.target.value)}
-              className="flex-1 w-full p-4 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Edit content here..."
-            />
-          ) : (
-            // Preview Mode
-            <div className="flex-1 border border-gray-200 rounded-lg p-6 overflow-auto bg-white">
-              <div 
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
-            </div>
-          )
-        ) : (
-          <div className="flex-1 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg">
-            <div className="text-center text-gray-400">
-              <div className="text-5xl mb-4">📄</div>
-              <p className="text-lg font-medium">Upload file .docx untuk mulai</p>
-              <p className="text-sm mt-2">Struktur dokumen akan tetap terjaga</p>
-            </div>
-          </div>
-        )}
-      </div>
+        /* Base styles */
+        .document-content {
+          font-family: 'Calibri', 'Segoe UI', Arial, sans-serif !important;
+          font-size: 11pt !important;
+          line-height: 1.6 !important;
+          color: #000 !important;
+        }
+
+        /* FORCE BOLD - Nuclear option */
+        .document-content strong,
+        .document-content b,
+        .document-content strong *,
+        .document-content b * {
+          font-weight: 700 !important;
+          font-family: 'Calibri', 'Segoe UI', Arial, sans-serif !important;
+        }
+
+        /* Headings - BOLD by default */
+        .document-content h1,
+        .document-content h2,
+        .document-content h3,
+        .document-content h4,
+        .document-content h5,
+        .document-content h6 {
+          font-weight: 700 !important;
+          color: #000 !important;
+          font-family: 'Calibri', 'Segoe UI', Arial, sans-serif !important;
+        }
+
+        .document-content h1 {
+          font-size: 20pt !important;
+          margin: 18pt 0 10pt 0 !important;
+        }
+
+        .document-content h2 {
+          font-size: 16pt !important;
+          margin: 16pt 0 8pt 0 !important;
+        }
+
+        .document-content h3 {
+          font-size: 14pt !important;
+          margin: 14pt 0 6pt 0 !important;
+        }
+
+        /* Paragraphs */
+        .document-content p {
+          margin: 0 0 10pt 0 !important;
+          font-size: 11pt !important;
+        }
+
+        /* Images */
+        .document-content img {
+          max-width: 100% !important;
+          height: auto !important;
+          display: block !important;
+          margin: 10pt auto !important;
+        }
+
+        /* Lists */
+        .document-content ul,
+        .document-content ol {
+          margin: 0 0 10pt 0 !important;
+          padding-left: 40pt !important;
+        }
+
+        .document-content li {
+          margin: 0 0 6pt 0 !important;
+        }
+
+        /* Tables */
+        .document-content table {
+          border-collapse: collapse !important;
+          margin: 10pt 0 !important;
+          width: 100% !important;
+        }
+
+        .document-content td,
+        .document-content th {
+          border: 1px solid #666 !important;
+          padding: 4pt 8pt !important;
+        }
+
+        .document-content th {
+          font-weight: 700 !important;
+          background-color: #f0f0f0 !important;
+        }
+      `}</style>
     </div>
   );
 };
