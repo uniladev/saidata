@@ -189,7 +189,7 @@ class MenuController extends Controller
                     ['id' => 2001, 'name' => 'Create Form', 'path' => '/forms/create', 'order' => 1],
                     ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
                     ['id' => 2003, 'name' => 'Menu Setting', 'path' => '/menu', 'order' => 3],
-                    ['id' => 2004, 'name' => 'Table', 'path' => '/table-demo', 'order' => 4],
+                    ['id' => 2004, 'name' => 'Table', 'path' => '/table-demo', 'order' => 4, 'submenu' => [['id' => 3001, 'name' => 'Basic Table', 'path' => '/table-demo/basic', 'order' => 1], ['id' => 3002, 'name' => 'Data Table', 'path' => '/table-demo/data-table', 'order' => 2]]],
                 ]
             ],
         ];
@@ -477,10 +477,10 @@ class MenuController extends Controller
      */
     private function buildMenuFromDatabase($fixedL1Id, $name, $icon, $order, $scope, $facultyCode = null, $departmentCode = null)
     {
-        // Get L2 menus from database
+        // 1. Get L2 menus from database (Kode Asli Anda)
         $query = \App\Models\Menu::where('parent_id', $fixedL1Id)
-                                  ->where('scope', $scope)
-                                  ->where('level', 2);
+                                 ->where('scope', $scope);
+                                // ->where('level', 2); // Anda bisa hapus 'level' jika L1 fixedId
         
         // Filter by faculty/department code
         if ($facultyCode) {
@@ -492,15 +492,51 @@ class MenuController extends Controller
         
         $l2Menus = $query->orderBy('order')->get();
         
-        // Build submenu array
+        // 2. Build submenu array
         $submenu = [];
         foreach ($l2Menus as $l2Menu) {
-            $submenu[] = [
+            
+            // --- INI LOGIKA BARU UNTUK L3 ---
+            // 3. Untuk setiap L2, cari L3 children-nya
+            $l3Query = \App\Models\Menu::where('parent_id', $l2Menu->_id) // Parent-nya adalah ID L2
+                                     ->where('scope', $scope);
+            
+            // Terapkan filter scope lagi
+            if ($facultyCode) {
+                $l3Query->where('faculty_code', $facultyCode);
+            }
+            if ($departmentCode) {
+                $l3Query->where('department_code', $departmentCode);
+            }
+            
+            $l3Menus = $l3Query->orderBy('order')->get();
+            
+            $l3Submenu = [];
+            foreach ($l3Menus as $l3Menu) {
+                // Disini kita bisa cek L4 jika mau, tapi kita berhenti di L3
+                $l3Submenu[] = [
+                    'id' => $l3Menu->_id,
+                    'name' => $l3Menu->name,
+                    'path' => $l3Menu->route ?? '/dashboard/menu/' . $l3Menu->_id,
+                    'order' => $l3Menu->order
+                ];
+            }
+            // --- AKHIR LOGIKA L3 ---
+
+            // 4. Susun node L2
+            $l2Node = [
                 'id' => $l2Menu->_id,
                 'name' => $l2Menu->name,
                 'path' => $l2Menu->route ?? '/dashboard/menu/' . $l2Menu->_id,
                 'order' => $l2Menu->order
             ];
+            
+            // 5. Jika L3 submenu-nya ada, tambahkan ke node L2
+            if (!empty($l3Submenu)) {
+                $l2Node['submenu'] = $l3Submenu;
+            }
+            
+            $submenu[] = $l2Node;
         }
         
         return [
@@ -525,7 +561,6 @@ class MenuController extends Controller
         $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
         $class = $profile['class'] ?? null;
         
-        // Determine by class field
         if ($class === 'university') {
             return 'admin_univ';
         } elseif ($class === 'faculty') {
