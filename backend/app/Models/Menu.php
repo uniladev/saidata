@@ -12,6 +12,7 @@ class Menu extends Model
     protected $fillable = [
         'name',
         'path',
+        'route',
         'parent_id',
         'level',
         'type',
@@ -19,6 +20,8 @@ class Menu extends Model
         'order',
         'faculty_code',
         'department_code',
+        'form_id',
+        'icon',
         'is_active',
         'created_by',
         'updated_by'
