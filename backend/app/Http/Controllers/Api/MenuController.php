@@ -14,13 +14,13 @@ class MenuController extends Controller
      *     path="/api/v1/menu",
      *     tags={"Menu"},
      *     summary="Get dynamic menu structure for sidebar navigation",
-     *     description="Returns menu structure based on user role and attributes. For students (role=user), menus are fetched from database filtered by faculty_code, department_code. For admins, menus are fetched from database based on their admin type (university/faculty/department) and managed scope.",
+     *     description="Returns menu structure based on user role. For students (role=user), menus are dynamically loaded from database filtered by faculty_code, department_code. For admins (role=admin), menus are hardcoded management tools only - admin users cannot use service menus, they only manage them.",
      *     operationId="getSidebarMenu",
      *     security={{"bearerAuth":{}}},
      *
      *     @OA\Response(
      *         response=200,
-     *         description="Successfully retrieved menu structure",
+     *         description="Successfully retrieved menu structure. Content varies by user role: Admin users get hardcoded management menus (Dashboard, DEVTEST tools, Validation, Settings, Help), Student users get dynamic service menus filtered by organizational attributes (faculty_code, department_code).",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(
@@ -60,13 +60,14 @@ class MenuController extends Controller
      *                 @OA\Property(
      *                     property="user_info",
      *                     type="object",
-     *                     description="User's organizational attributes",
+     *                     description="User's organizational attributes and admin class",
      *                     @OA\Property(property="faculty", type="string", nullable=true, example="FMIPA"),
      *                     @OA\Property(property="faculty_code", type="string", nullable=true, example="FMIPA"),
      *                     @OA\Property(property="department", type="string", nullable=true, example="ILKOM"),
      *                     @OA\Property(property="department_code", type="string", nullable=true, example="ILKOM"),
      *                     @OA\Property(property="study_program", type="string", nullable=true, example="ILKOM-S1"),
-     *                     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1")
+     *                     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1"),
+     *                     @OA\Property(property="class", type="string", nullable=true, enum={"university", "faculty", "department"}, example="faculty", description="Admin class for authorization (only present for admin users)")
      *                 )
      *             )
      *         )
@@ -155,13 +156,14 @@ class MenuController extends Controller
      *
      * @OA\Schema(
      *     schema="UserOrganizationalInfo",
-     *     description="User's organizational attributes from profile",
+     *     description="User's organizational attributes and admin class from profile",
      *     @OA\Property(property="faculty", type="string", nullable=true, example="FMIPA"),
      *     @OA\Property(property="faculty_code", type="string", nullable=true, example="FMIPA"),
      *     @OA\Property(property="department", type="string", nullable=true, example="ILKOM"),
      *     @OA\Property(property="department_code", type="string", nullable=true, example="ILKOM"),
      *     @OA\Property(property="study_program", type="string", nullable=true, example="ILKOM-S1"),
-     *     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1")
+     *     @OA\Property(property="study_program_code", type="string", nullable=true, example="ILKOM-S1"),
+     *     @OA\Property(property="class", type="string", nullable=true, enum={"university", "faculty", "department"}, example="faculty", description="Admin class determining authorization scope (only for admin users)")
      * )
      */
     public function index(Request $request)
@@ -199,7 +201,8 @@ class MenuController extends Controller
 
         // Menu berdasarkan role
         if ($user->role === 'admin') {
-            // ADMIN: Hanya menu manajemen, tidak bisa mengajukan layanan
+            // ADMIN: Hanya menu manajemen hardcoded, tidak bisa menggunakan layanan
+            
             $menuItems[] = [
                 'id' => 90909,
                 'name' => 'DEVTEST',
@@ -219,7 +222,7 @@ class MenuController extends Controller
                 'name' => 'Validasi Permohonan',
                 'icon' => 'CheckCircle',
                 'path' => '/dashboard/validation',
-                'order' => 3,
+                'order' => 6,
                 'roles' => ['admin']
             ];
             
@@ -404,157 +407,22 @@ class MenuController extends Controller
         ];
 
         return $names[$departmentCode] ?? $departmentCode;
-    }
-    /**
-     * Get menu for admin users
-     * Fetch from database based on admin type and their managed scope
-     */
-    private function getAdminMenu()
-    {
-        $user = Auth::user();
-        $profile = $user->profile ?? [];
-        if (is_object($profile)) {
-            $profile = (array) $profile;
-        }
-        
-        $facultyCode = $profile['faculty_code'] ?? null;
-        $departmentCode = $profile['department_code'] ?? null;
-        
-        // Determine admin type
-        $adminType = $this->getAdminType($user);
-        
-        $menu = [];
-        
-        // Get fixed L1 categories and their children from database
-        if ($adminType === 'admin_univ') {
-            // Admin Univ gets Layanan Universitas + Update Data
-            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_universitas', 'Layanan Universitas', 'Building', 2, 'universitas');
-            $menu[] = $this->buildMenuFromDatabase('fixed_l1_update_data', 'Update Data', 'Edit', 3, 'update_data');
-            
-        } elseif ($adminType === 'admin_fakultas') {
-            // Admin Fakultas gets Layanan Fakultas (filtered by their faculty_code)
-            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_fakultas', 'Layanan Fakultas', 'GraduationCap', 2, 'fakultas', $facultyCode);
-            
-        } elseif ($adminType === 'admin_jurusan') {
-            // Admin Jurusan gets Layanan Jurusan (filtered by their department_code)
-            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_jurusan', 'Layanan Jurusan', 'Building2', 2, 'jurusan', $facultyCode, $departmentCode);
-        }
-        
-        // Add admin-specific menus
-        $menu[] = [
-            'id' => 6,
-            'name' => 'Validasi Permohonan',
-            'icon' => 'CheckCircle',
-            'path' => '/dashboard/validation',
-            'order' => 6,
-            'roles' => ['admin']
-        ];
-        
-        $menu[] = [
-            'id' => 7,
-            'name' => 'Users',
-            'icon' => 'Users',
-            'path' => '/dashboard/users',
-            'order' => 7,
-            'roles' => ['admin']
-        ];
-        
-        $menu[] = [
-            'id' => 8,
-            'name' => 'Reports',
-            'icon' => 'BarChart',
-            'path' => '/dashboard/reports',
-            'order' => 8,
-            'roles' => ['admin']
-        ];
-        
-        return $menu;
-    }
-    
-    /**
-     * Build menu structure from database based on fixed L1 category
-     */
-    private function buildMenuFromDatabase($fixedL1Id, $name, $icon, $order, $scope, $facultyCode = null, $departmentCode = null)
-    {
-        // Get L2 menus from database
-        $query = \App\Models\Menu::where('parent_id', $fixedL1Id)
-                                  ->where('scope', $scope)
-                                  ->where('level', 2);
-        
-        // Filter by faculty/department code
-        if ($facultyCode) {
-            $query->where('faculty_code', $facultyCode);
-        }
-        if ($departmentCode) {
-            $query->where('department_code', $departmentCode);
-        }
-        
-        $l2Menus = $query->orderBy('order')->get();
-        
-        // Build submenu array with L3 hierarchy
-        $submenu = [];
-        foreach ($l2Menus as $l2Menu) {
-            $menuItem = [
-                'id' => $l2Menu->_id,
-                'name' => $l2Menu->name,
-                'path' => $l2Menu->route ?? '/dashboard/menu/' . $l2Menu->_id,
-                'order' => $l2Menu->order,
-                'type' => $l2Menu->type
+            $menuItems[] = [
+                'id' => 7,
+                'name' => 'Users',
+                'icon' => 'Users',
+                'path' => '/dashboard/users',
+                'order' => 7,
+                'roles' => ['admin']
             ];
             
-            // Get L3 children for this L2 menu
-            $l3Children = \App\Models\Menu::where('parent_id', $l2Menu->_id)
-                                         ->where('is_active', true)
-                                         ->orderBy('order')
-                                         ->get();
-            
-            if ($l3Children->isNotEmpty()) {
-                $menuItem['submenu'] = [];
-                foreach ($l3Children as $l3Menu) {
-                    $menuItem['submenu'][] = [
-                        'id' => $l3Menu->_id,
-                        'name' => $l3Menu->name,
-                        'path' => $l3Menu->route ?? '/dashboard/menu/' . $l3Menu->_id,
-                        'order' => $l3Menu->order,
-                        'type' => $l3Menu->type
-                    ];
-                }
-            }
-            
-            $submenu[] = $menuItem;
-        }
-        
-        return [
-            'id' => $fixedL1Id,
-            'name' => $name,
-            'icon' => $icon,
-            'order' => $order,
-            'roles' => ['admin'],
-            'submenu' => $submenu
-        ];
-    }
-    
-    /**
-     * Determine admin type based on profile class
-     */
-    private function getAdminType($user)
-    {
-        if (!$user || $user->role !== 'admin') {
-            return null;
-        }
-
-        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
-        $class = $profile['class'] ?? null;
-        
-        // Determine by class field
-        if ($class === 'university') {
-            return 'admin_univ';
-        } elseif ($class === 'faculty') {
-            return 'admin_fakultas';
-        } elseif ($class === 'department') {
-            return 'admin_jurusan';
-        }
-
-        return null;
+            $menuItems[] = [
+                'id' => 8,
+                'name' => 'Reports',
+                'icon' => 'BarChart',
+                'path' => '/dashboard/reports',
+                'order' => 8,
+                'roles' => ['admin']
+            ];
     }
 }
