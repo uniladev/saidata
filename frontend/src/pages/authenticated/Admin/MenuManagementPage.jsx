@@ -7,6 +7,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { useAuth } from '../../../context/AuthContext';
+import AddServiceChoiceModal from '../../../components/common/AddServiceChoiceModal';
 
 // Helper component for draggable items
 const SortableItem = ({ id, children, isReorderMode }) => {
@@ -385,6 +386,8 @@ const MenuManagementPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [showAddServiceChoice, setShowAddServiceChoice] = useState(false);
+  const [addServiceContext, setAddServiceContext] = useState({ categoryId: null, parentId: null });
 
   // Fetch menu structure from backend
   useEffect(() => {
@@ -494,16 +497,28 @@ const MenuManagementPage = () => {
   };
 
   const handleAddService = (categoryId, parentId) => {
-    setCurrentItem({ 
-      type: 'service', 
-      parentId: parentId,
-      categoryId: categoryId 
-    });
-    setIsModalOpen(true);
+    setAddServiceContext({ categoryId, parentId });
+    setShowAddServiceChoice(true);
   };
 
   const handleCreateForm = () => {
     navigate('/forms/create');
+  };
+
+  const handleCreateFormFromModal = () => {
+    setShowAddServiceChoice(false);
+    navigate('/forms/create');
+  };
+
+  const handleAddExistingFormFromModal = () => {
+    setShowAddServiceChoice(false);
+    setCurrentItem({
+      type: 'service',
+      parentId: addServiceContext.parentId,
+      categoryId: addServiceContext.categoryId,
+      isAddingExistingForm: true
+    });
+    setIsModalOpen(true);
   };
 
   const handleAddForm = (categoryId, parentId) => {
@@ -1020,6 +1035,13 @@ const MenuManagementPage = () => {
         </DndContext>
       </div>
 
+      {showAddServiceChoice && (
+        <AddServiceChoiceModal
+          onClose={() => setShowAddServiceChoice(false)}
+          onCreateForm={handleCreateFormFromModal}
+          onAddExistingForm={handleAddExistingFormFromModal}
+        />
+      )}
       {isModalOpen && (
         <MenuItemFormModal
           item={currentItem?.id ? currentItem : null}
