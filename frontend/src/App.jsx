@@ -29,14 +29,14 @@ const {
   DocumentValidationPage: lazy(() => import("./pages/guest/DocumentValidation")),
   LoginPage: lazy(() => import("./pages/auth/Login")),
   DashboardPage: lazy(() => import("./pages/authenticated/User/Dashboard")),
-  FormBuilderPage: lazy(() => import("./pages/authenticated/Admin/FormBuilderPage")),
-  FormTakerPage: lazy(() => import("./pages/authenticated/Admin/FormTakerPage")),
-  FormsListPage: lazy(() => import("./pages/authenticated/Admin/FormsListPage")),
+  FormBuilderPage: lazy(() => import("./pages/authenticated/Admin/Forms/FormBuilderPage")),
+  FormTakerPage: lazy(() => import("./pages/authenticated/Admin/Forms/FormTakerPage")),
+  FormsListPage: lazy(() => import("./pages/authenticated/Admin/Forms/FormsListPage")),
   DocumentTemplates: lazy(() => import("./pages/authenticated/User/DocumentTemplates")),
   NotFoundPage: lazy(() => import("./pages/NotFound")),
-  MenuManagementPage: lazy(() => import("./pages/authenticated/Admin/MenuManagementPage")),
-  TablePage: lazy(() => import("./pages/authenticated/Admin/TablePage")),
-  OutputTemplatesPage: lazy(() => import("./pages/output/OutputTemplatesPage")),
+  MenuManagementPage: lazy(() => import("./pages/authenticated/Admin/Menu/MenuManagementPage")),
+  TablePage: lazy(() => import("./pages/authenticated/Admin/Table/TablePage")),
+  OutputTemplatesPage: lazy(() => import("./pages/authenticated/Admin/OutputTemplate/OutputTemplatesPage")),
 };
 
 // Protected Route Component

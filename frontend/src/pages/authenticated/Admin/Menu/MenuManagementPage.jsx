@@ -5,9 +5,9 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../config/api';
-import { useAuth } from '../../../context/AuthContext';
-import AddServiceChoiceModal from '../../../components/common/AddServiceChoiceModal';
+import api from '../../../../config/api';
+import { useAuth } from '../../../../context/AuthContext';
+import AddServiceChoiceModal from '../../../../components/common/AddServiceChoiceModal';
 
 // Helper component for draggable items
 const SortableItem = ({ id, children, isReorderMode }) => {
