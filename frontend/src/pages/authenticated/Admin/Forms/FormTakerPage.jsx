@@ -2,13 +2,13 @@
 // frontend/src/pages/authenticated/FormTakerPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import FormRenderer from '../../../components/formTaker/FormRenderer';
-import FormHeader from '../../../components/formTaker/FormHeader';
-import FormActions from '../../../components/formTaker/FormActions';
-import LoadingState from '../../../components/formTaker/LoadingState';
-import ErrorState from '../../../components/formTaker/ErrorState';
-import { useFormData } from '../../../hooks/useFormData';
-import api from '../../../config/api'; // <-- ADD THIS LINE
+import FormRenderer from '../../../../components/formTaker/FormRenderer';
+import FormHeader from '../../../../components/formTaker/FormHeader';
+import FormActions from '../../../../components/formTaker/FormActions';
+import LoadingState from '../../../../components/formTaker/LoadingState';
+import ErrorState from '../../../../components/formTaker/ErrorState';
+import { useFormData } from '../../../../hooks/useFormData';
+import api from '../../../../config/api'; // <-- ADD THIS LINE
 
 const FormTakerPage = () => {
   const { formId } = useParams();

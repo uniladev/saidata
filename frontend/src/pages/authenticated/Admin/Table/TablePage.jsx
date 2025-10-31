@@ -10,7 +10,7 @@ import {
   ChevronLeft, 
   ChevronRight 
 } from 'lucide-react';
-import api from '../../../config/api';
+import api from '../../../../config/api';
 
 // === 2. "OTAK" TABEL (KOLOM DINAMIS) ===
 // 'key' adalah nama properti di dummyData
@@ -39,7 +39,7 @@ const TablePage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await api.get('/forms');
+        const res = await api.get('submissions/{id}');
         // The backend returns { success, data: [...] }
         setPrestasiList(Array.isArray(res.data.data) ? res.data.data : []);
       } catch (err) {
