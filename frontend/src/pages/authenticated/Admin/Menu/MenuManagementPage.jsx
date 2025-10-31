@@ -9,16 +9,10 @@ import api from '../../../../config/api';
 import { useAuth } from '../../../../context/AuthContext';
 import AddServiceChoiceModal from '../../../../components/common/AddServiceChoiceModal';
 
-// Helper component for draggable items
+// Draggable wrapper
 const SortableItem = ({ id, children, isReorderMode }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: id, disabled: !isReorderMode });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id, disabled: !isReorderMode });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -38,15 +32,13 @@ const SortableItem = ({ id, children, isReorderMode }) => {
             <GripVertical size={18} />
           </button>
         )}
-        <div className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1">{children}</div>
       </div>
     </div>
   );
 };
 
-// Modal for Add/Edit Menu Items
+// Add/Edit modal
 const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExistingForm, onClose, onSave }) => {
   const isEditing = !!item;
   const type = isEditing ? item.type : itemType;
@@ -56,7 +48,7 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
     path: item?.path || '',
     icon: item?.icon || (type === 'subcategory' ? 'Folder' : ''),
     order: item?.order || 1,
-    roles: item?.roles?.join(', ') || 'user',
+    roles: (item?.roles && Array.isArray(item.roles) ? item.roles.join(', ') : (item?.roles || 'user')),
     formId: item?.formId || '',
     outputConfig: item?.outputConfig || '',
   });
@@ -65,16 +57,16 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
   const [isLoadingForms, setIsLoadingForms] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
 
-  // Fetch forms for service dropdown
+  // Fetch forms list for service
   useEffect(() => {
     if (type === 'service') {
       const fetchForms = async () => {
         setIsLoadingForms(true);
         try {
-          const response = await api.get('/forms');
-          setFormsList(response.data.data || []);
-        } catch (error) {
-          console.error("Error fetching forms:", error);
+          const res = await api.get('/forms');
+          setFormsList(res.data?.data || []);
+        } catch (e) {
+          console.error('Error fetching forms:', e);
           setFormsList([]);
         } finally {
           setIsLoadingForms(false);
@@ -89,7 +81,6 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle form selection for adding existing form
   const handleFormSelect = (form) => {
     setSelectedForm(form);
     setFormData(prev => ({
@@ -97,69 +88,60 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
       name: form.title,
       formId: form.id,
       path: `/dashboard/forms/${form.id}`,
-      outputConfig: `Generate document from ${form.title}`
+      outputConfig: `Generate document from ${form.title}`,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const rolesArray = formData.roles.split(',').map(role => role.trim()).filter(role => role);
-    const orderNumber = parseInt(formData.order, 10) || 1;
+    const rolesArray = String(formData.roles)
+      .split(',')
+      .map(r => r.trim())
+      .filter(Boolean);
 
-    const savedItemData = {
+    const payload = {
       ...(isEditing ? { id: item.id } : {}),
-      type: type,
-      parentId: parentId,
-      categoryId: categoryId,
+      type,
+      parentId,
+      categoryId,
       name: formData.name,
-      order: orderNumber,
+      order: parseInt(formData.order, 10) || 1,
       roles: rolesArray,
-      ...(type !== 'category' && { path: formData.path }),
       ...(type === 'subcategory' && { icon: formData.icon }),
       ...(type === 'service' && { 
-        formId: formData.formId, 
-        outputConfig: formData.outputConfig 
+        path: formData.path,
+        formId: formData.formId,
+        outputConfig: formData.outputConfig,
       }),
     };
 
-    onSave(savedItemData);
+    onSave(payload);
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h3 className="text-xl font-semibold text-gray-900 capitalize">
               {isEditing ? `Edit ${type}` : isAddingExistingForm ? 'Add Existing Form' : `Add New ${type}`}
             </h3>
             <p className="text-sm text-gray-500 mt-1">
-              {type === 'category' ? 'Create a new menu category' : 
-               type === 'subcategory' ? 'Add a subcategory to organize services' :
-               'Configure service settings'}
+              {type === 'subcategory' ? 'Add a subcategory to organize services' : 'Configure service settings'}
             </p>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            type="button"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" type="button">
             <X size={20} className="text-gray-500" />
           </button>
         </div>
 
-        {/* Form Content */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-5">
               {isAddingExistingForm && type === 'service' ? (
-                // Special UI for adding existing form
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select an Existing Form
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select an Existing Form</label>
                     <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
                       {isLoadingForms ? (
                         <div className="p-8 text-center">
@@ -186,16 +168,14 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
                             >
                               <div className="font-medium text-gray-900">{form.title}</div>
                               <div className="text-xs text-gray-500 mt-1">ID: {form.id}</div>
-                              {form.description && (
-                                <div className="text-sm text-gray-600 mt-2">{form.description}</div>
-                              )}
+                              {form.description && <div className="text-sm text-gray-600 mt-2">{form.description}</div>}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
                   </div>
-                  
+
                   {selectedForm && (
                     <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                       <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
@@ -220,35 +200,35 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
                   )}
                 </div>
               ) : (
-                // Regular form fields for creating/editing
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Name <span className="text-red-500">*</span>
                     </label>
-                    <input 
-                      type="text" 
-                      name="name" 
-                      value={formData.name} 
-                      onChange={handleChange} 
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" 
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
                       placeholder="Enter name"
-                      required 
+                      required
                     />
                   </div>
 
-                  {type !== 'category' && (
+                  {/* Path hanya untuk service */}
+                  {type === 'service' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Path <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="text" 
-                        name="path" 
-                        value={formData.path} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm" 
-                        required 
+                      <input
+                        type="text"
+                        name="path"
+                        value={formData.path}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                        required
                         placeholder="/dashboard/example-path"
                       />
                     </div>
@@ -256,16 +236,14 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
 
                   {type === 'subcategory' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Icon Name
-                      </label>
-                      <input 
-                        type="text" 
-                        name="icon" 
-                        value={formData.icon} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                        placeholder="e.g., Folder, FileText, Settings" 
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Icon Name</label>
+                      <input
+                        type="text"
+                        name="icon"
+                        value={formData.icon}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., Folder, FileText, Settings"
                       />
                       <p className="text-xs text-gray-500 mt-1">Icon from lucide-react library</p>
                     </div>
@@ -276,28 +254,25 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Order <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="number" 
-                        name="order" 
-                        value={formData.order} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                        required 
+                      <input
+                        type="number"
+                        name="order"
+                        value={formData.order}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
                         min="1"
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Roles
-                      </label>
-                      <input 
-                        type="text" 
-                        name="roles" 
-                        value={formData.roles} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                        placeholder="admin, user" 
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
+                      <input
+                        type="text"
+                        name="roles"
+                        value={formData.roles}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="admin, user"
                       />
                     </div>
                   </div>
@@ -306,7 +281,6 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
                     <>
                       <div className="border-t border-gray-200 pt-5 mt-2">
                         <h4 className="text-sm font-semibold text-gray-900 mb-4">Service Configuration</h4>
-                        
                         <div className="space-y-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -329,7 +303,6 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
                             </select>
                             <p className="text-xs text-gray-500 mt-1.5">Choose a form from the Form Builder</p>
                           </div>
-                          
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Output Configuration
@@ -352,17 +325,12 @@ const MenuItemFormModal = ({ item, itemType, parentId, categoryId, isAddingExist
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors"
-            >
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors">
               Cancel
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isAddingExistingForm && !selectedForm}
             >
@@ -389,62 +357,71 @@ const MenuManagementPage = () => {
   const [showAddServiceChoice, setShowAddServiceChoice] = useState(false);
   const [addServiceContext, setAddServiceContext] = useState({ categoryId: null, parentId: null });
 
+  // Normalize API tree to { id, name, order, submenu[] } and node type
+  const normalizeTree = (apiCategories = []) => {
+    const mapNode = (n) => ({
+      id: n._id || n.id,
+      name: n.name || n.title,
+      type: n.type || (n.formId || n.path ? 'service' : 'subcategory'),
+      path: n.path || '',
+      formId: n.formId || null,
+      order: typeof n.order === 'number' ? n.order : (typeof n.sort === 'number' ? n.sort : 0),
+      roles: n.roles || n.allowedRoles || [],
+      icon: n.icon,
+      submenu: (n.submenu || n.children || n.items || []).map(mapNode),
+    });
+
+    return (apiCategories || []).map((cat) => ({
+      id: cat._id || cat.id,
+      name: cat.name || cat.title,
+      order: typeof cat.order === 'number' ? cat.order : (typeof cat.sort === 'number' ? cat.sort : 0),
+      submenu: (cat.submenu || cat.children || cat.items || []).map(mapNode),
+    }));
+  };
+
   // Fetch menu structure from backend
   useEffect(() => {
     fetchMenuStructure();
   }, []);
 
-  const filteredMenuStructure = useMemo(() => {
-    if (!menuStructure || menuStructure.length === 0 || !user || !user.name) {
-      return [];
-    }
-
-    const adminName = user.name;
-
-    if (adminName === 'Administrator') {
-      return menuStructure;
-    }
-
-    if (adminName === 'Administrator Univ') {
-      return menuStructure.filter(cat => 
-        cat.name !== 'Layanan Fakultas' && cat.name !== 'Layanan Jurusan'
-      );
-    }
-
-    if (adminName === 'Administrator Fakultas') {
-      return menuStructure.filter(cat => 
-        cat.name !== 'Layanan Universitas' && cat.name !== 'Layanan Jurusan'
-      );
-    }
-    
-    if (adminName === 'Administrator Jurusan') {
-      return menuStructure.filter(cat => 
-        cat.name !== 'Layanan Universitas' && cat.name !== 'Layanan Fakultas'
-      );
-    }
-
-    return [];
-  }, [menuStructure, user]);
-
   const fetchMenuStructure = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get('/management/menu');
-      const menuData = response.data.data || [];
-      setMenuStructure(menuData);
-      setOriginalMenuStructure(JSON.parse(JSON.stringify(menuData))); // Deep copy
+      const response = await api.get('/management/menu'); // GET tree
+      const apiData = response.data?.data || [];
+      const normalized = normalizeTree(apiData);
+      setMenuStructure(normalized);
+      setOriginalMenuStructure(JSON.parse(JSON.stringify(normalized)));
     } catch (err) {
       console.error('Error fetching menu structure:', err);
-      setError(err.response?.data?.message || "Failed to load menu structure");
+      setError(err.response?.data?.message || 'Failed to load menu structure');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Filter categories by admin name with fallback to show all
+  const filteredMenuStructure = useMemo(() => {
+    if (!Array.isArray(menuStructure)) return [];
+    if (!user?.name) return menuStructure; // fallback show all
+    const adminName = user.name;
+
+    if (adminName === 'Administrator') return menuStructure;
+    if (adminName === 'Administrator Univ') {
+      return menuStructure.filter(cat => cat.name !== 'Layanan Fakultas' && cat.name !== 'Layanan Jurusan');
+    }
+    if (adminName === 'Administrator Fakultas') {
+      return menuStructure.filter(cat => cat.name !== 'Layanan Universitas' && cat.name !== 'Layanan Jurusan');
+    }
+    if (adminName === 'Administrator Jurusan') {
+      return menuStructure.filter(cat => cat.name !== 'Layanan Universitas' && cat.name !== 'Layanan Fakultas');
+    }
+    return menuStructure; // fallback
+  }, [menuStructure, user]);
+
   const handleToggleReorderMode = () => {
     if (isReorderMode) {
-      // Cancel reorder - restore original structure
       setMenuStructure(JSON.parse(JSON.stringify(originalMenuStructure)));
     }
     setIsReorderMode(!isReorderMode);
@@ -453,34 +430,23 @@ const MenuManagementPage = () => {
   const handleSaveOrder = async () => {
     setIsSavingOrder(true);
     try {
-      // Prepare menus array for reorder API
-      const menusToReorder = [];
-      const extractMenusWithOrder = (menus, baseOrder = 0) => {
-        menus.forEach((menu, index) => {
-          const order = baseOrder + index + 1;
-          menusToReorder.push({ id: menu._id || menu.id, order });
-          if (menu.children && menu.children.length > 0) {
-            extractMenusWithOrder(menu.children, order * 100);
-          }
+      // Flatten orders per level (simple rank list)
+      const payload = [];
+      const walk = (nodes) => {
+        nodes.forEach((n, idx) => {
+          payload.push({ id: n.id, order: idx + 1 });
+          if (n.submenu?.length) walk(n.submenu);
         });
       };
-      extractMenusWithOrder(menuStructure);
+      walk(menuStructure);
 
-      // Save using POST reorder endpoint
-      await api.post('/management/menu/reorder', {
-        menus: menusToReorder
-      });
-      
-      // Update original structure and exit reorder mode
+      await api.post('/management/menu/reorder', { menus: payload });
       setOriginalMenuStructure(JSON.parse(JSON.stringify(menuStructure)));
       setIsReorderMode(false);
-      
-      // Show success message
       alert('Order saved successfully!');
     } catch (err) {
-      console.error("Error saving order:", err);
-      alert(err.response?.data?.message || "Failed to save order");
-      // Restore original structure on error
+      console.error('Error saving order:', err);
+      alert(err.response?.data?.message || 'Failed to save order');
       setMenuStructure(JSON.parse(JSON.stringify(originalMenuStructure)));
     } finally {
       setIsSavingOrder(false);
@@ -488,10 +454,10 @@ const MenuManagementPage = () => {
   };
 
   const handleAddSubcategory = (categoryId, parentId = null) => {
-    setCurrentItem({ 
-      type: 'subcategory', 
+    setCurrentItem({
+      type: 'subcategory',
       parentId: parentId || categoryId,
-      categoryId: categoryId 
+      categoryId,
     });
     setIsModalOpen(true);
   };
@@ -516,17 +482,17 @@ const MenuManagementPage = () => {
       type: 'service',
       parentId: addServiceContext.parentId,
       categoryId: addServiceContext.categoryId,
-      isAddingExistingForm: true
+      isAddingExistingForm: true,
     });
     setIsModalOpen(true);
   };
 
   const handleAddForm = (categoryId, parentId) => {
-    setCurrentItem({ 
-      type: 'service', 
-      parentId: parentId,
-      categoryId: categoryId,
-      isAddingExistingForm: true
+    setCurrentItem({
+      type: 'service',
+      parentId,
+      categoryId,
+      isAddingExistingForm: true,
     });
     setIsModalOpen(true);
   };
@@ -540,17 +506,16 @@ const MenuManagementPage = () => {
     setIsLoading(true);
     try {
       if (savedItemData.id) {
-        await api.put(`/admin/menus/${savedItemData.id}`, savedItemData);
+        await api.put(`/management/menu/${savedItemData.id}`, savedItemData);
       } else {
         await api.post('/management/menu', savedItemData);
       }
-      
       await fetchMenuStructure();
       setIsModalOpen(false);
       setCurrentItem(null);
     } catch (err) {
       console.error('Error saving menu item:', err);
-      alert(err.response?.data?.message || "Failed to save menu item");
+      alert(err.response?.data?.message || 'Failed to save menu item');
     } finally {
       setIsLoading(false);
     }
@@ -560,123 +525,76 @@ const MenuManagementPage = () => {
     if (!window.confirm('Are you sure you want to delete this item? This might also delete its children.')) {
       return;
     }
-    
     setIsLoading(true);
     try {
-      await api.delete(`/admin/menus/${itemId}`);
+      await api.delete(`/management/menu/${itemId}`);
       await fetchMenuStructure();
     } catch (err) {
-      console.error("Error deleting menu item:", err);
-      alert(err.response?.data?.message || "Failed to delete menu item");
+      console.error('Error deleting menu item:', err);
+      alert(err.response?.data?.message || 'Failed to delete menu item');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Drag end (only reorder within same level)
   const handleDragEnd = (event) => {
     const { active, over } = event;
-
-    if (!over || active.id === over.id) {
-      return;
-    }
+    if (!over || active.id === over.id) return;
 
     const activeId = active.id;
     const overId = over.id;
 
-    const updateItemOrder = (items, activeId, overId) => {
-      const activeIndex = items.findIndex(item => item.id === activeId);
-      const overIndex = items.findIndex(item => item.id === overId);
-      
-      if (activeIndex !== -1 && overIndex !== -1) {
-        return arrayMove(items, activeIndex, overIndex);
-      }
-      return items;
+    const reorder = (arr, aId, oId) => {
+      const aIdx = arr.findIndex(x => x.id === aId);
+      const oIdx = arr.findIndex(x => x.id === oId);
+      if (aIdx !== -1 && oIdx !== -1) return arrayMove(arr, aIdx, oIdx);
+      return arr;
     };
 
-    const updateNestedStructure = (structure) => {
-      return structure.map(category => {
-        if (category.submenu) {
-          const topLevelIds = category.submenu.map(item => item.id);
-          if (topLevelIds.includes(activeId) && topLevelIds.includes(overId)) {
-            return {
-              ...category,
-              submenu: updateItemOrder(category.submenu, activeId, overId)
-            };
-          }
-          
-          return {
-            ...category,
-            submenu: category.submenu.map(sub1 => {
-              if (sub1.submenu) {
-                const sub1Ids = sub1.submenu.map(item => item.id);
-                if (sub1Ids.includes(activeId) && sub1Ids.includes(overId)) {
-                  return {
-                    ...sub1,
-                    submenu: updateItemOrder(sub1.submenu, activeId, overId)
-                  };
-                }
-                
-                return {
-                  ...sub1,
-                  submenu: sub1.submenu.map(sub2 => {
-                    if (sub2.submenu) {
-                      const sub2Ids = sub2.submenu.map(item => item.id);
-                      if (sub2Ids.includes(activeId) && sub2Ids.includes(overId)) {
-                        return {
-                          ...sub2,
-                          submenu: updateItemOrder(sub2.submenu, activeId, overId)
-                        };
-                      }
-                    }
-                    return sub2;
-                  })
-                };
-              }
-              return sub1;
-            })
-          };
-        }
-        return category;
-      });
-    };
-
-    const isCategory = menuStructure.some(cat => cat.id === activeId);
-    
-    if (isCategory) {
-      const oldIndex = menuStructure.findIndex(cat => cat.id === activeId);
-      const newIndex = menuStructure.findIndex(cat => cat.id === overId);
-      const reorderedCategories = arrayMove(menuStructure, oldIndex, newIndex);
-      setMenuStructure(reorderedCategories);
-    } else {
-      const updatedStructure = updateNestedStructure(menuStructure);
-      setMenuStructure(updatedStructure);
+    // Try reorder at category level
+    const catIdxA = menuStructure.findIndex(c => c.id === activeId);
+    const catIdxO = menuStructure.findIndex(c => c.id === overId);
+    if (catIdxA !== -1 && catIdxO !== -1) {
+      setMenuStructure(arrayMove(menuStructure, catIdxA, catIdxO));
+      return;
     }
+
+    // Reorder inside nested submenu (L1-L3)
+    const deepReorder = (nodes) => nodes.map(n => {
+      if (n.submenu?.length) {
+        const ids = n.submenu.map(x => x.id);
+        if (ids.includes(activeId) && ids.includes(overId)) {
+          return { ...n, submenu: reorder(n.submenu, activeId, overId) };
+        }
+        return { ...n, submenu: deepReorder(n.submenu) };
+      }
+      return n;
+    });
+
+    setMenuStructure(deepReorder(menuStructure));
   };
 
-  // Recursive component to render subcategory levels
+  // Recursive renderer for subcategory
   const renderSubcategory = (subcategory, categoryId, level = 1) => {
     const maxLevel = 3;
     const canAddSubcategory = level < maxLevel;
     const canAddService = true;
-    
+
     const levelColors = {
       1: { bg: 'bg-blue-50/50', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-700' },
       2: { bg: 'bg-green-50/50', border: 'border-green-200', badge: 'bg-green-100 text-green-700' },
       3: { bg: 'bg-purple-50/50', border: 'border-purple-200', badge: 'bg-purple-100 text-purple-700' }
     };
-
     const colors = levelColors[level];
 
     return (
       <div className={`${colors.bg} border ${colors.border} rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow`}>
-        {/* Subcategory Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <Layers size={18} className="text-gray-600" />
             <span className="font-medium text-gray-900">{subcategory.name}</span>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${colors.badge}`}>
-              Level {level}
-            </span>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${colors.badge}`}>Level {level}</span>
             {subcategory.submenu && subcategory.submenu.length > 0 && (
               <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border border-gray-200">
                 {subcategory.submenu.length} items
@@ -686,29 +604,29 @@ const MenuManagementPage = () => {
           {!isReorderMode && (
             <div className="flex items-center gap-1">
               {canAddSubcategory && (
-                <button 
-                  onClick={() => handleAddSubcategory(categoryId, subcategory.id)} 
+                <button
+                  onClick={() => handleAddSubcategory(categoryId, subcategory.id)}
                   className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors"
                 >
                   + Sub
                 </button>
               )}
               {canAddService && (
-                <button 
-                  onClick={() => handleAddService(categoryId, subcategory.id)} 
+                <button
+                  onClick={() => handleAddService(categoryId, subcategory.id)}
                   className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-md transition-colors"
                 >
                   + Service
                 </button>
               )}
-              <button 
-                onClick={() => handleEditItem(subcategory, categoryId)} 
+              <button
+                onClick={() => handleEditItem(subcategory, categoryId)}
                 className="p-1.5 text-gray-600 hover:bg-white/80 hover:text-indigo-600 rounded transition-colors"
               >
                 <Edit size={14}/>
               </button>
-              <button 
-                onClick={() => handleDeleteItem(subcategory.id)} 
+              <button
+                onClick={() => handleDeleteItem(subcategory.id)}
                 className="p-1.5 text-gray-600 hover:bg-white/80 hover:text-red-600 rounded transition-colors"
               >
                 <Trash2 size={14}/>
@@ -717,15 +635,11 @@ const MenuManagementPage = () => {
           )}
         </div>
 
-        {/* Render children */}
         {subcategory.submenu && subcategory.submenu.length > 0 && (
           <div className="ml-6 space-y-3 mt-3 pl-4 border-l-2 border-gray-200">
-            <SortableContext
-              items={subcategory.submenu.map(item => item.id)}
-              strategy={verticalListSortingStrategy}
-            >
+            <SortableContext items={subcategory.submenu.map(item => item.id)} strategy={verticalListSortingStrategy}>
               {subcategory.submenu
-                .sort((a, b) => a.order - b.order)
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((child) => {
                   if (child.type === 'service') {
                     return (
@@ -739,39 +653,21 @@ const MenuManagementPage = () => {
                                 Service
                               </span>
                               {child.formId && (
-                                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-mono">
-                                  #{child.formId}
-                                </span>
+                                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-mono">#{child.formId}</span>
                               )}
                             </div>
                             {!isReorderMode && (
                               <div className="flex items-center gap-1">
-                                <button 
-                                  onClick={handleCreateForm}
-                                  className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                  title="Create New Form"
-                                >
+                                <button onClick={handleCreateForm} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Create New Form">
                                   <FileText size={14}/>
                                 </button>
-                                <button 
-                                  onClick={() => handleAddForm(categoryId, subcategory.id)}
-                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                  title="Add Existing Form"
-                                >
+                                <button onClick={() => handleAddForm(categoryId, subcategory.id)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Add Existing Form">
                                   <Plus size={14}/>
                                 </button>
-                                <button 
-                                  onClick={() => handleEditItem(child, categoryId)} 
-                                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                  title="Edit Service"
-                                >
+                                <button onClick={() => handleEditItem(child, categoryId)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit Service">
                                   <Edit size={14}/>
                                 </button>
-                                <button 
-                                  onClick={() => handleDeleteItem(child.id)} 
-                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                  title="Delete Service"
-                                >
+                                <button onClick={() => handleDeleteItem(child.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Service">
                                   <Trash2 size={14}/>
                                 </button>
                               </div>
@@ -780,13 +676,12 @@ const MenuManagementPage = () => {
                         </div>
                       </SortableItem>
                     );
-                  } else {
-                    return (
-                      <SortableItem key={child.id} id={child.id} isReorderMode={isReorderMode}>
-                        {renderSubcategory(child, categoryId, level + 1)}
-                      </SortableItem>
-                    );
                   }
+                  return (
+                    <SortableItem key={child.id} id={child.id} isReorderMode={isReorderMode}>
+                      {renderSubcategory(child, categoryId, level + 1)}
+                    </SortableItem>
+                  );
                 })}
             </SortableContext>
           </div>
@@ -827,7 +722,6 @@ const MenuManagementPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -881,7 +775,6 @@ const MenuManagementPage = () => {
           </div>
         </div>
 
-        {/* Reorder Mode Banner */}
         {isReorderMode && (
           <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
             <div className="flex items-start gap-3">
@@ -896,7 +789,6 @@ const MenuManagementPage = () => {
           </div>
         )}
 
-        {/* Menu Structure */}
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <div className="space-y-4">
             {!Array.isArray(menuStructure) || filteredMenuStructure.length === 0 ? (
@@ -912,11 +804,10 @@ const MenuManagementPage = () => {
               >
                 <div className="space-y-4">
                   {filteredMenuStructure
-                    .sort((a, b) => a.order - b.order)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
                     .map((category) => (
                       <SortableItem key={category.id} id={category.id} isReorderMode={isReorderMode}>
                         <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                          {/* Category Header */}
                           <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 border-b border-gray-200">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
@@ -949,7 +840,6 @@ const MenuManagementPage = () => {
                             </div>
                           </div>
 
-                          {/* Subcategories and Services */}
                           {category.submenu && category.submenu.length > 0 && (
                             <div className="p-5 space-y-3 bg-gray-50/50">
                               <SortableContext
@@ -957,9 +847,8 @@ const MenuManagementPage = () => {
                                 strategy={verticalListSortingStrategy}
                               >
                                 {category.submenu
-                                  .sort((a, b) => a.order - b.order)
+                                  .sort((a, b) => (a.order || 0) - (b.order || 0))
                                   .map((item) => {
-                                    // Check if item is a service
                                     if (item.type === 'service') {
                                       return (
                                         <SortableItem key={item.id} id={item.id} isReorderMode={isReorderMode}>
@@ -1013,14 +902,12 @@ const MenuManagementPage = () => {
                                           </div>
                                         </SortableItem>
                                       );
-                                    } else {
-                                      // It's a subcategory
-                                      return (
-                                        <SortableItem key={item.id} id={item.id} isReorderMode={isReorderMode}>
-                                          {renderSubcategory(item, category.id, 1)}
-                                        </SortableItem>
-                                      );
                                     }
+                                    return (
+                                      <SortableItem key={item.id} id={item.id} isReorderMode={isReorderMode}>
+                                        {renderSubcategory(item, category.id, 1)}
+                                      </SortableItem>
+                                    );
                                   })}
                               </SortableContext>
                             </div>
