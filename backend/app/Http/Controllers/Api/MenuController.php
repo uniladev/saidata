@@ -213,7 +213,7 @@ class MenuController extends Controller
                     ['id' => 2001, 'name' => 'Create Form', 'path' => '/forms/create', 'order' => 1],
                     ['id' => 2002, 'name' => 'Form List', 'path' => '/forms', 'order' => 2],
                     ['id' => 2003, 'name' => 'Menu Setting', 'path' => '/menu', 'order' => 3],
-                    ['id' => 2004, 'name' => 'Table', 'path' => '/table-demo', 'order' => 4],
+                    ['id' => 2004, 'name' => 'Table', 'path' => '/table-demo', 'order' => 4, 'submenu' => [['id' => 3001, 'name' => 'Basic Table', 'path' => '/table-demo/basic', 'order' => 1], ['id' => 3002, 'name' => 'Data Table', 'path' => '/table-demo/data-table', 'order' => 2]]],
                 ]
             ];
             
@@ -407,22 +407,170 @@ class MenuController extends Controller
         ];
 
         return $names[$departmentCode] ?? $departmentCode;
-            $menuItems[] = [
-                'id' => 7,
-                'name' => 'Users',
-                'icon' => 'Users',
-                'path' => '/dashboard/users',
-                'order' => 7,
-                'roles' => ['admin']
+    }
+    /**
+     * Get menu for admin users
+     * Fetch from database based on admin type and their managed scope
+     */
+    private function getAdminMenu()
+    {
+        $user = Auth::user();
+        $profile = $user->profile ?? [];
+        if (is_object($profile)) {
+            $profile = (array) $profile;
+        }
+        
+        $facultyCode = $profile['faculty_code'] ?? null;
+        $departmentCode = $profile['department_code'] ?? null;
+        
+        // Determine admin type
+        $adminType = $this->getAdminType($user);
+        
+        $menu = [];
+        
+        // Get fixed L1 categories and their children from database
+        if ($adminType === 'admin_univ') {
+            // Admin Univ gets Layanan Universitas + Update Data
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_universitas', 'Layanan Universitas', 'Building', 2, 'universitas');
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_update_data', 'Update Data', 'Edit', 3, 'update_data');
+            
+        } elseif ($adminType === 'admin_fakultas') {
+            // Admin Fakultas gets Layanan Fakultas (filtered by their faculty_code)
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_fakultas', 'Layanan Fakultas', 'GraduationCap', 2, 'fakultas', $facultyCode);
+            
+        } elseif ($adminType === 'admin_jurusan') {
+            // Admin Jurusan gets Layanan Jurusan (filtered by their department_code)
+            $menu[] = $this->buildMenuFromDatabase('fixed_l1_layanan_jurusan', 'Layanan Jurusan', 'Building2', 2, 'jurusan', $facultyCode, $departmentCode);
+        }
+        
+        // Add admin-specific menus
+        $menu[] = [
+            'id' => 6,
+            'name' => 'Validasi Permohonan',
+            'icon' => 'CheckCircle',
+            'path' => '/dashboard/validation',
+            'order' => 6,
+            'roles' => ['admin']
+        ];
+        
+        $menu[] = [
+            'id' => 7,
+            'name' => 'Users',
+            'icon' => 'Users',
+            'path' => '/dashboard/users',
+            'order' => 7,
+            'roles' => ['admin']
+        ];
+        
+        $menu[] = [
+            'id' => 8,
+            'name' => 'Reports',
+            'icon' => 'BarChart',
+            'path' => '/dashboard/reports',
+            'order' => 8,
+            'roles' => ['admin']
+        ];
+        
+        return $menu;
+    }
+    
+    /**
+     * Build menu structure from database based on fixed L1 category
+     */
+    private function buildMenuFromDatabase($fixedL1Id, $name, $icon, $order, $scope, $facultyCode = null, $departmentCode = null)
+    {
+        // 1. Get L2 menus from database (Kode Asli Anda)
+        $query = \App\Models\Menu::where('parent_id', $fixedL1Id)
+                                 ->where('scope', $scope);
+                                // ->where('level', 2); // Anda bisa hapus 'level' jika L1 fixedId
+        
+        // Filter by faculty/department code
+        if ($facultyCode) {
+            $query->where('faculty_code', $facultyCode);
+        }
+        if ($departmentCode) {
+            $query->where('department_code', $departmentCode);
+        }
+        
+        $l2Menus = $query->orderBy('order')->get();
+        
+        // 2. Build submenu array
+        $submenu = [];
+        foreach ($l2Menus as $l2Menu) {
+            
+            // --- INI LOGIKA BARU UNTUK L3 ---
+            // 3. Untuk setiap L2, cari L3 children-nya
+            $l3Query = \App\Models\Menu::where('parent_id', $l2Menu->_id) // Parent-nya adalah ID L2
+                                     ->where('scope', $scope);
+            
+            // Terapkan filter scope lagi
+            if ($facultyCode) {
+                $l3Query->where('faculty_code', $facultyCode);
+            }
+            if ($departmentCode) {
+                $l3Query->where('department_code', $departmentCode);
+            }
+            
+            $l3Menus = $l3Query->orderBy('order')->get();
+            
+            $l3Submenu = [];
+            foreach ($l3Menus as $l3Menu) {
+                // Disini kita bisa cek L4 jika mau, tapi kita berhenti di L3
+                $l3Submenu[] = [
+                    'id' => $l3Menu->_id,
+                    'name' => $l3Menu->name,
+                    'path' => $l3Menu->route ?? '/dashboard/menu/' . $l3Menu->_id,
+                    'order' => $l3Menu->order
+                ];
+            }
+            // --- AKHIR LOGIKA L3 ---
+
+            // 4. Susun node L2
+            $l2Node = [
+                'id' => $l2Menu->_id,
+                'name' => $l2Menu->name,
+                'path' => $l2Menu->route ?? '/dashboard/menu/' . $l2Menu->_id,
+                'order' => $l2Menu->order
             ];
             
-            $menuItems[] = [
-                'id' => 8,
-                'name' => 'Reports',
-                'icon' => 'BarChart',
-                'path' => '/dashboard/reports',
-                'order' => 8,
-                'roles' => ['admin']
-            ];
+            // 5. Jika L3 submenu-nya ada, tambahkan ke node L2
+            if (!empty($l3Submenu)) {
+                $l2Node['submenu'] = $l3Submenu;
+            }
+            
+            $submenu[] = $l2Node;
+        }
+        
+        return [
+            'id' => $fixedL1Id,
+            'name' => $name,
+            'icon' => $icon,
+            'order' => $order,
+            'roles' => ['admin'],
+            'submenu' => $submenu
+        ];
+    }
+    
+    /**
+     * Determine admin type based on profile class
+     */
+    private function getAdminType($user)
+    {
+        if (!$user || $user->role !== 'admin') {
+            return null;
+        }
+
+        $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
+        $class = $profile['class'] ?? null;
+        
+        if ($class === 'university') {
+            return 'admin_univ';
+        } elseif ($class === 'faculty') {
+            return 'admin_fakultas';
+        } elseif ($class === 'department') {
+            return 'admin_jurusan';
+        }
+
+        return null;
     }
 }

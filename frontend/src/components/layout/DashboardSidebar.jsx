@@ -1,4 +1,3 @@
-// frontend/src/components/layout/DashboardSidebar.jsx
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -34,10 +33,10 @@ const iconMap = {
   'GraduationCap': GraduationCap,
   'BookOpen': BookOpen,
   'ClipboardList': ClipboardList,
-  'Building2': Building, // Alias untuk Building
+  'Building2': Building,
 };
 
-// Sample Menu Data - Consolidated structure (role filtering happens elsewhere)
+// Sample Menu Data
 const sampleMenuData = [
   {
     id: 1,
@@ -183,7 +182,8 @@ const sampleMenuData = [
         order: 4 
       },
     ]
-  },{
+  },
+  {
     id: 6,
     name: 'Validasi Permohonan',
     icon: 'CheckCircle',
@@ -229,7 +229,6 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  const [openSubmenu, setOpenSubmenu] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -247,35 +246,32 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
         console.log('📡 API Response:', response.data);
         
         if (response.data.success) {
-        const menuData = response.data.data.menu || [];
+          const menuData = response.data.data.menu || [];
 
-        // --- NEW: filter menu by user role (including nested submenu/services) ---
-        const userRole = (user?.role || 'user').toLowerCase().trim();
-        console.log('👤 User role (normalized):', userRole);
+          // Filter menu by user role
+          const userRole = (user?.role || 'user').toLowerCase().trim();
+          console.log('👤 User role (normalized):', userRole);
 
-        const filteredMenus = (menuData || [])
-          .filter(menu => !menu.roles || menu.roles.map(r=>r.toLowerCase()).includes(userRole))
-          .map(menu => ({
-            ...menu,
-            submenu: (menu.submenu || [])
-              .filter(sub => !sub.roles || sub.roles.map(r=>r.toLowerCase()).includes(userRole))
-              .map(sub => ({
-                ...sub,
-                services: (sub.services || [])
-                  .filter(srv => !srv.roles || srv.roles.map(r=>r.toLowerCase()).includes(userRole))
-              }))
-          }));
+          const filterMenuByRole = (menus) => {
+            if (!menus) return [];
+            return menus
+              .filter(item => !item.roles || item.roles.map(r => r.toLowerCase()).includes(userRole))
+              .map(item => ({
+                ...item,
+                submenu: filterMenuByRole(item.submenu),
+              }));
+          };
 
-        setMenuItems(filteredMenus);
-        // -----------------------------------------------------------------------
-        
-        // Log user info for debugging
-        if (response.data.data.user_info) {
-          console.log('👤 User Menu Info:', response.data.data.user_info);
+          const filteredMenus = filterMenuByRole(menuData);
+          setMenuItems(filteredMenus);
+          
+          // Log user info for debugging
+          if (response.data.data.user_info) {
+            console.log('👤 User Menu Info:', response.data.data.user_info);
+          }
+        } else {
+          throw new Error('Failed to fetch menu');
         }
-      } else {
-        throw new Error('Failed to fetch menu');
-      }
       } catch (error) {
         console.error('❌ Error fetching menu items:', error);
         console.log('⚠️ Using fallback menu');
@@ -289,45 +285,29 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
             ...menu,
             submenu: (menu.submenu || [])
               .filter(sub => !sub.roles || sub.roles.map(r=>r.toLowerCase()).includes(userRole))
-              .map(sub => ({
-                ...sub,
-                services: (sub.services || [])
-                  .filter(srv => !srv.roles || srv.roles.map(r=>r.toLowerCase()).includes(userRole))
-              }))
           }))
           .sort((a,b) => (a.order||0) - (b.order||0));
+        
         console.log('📋 Fallback menu items:', filteredMenus.length, 'items for role:', userRole);
 
         setMenuItems(filteredMenus);
-
       } finally {
         setLoading(false);
       }
     };
 
     if (user) {
-      // Reset menu items before fetching
       setMenuItems([]);
       fetchMenuItems();
     } else {
-      // Clear menu if no user
       setMenuItems([]);
     }
   }, [user]);
 
   // Check if current path is active
   const isActive = (path) => {
+    if (!path) return false;
     return location.pathname === path;
-  };
-
-  // Check if submenu has active item
-  const hasActiveSubmenu = (submenu) => {
-    return submenu?.some(item => location.pathname === item.path);
-  };
-
-  // Toggle submenu
-  const toggleSubmenu = (index) => {
-    setOpenSubmenu(openSubmenu === index ? null : index);
   };
 
   // Handle logout
@@ -344,6 +324,109 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
   // Get icon component from string name
   const getIcon = (iconName) => {
     return iconMap[iconName] || FileText;
+  };
+
+  // Recursive Menu Item Component
+  const SidebarMenuItem = ({ item, level = 0 }) => {
+    // Function to check if item or its children are active
+    const isChildActive = (menuItem) => {
+      if (!menuItem) return false;
+      // Check current item path
+      if (menuItem.path && isActive(menuItem.path)) return true;
+      // Check all children recursively
+      if (menuItem.submenu && Array.isArray(menuItem.submenu)) {
+        return menuItem.submenu.some(isChildActive);
+      }
+      return false;
+    };
+
+    // Determine initial state: open if this item or its children are active
+    const isCurrentlyActive = isChildActive(item);
+    const [isOpen, setIsOpen] = useState(isCurrentlyActive);
+
+    const hasSubmenu = Array.isArray(item.submenu) && item.submenu.length > 0;
+    const IconComponent = getIcon(item.icon);
+    const toggleOpen = () => setIsOpen(!isOpen);
+
+    // Determine padding based on level (L1=16px, L2=36px, L3=56px)
+    const paddingLeft = level === 0 ? 16 : level === 1 ? 36 : 24;
+
+    if (hasSubmenu) {
+      // Render item WITH submenu (as Button)
+      return (
+        <div>
+          <button
+            onClick={toggleOpen}
+            className={`
+              w-full flex items-center justify-between py-3 rounded-lg transition
+              ${isCurrentlyActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}
+            `}
+            style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '16px' }}
+          >
+            <div className="flex items-center gap-3">
+              {IconComponent && level === 0 && (
+                <IconComponent className="h-5 w-5 flex-shrink-0" />
+              )}
+              <span className={`font-medium text-left ${level > 0 ? 'text-sm' : ''}`}>
+                {item.name}
+              </span>
+            </div>
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4 flex-shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 flex-shrink-0" />
+            )}
+          </button>
+          
+          {/* Submenu container (L2, L3, ...) */}
+          <div
+            className={`
+              overflow-hidden transition-all duration-300
+              ${isOpen ? 'max-h-[800px] mt-1' : 'max-h-0'}
+            `}
+          >
+            <div className={`
+                ${level === 0 ? 'ml-4 pl-4' : 'ml-4 pl-1'}
+                border-l- border-gray-200 space-y-0.5
+              `}>
+              {item.submenu
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((childItem) => (
+                  // RECURSIVE CALL
+                  <SidebarMenuItem
+                    key={childItem.id}
+                    item={childItem}
+                    level={level + 1}
+                  />
+                ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render item WITHOUT submenu (as Link)
+    return (
+      <Link
+        to={item.path || '#'}
+        onClick={closeSidebar}
+        className={`
+          flex items-center gap-3 py-2 rounded-lg transition
+          ${level === 0 ? 'py-3' : 'py-1'}
+          ${level > 0 ? 'text-sm' : 'font-medium'}
+          ${isActive(item.path)
+            ? 'bg-blue-50 text-blue-600 font-medium'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          }
+        `}
+        style={{ paddingLeft: `${paddingLeft}px` }}
+      >
+        {IconComponent && level === 0 && (
+          <IconComponent className="h-5 w-5 flex-shrink-0" />
+        )}
+        <span>{item.name}</span>
+      </Link>
+    );
   };
 
   return (
@@ -404,85 +487,12 @@ const DashboardSidebar = ({ isOpen, closeSidebar }) => {
               <p className="text-sm">Tidak ada menu tersedia</p>
             </div>
           ) : (
-            // Dynamic menu items
-            menuItems.map((item, index) => {
-              const IconComponent = getIcon(item.icon);
-              
-              return (
-                <div key={item.id}>
-                  {Array.isArray(item.submenu) && item.submenu.length > 0 ? (
-                    // Menu with submenu
-                    <div>
-                      <button
-                        onClick={() => toggleSubmenu(index)}
-                        className={`
-                          w-full flex items-center justify-between px-4 py-3 rounded-lg transition
-                          ${hasActiveSubmenu(item.submenu)
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'text-gray-700 hover:bg-gray-100'
-                          }
-                        `}
-                      >
-                        <div className="flex items-center gap-3">
-                          <IconComponent className="h-5 w-5 flex-shrink-0" />
-                          <span className="font-medium">{item.name}</span>
-                        </div>
-                        {openSubmenu === index ? (
-                          <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                        )}
-                      </button>
-                      
-                      {/* Submenu */}
-                      <div
-                        className={`
-                          overflow-hidden transition-all duration-300
-                          ${openSubmenu === index ? 'max-h-[800px] mt-1' : 'max-h-0'}
-                        `}
-                      >
-                        <div className="ml-4 pl-4 border-l-2 border-gray-200 space-y-1">
-                          {item.submenu
-                            .sort((a, b) => a.order - b.order)
-                            .map((subitem) => (
-                              <Link
-                                key={subitem.id}
-                                to={subitem.path}
-                                onClick={closeSidebar}
-                                className={`
-                                  flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm
-                                  ${isActive(subitem.path)
-                                    ? 'bg-blue-50 text-blue-600 font-medium'
-                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                  }
-                                `}
-                              >
-                                <span>{subitem.name}</span>
-                              </Link>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Regular menu item
-                    <Link
-                      to={item.path}
-                      onClick={closeSidebar}
-                      className={`
-                        flex items-center gap-3 px-4 py-3 rounded-lg transition justify-start
-                        ${isActive(item.path)
-                          ? 'bg-blue-50 text-blue-600 font-medium'
-                          : 'text-gray-700 hover:bg-gray-100'
-                        }
-                      `}
-                    >
-                      <IconComponent className="h-5 w-5 flex-shrink-0" />
-                      <span>{item.name}</span>
-                    </Link>
-                  )}
-                </div>
-              );
-            })
+            // Dynamic menu items using SidebarMenuItem component
+            menuItems
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map((item) => (
+                <SidebarMenuItem key={item.id} item={item} level={0} />
+              ))
           )}
         </nav>
 
