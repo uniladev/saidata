@@ -390,12 +390,12 @@ export default function Dashboard() {
       </div>
 
       {/* Tiny Stats at Bottom */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+      {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <StatCard icon={ShieldCheck} label="Total Pengajuan" value={stats.total} tone="blue" />
         <StatCard icon={CheckCircle2} label="Disetujui" value={stats.approved} tone="green" />
         <StatCard icon={Clock3} label="Diproses" value={stats.processing} tone="yellow" />
         <StatCard icon={XCircle} label="Ditolak" value={stats.rejected} tone="red" />
-      </div>
+      </div> */}
     </div>
   );
 }
