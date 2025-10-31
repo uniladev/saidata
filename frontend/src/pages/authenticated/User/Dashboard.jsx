@@ -1,314 +1,401 @@
-// frontend/src/pages/Dashboard.jsx
-import { useState, useEffect } from 'react';
-import { 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Users, 
-  ShoppingCart, 
-  DollarSign, 
-  TrendingUp,
-  Activity,
-  Package,
-  Eye,
-  MoreVertical
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { FilePlus2 } from 'lucide-react'; // For the new action button
-import api from '../../../config/api';
+import { useMemo, useState } from "react";
+import {
+  User,
+  HelpCircle,
+  Download,
+  Search as SearchIcon,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Clock3,
+  XCircle,
+  Send,
+  ShieldCheck,
+  FilePlus2,
+  FileText,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
-// Stat Card Component
-const StatCard = ({ title, value, change, icon: Icon, trend, color }) => {
-  const isPositive = trend === 'up';
-  
-  return (
-    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${color}`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
-      </div>
-      
-      <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
-      <div className="flex items-end justify-between">
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <div className={`flex items-center text-sm font-medium ${
-          isPositive ? 'text-green-600' : 'text-red-600'
-        }`}>
-          {isPositive ? (
-            <ArrowUpRight className="w-4 h-4 mr-1" />
-          ) : (
-            <ArrowDownRight className="w-4 h-4 mr-1" />
-          )}
-          {change}
-        </div>
-      </div>
-    </div>
-  );
+/**
+ * SAIDATA FMIPA UNILA — USER DASHBOARD (Refined UX, Dummy)
+ * --------------------------------------------------------
+ * Order:
+ * 1) Telegram Connect CTA
+ * 2) Quick Actions (4 utama)
+ * 3) Service History (tabel + search)
+ * 4) Pengumuman & Tips
+ * 5) Stat Cards kecil di bawah
+ */
+
+// ===== Dummy Data =====
+const DUMMY_HISTORY = [
+  {
+    id: "REQ-241031-0001",
+    created_at: "2025-10-31T12:45:00+07:00",
+    service_name: "Surat Keterangan Aktif Kuliah",
+    status: "approved",
+    reference_no: "SKAK/UNILA/FMIPA/2025/1031/001",
+    download_url: "#",
+  },
+  {
+    id: "REQ-241030-0007",
+    created_at: "2025-10-30T10:18:00+07:00",
+    service_name: "Surat Pengantar Penelitian",
+    status: "processing",
+    reference_no: null,
+    download_url: null,
+  },
+  {
+    id: "REQ-241029-0003",
+    created_at: "2025-10-29T09:05:00+07:00",
+    service_name: "Surat Observasi Laboratorium",
+    status: "rejected",
+    reference_no: null,
+    download_url: null,
+  },
+  {
+    id: "REQ-241028-0010",
+    created_at: "2025-10-28T16:20:00+07:00",
+    service_name: "Surat Rekomendasi Kegiatan",
+    status: "approved",
+    reference_no: "SRK/UNILA/FMIPA/2025/1028/010",
+    download_url: "#",
+  },
+];
+
+const DUMMY_ANNOUNCEMENTS = [
+  {
+    id: 1,
+    title: "Batas Pengajuan SKAK Periode Oktober",
+    content:
+      "Pengajuan SKAK untuk periode Oktober ditutup 15 November 2025 pukul 23:59 WIB.",
+    date: "2025-10-31",
+  },
+  {
+    id: 2,
+    title: "Lampiran Wajib untuk Penelitian",
+    content:
+      "Pastikan melampirkan KRS/KHS terbaru dan proposal singkat (PDF) saat mengajukan surat penelitian.",
+    date: "2025-10-27",
+  },
+];
+
+const DUMMY_TIPS = [
+  {
+    id: 1,
+    title: "Gunakan email Unila aktif",
+    desc: "Notifikasi status dan file surat akan dikirim ke email student.unila.ac.id kamu.",
+  },
+  {
+    id: 2,
+    title: "Siapkan berkas PDF",
+    desc: "Beberapa layanan memerlukan lampiran PDF (maks 2MB). Pastikan terbaca jelas.",
+  },
+  {
+    id: 3,
+    title: "Cek riwayat secara berkala",
+    desc: "Status akan berubah otomatis saat diverifikasi loket fakultas.",
+  },
+];
+
+const TELEGRAM = {
+  BOT_USERNAME: "saidata_fmipa_bot",
+  START_CODE: "DEMO-START-CODE",
 };
 
-// Recent Activity Item
-const ActivityItem = ({ title, description, time, status }) => {
-  const statusColors = {
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    info: 'bg-blue-100 text-blue-800',
-    error: 'bg-red-100 text-red-800'
+// ===== Small UI Helpers =====
+function StatCard({ icon: Icon, label, value, tone = "blue" }) {
+  const toneClasses = {
+    blue: "bg-blue-600",
+    green: "bg-green-600",
+    yellow: "bg-yellow-500",
+    red: "bg-red-600",
   };
-
   return (
-    <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
-      <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-blue-500"></div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">{title}</p>
-        <p className="text-sm text-gray-500">{description}</p>
-        <p className="text-xs text-gray-400 mt-1">{time}</p>
-      </div>
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[status]}`}>
-        {status}
-      </span>
-    </div>
-  );
-};
-
-// Top Product Item
-const ProductItem = ({ name, sales, revenue, trend }) => {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-      <div className="flex items-center space-x-3">
-        <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-          <Package className="w-5 h-5 text-gray-500" />
+    <div className="rounded-xl border bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className={`rounded-lg p-3 text-white ${toneClasses[tone]}`}>
+          <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-900">{name}</p>
-          <p className="text-xs text-gray-500">{sales} sales</p>
+          <p className="text-sm text-gray-500">{label}</p>
+          <p className="text-2xl font-semibold text-gray-900">{value}</p>
         </div>
-      </div>
-      <div className="text-right">
-        <p className="text-sm font-semibold text-gray-900">{revenue}</p>
-        <p className={`text-xs ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {trend > 0 ? '+' : ''}{trend}%
-        </p>
       </div>
     </div>
   );
-};
+}
 
-// Upgraded QuickAction Component
-const QuickAction = ({ icon: Icon, label, color, to, ...props }) => {
-  // The props now include 'to' for navigation and '...props' for any other attributes like onClick
+function QuickAction({ icon: Icon, label, to }) {
+  return (
+    <Link
+      to={to}
+      className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center hover:border-blue-400 hover:bg-blue-50/40"
+    >
+      <Icon className="h-7 w-7" />
+      <span className="text-sm font-medium">{label}</span>
+    </Link>
+  );
+}
 
-  const classNames = `flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed ${color} hover:border-solid transition-all text-center`;
+function StatusBadge({ status }) {
+  const map = {
+    approved: { text: "Disetujui", cls: "bg-green-100 text-green-700" },
+    processing: { text: "Diproses", cls: "bg-yellow-100 text-yellow-800" },
+    rejected: { text: "Ditolak", cls: "bg-red-100 text-red-700" },
+  };
+  const s = map[status] || { text: status, cls: "bg-gray-100 text-gray-700" };
+  return <span className={`rounded-full px-2 py-1 text-xs font-medium ${s.cls}`}>{s.text}</span>;
+}
 
-  // If a 'to' prop is provided, render a Link component
-  if (to) {
-    return (
-      <Link to={to} className={classNames} {...props}>
-        <Icon className="w-8 h-8 mb-2" />
-        <span className="text-sm font-medium">{label}</span>
-      </Link>
+function TablePager({ page, total, perPage, onPageChange }) {
+  const lastPage = Math.max(1, Math.ceil(total / perPage));
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <button
+        onClick={() => onPageChange(Math.max(1, page - 1))}
+        disabled={page <= 1}
+        className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+      >
+        <ChevronLeft className="h-4 w-4" /> Prev
+      </button>
+      <p className="text-sm text-gray-600">
+        Page <span className="font-medium">{page}</span> of {lastPage}
+      </p>
+      <button
+        onClick={() => onPageChange(Math.min(lastPage, page + 1))}
+        disabled={page >= lastPage}
+        className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+      >
+        Next <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [tgConnected, setTgConnected] = useState(false);
+  const perPage = 5;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const base = q
+      ? DUMMY_HISTORY.filter(
+          (r) =>
+            r.service_name.toLowerCase().includes(q) ||
+            r.id.toLowerCase().includes(q) ||
+            (r.reference_no || "").toLowerCase().includes(q) ||
+            r.status.toLowerCase().includes(q)
+        )
+      : DUMMY_HISTORY;
+    return base;
+  }, [query]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filtered.slice(start, start + perPage);
+  }, [filtered, page]);
+
+  const stats = useMemo(() => {
+    const total = DUMMY_HISTORY.length;
+    const approved = DUMMY_HISTORY.filter((d) => d.status === "approved").length;
+    const processing = DUMMY_HISTORY.filter((d) => d.status === "processing").length;
+    const rejected = DUMMY_HISTORY.filter((d) => d.status === "rejected").length;
+    return { total, approved, processing, rejected };
+  }, []);
+
+  function onExportCSV() {
+    const header = ["ID", "Tanggal", "Layanan", "Status", "Nomor Referensi"].join(",");
+    const lines = DUMMY_HISTORY.map((r) =>
+      [
+        r.id,
+        new Date(r.created_at).toLocaleString(),
+        r.service_name,
+        r.status,
+        r.reference_no || "-",
+      ]
+        .map((x) => `"${String(x).replaceAll('"', '""')}"`)
+        .join(",")
     );
+    const csv = [header, ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `service-history-demo.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
-  // Otherwise, render a button as before
-  return (
-    <button className={classNames} {...props}>
-      <Icon className="w-8 h-8 mb-2" />
-      <span className="text-sm font-medium">{label}</span>
-    </button>
-  );
-};
-
-const Dashboard = () => {
-  const [forms, setForms] = useState([]); // State for your forms, initialized as an empty array
-  
-  const [stats] = useState([ // State for your stats data
-    {
-      title: 'Total Revenue',
-      value: '$45,231',
-      change: '+20.1%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Total Orders',
-      value: '1,429',
-      change: '+12.5%',
-      trend: 'up',
-      icon: ShoppingCart,
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Active Users',
-      value: '2,345',
-      change: '+8.3%',
-      trend: 'up',
-      icon: Users,
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Conversion Rate',
-      value: '3.24%',
-      change: '-2.4%',
-      trend: 'down',
-      icon: TrendingUp,
-      color: 'bg-orange-500'
-    }
-  ]);
-
-  useEffect(() => {
-  // This function will fetch forms from the Laravel backend
-  const fetchForms = async () => {
-    try {
-      // We use the 'api' client. It automatically adds the token.
-      const response = await api.get('/forms');
-
-      // Assuming the backend wraps the forms in a 'data' key
-      setForms(response.data.data); // Get the array from the 'data' key// <-- This is the fix to correctly set forms
-    } catch (error) {
-      console.error("Error fetching forms:", error);
-    }
-  };
-
-  fetchForms();
-}, []); // <-- Use an empty array so it runs once when the page loads
-
-  const [activities] = useState([
-    {
-      title: 'New order received',
-      description: 'Order #1234 from John Doe',
-      time: '5 minutes ago',
-      status: 'success'
-    },
-    {
-      title: 'Payment processed',
-      description: 'Payment of $299.00 confirmed',
-      time: '15 minutes ago',
-      status: 'info'
-    },
-    {
-      title: 'Low stock alert',
-      description: 'Product "Widget Pro" is running low',
-      time: '1 hour ago',
-      status: 'warning'
-    },
-    {
-      title: 'Order cancelled',
-      description: 'Order #1230 cancelled by customer',
-      time: '2 hours ago',
-      status: 'error'
-    }
-  ]);
-
-  const [topProducts] = useState([
-    { name: 'Premium Widget', sales: 142, revenue: '$4,260', trend: 12.5 },
-    { name: 'Pro Dashboard', sales: 98, revenue: '$2,940', trend: 8.3 },
-    { name: 'Essential Pack', sales: 76, revenue: '$1,520', trend: -3.2 },
-    { name: 'Starter Kit', sales: 64, revenue: '$960', trend: 5.7 }
-  ]);
+  const tgLink = `https://t.me/${TELEGRAM.BOT_USERNAME}?start=${encodeURIComponent(TELEGRAM.START_CODE)}`;
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-            Download Report
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
-      </div>
-
-      {/* Main Content Grid */}
-      {/* DELETE the entire "Main Content Grid" div */}
-      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"> ... </div> */}
-
-      {/* And ADD this new section in its place */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">My Forms</h2>
-        {forms.length > 0 ? (
-          <div className="space-y-4">
-            {forms.map((form) => (
-              <div key={form._id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <h3 className="font-semibold">{form.title}</h3>
-                  <p className="text-sm text-gray-500">
-                    {form.fields ? `${form.fields.length} fields` : 'View Form'}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {/* Change this link to use form.slug instead of form.id */}
-                  <Link 
-                    to={`/form/${form.slug}`} 
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Take Survey
-                  </Link>
-                  <a 
-                    href={`/form/${form.slug}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-gray-500 hover:text-blue-600"
-                  >
-                    (Open in new tab)
-                  </a>
-                </div>
-              </div>
-            ))}
+      {/* Telegram CTA */}
+      <div className="rounded-2xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-blue-600" />
+              <p className="text-sm font-semibold text-blue-700">Notifikasi Telegram</p>
+            </div>
+            <p className="mt-1 text-sm text-blue-900/80">
+              Sambungkan akun kamu dengan bot Telegram untuk menerima notifikasi status pengajuan
+              (disetujui/ditolak/diproses) secara real-time.
+            </p>
           </div>
-        ) : (
-          <p className="text-gray-500">You haven't created any forms yet. Click "Create Form" to get started!</p>
-        )}
+          <div className="flex items-center gap-2">
+            {!tgConnected ? (
+              <a
+                href={tgLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              >
+                <Send className="h-4 w-4" /> Hubungkan Bot
+              </a>
+            ) : (
+              <button
+                onClick={() => setTgConnected(false)}
+                className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-blue-700 hover:bg-blue-50"
+              >
+                Terhubung · Putuskan
+              </button>
+            )}
+            <button
+              onClick={onExportCSV}
+              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 hover:bg-white/70"
+            >
+              <Download className="h-4 w-4" /> Export Riwayat
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {/* This one will now be a LINK because it has a 'to' prop */}
-          <QuickAction
-            to="/forms/create"
-            icon={FilePlus2} // Make sure you've imported FilePlus2
-            label="Create Form"
-            color="border-blue-300 text-blue-600 hover:bg-blue-50"
-          />
-
-          {/* These remain as BUTTONS because they have an 'onClick' prop */}
-          <QuickAction
-            onClick={() => alert('New Order Clicked!')}
-            icon={ShoppingCart}
-            label="New Order"
-            color="border-green-300 text-green-600 hover:bg-green-50"
-          />
-          <QuickAction
-            onClick={() => alert('Add User Clicked!')}
-            icon={Users}
-            label="Add User"
-            color="border-purple-300 text-purple-600 hover:bg-purple-50"
-          />
-          <QuickAction
-            onClick={() => alert('View Reports Clicked!')}
-            icon={Eye}
-            label="View Reports"
-            color="border-orange-300 text-orange-600 hover:bg-orange-50"
-          />
+      <div className="rounded-xl border bg-white p-5">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Aksi Cepat</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <QuickAction to="/forms" icon={FilePlus2} label="Buat Pengajuan" />
+          <QuickAction to="/templates" icon={FileText} label="Template Surat" />
+          <QuickAction to="/profile" icon={User} label="Profil Saya" />
+          <QuickAction to="/help" icon={HelpCircle} label="Panduan" />
         </div>
+      </div>
+
+      {/* Service History */}
+      <div className="rounded-xl border bg-white">
+        <div className="flex items-center justify-between gap-3 border-b p-4">
+          <h2 className="text-lg font-semibold text-gray-900">Riwayat Pengajuan</h2>
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              value={query}
+              onChange={(e) => {
+                setPage(1);
+                setQuery(e.target.value);
+              }}
+              placeholder="Cari layanan / status / nomor..."
+              className="w-64 rounded-md border px-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600">Tanggal</th>
+                <th className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600">Layanan</th>
+                <th className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600">Status</th>
+                <th className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600">Nomor Referensi</th>
+                <th className="px-3 py-3.5 text-right text-xs font-semibold text-gray-600">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {paged.map((r) => (
+                <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="px-3 py-4 text-sm text-gray-900">
+                    {new Date(r.created_at).toLocaleString()}
+                  </td>
+                  <td className="px-3 py-4 text-sm text-gray-900">{r.service_name}</td>
+                  <td className="px-3 py-4 text-sm"><StatusBadge status={r.status} /></td>
+                  <td className="px-3 py-4 text-sm text-gray-900">{r.reference_no || "-"}</td>
+                  <td className="px-3 py-4 text-right text-sm">
+                    <div className="inline-flex items-center gap-2">
+                      <Link
+                        to={`#/requests/${r.id}`}
+                        className="rounded-md border px-2 py-1 text-gray-700 hover:bg-gray-50"
+                      >
+                        Detail
+                      </Link>
+                      {r.download_url ? (
+                        <a
+                          href={r.download_url}
+                          className="rounded-md border px-2 py-1 text-blue-700 hover:bg-blue-50"
+                        >
+                          Unduh
+                        </a>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {paged.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-10 text-center text-sm text-gray-500">
+                    Tidak ada data.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t bg-gray-50 p-3">
+          <p className="text-sm text-gray-600">
+            Menampilkan <span className="font-medium">{paged.length}</span> dari {filtered.length} entri
+          </p>
+          <TablePager page={page} total={filtered.length} perPage={perPage} onPageChange={setPage} />
+        </div>
+      </div>
+
+      {/* Announcements & Tips */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="rounded-xl border bg-white p-5 lg:col-span-2">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Pengumuman</h2>
+          <div className="divide-y">
+            {DUMMY_ANNOUNCEMENTS.map((a) => (
+              <div key={a.id} className="py-3">
+                <p className="text-sm text-gray-400">{a.date}</p>
+                <p className="font-medium text-gray-900">{a.title}</p>
+                <p className="text-sm text-gray-600">{a.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border bg-white p-5">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Tips</h2>
+          <ul className="space-y-3">
+            {DUMMY_TIPS.map((t) => (
+              <li key={t.id} className="rounded-lg border p-3">
+                <p className="text-sm font-medium text-gray-900">{t.title}</p>
+                <p className="text-sm text-gray-600">{t.desc}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Tiny Stats at Bottom */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <StatCard icon={ShieldCheck} label="Total Pengajuan" value={stats.total} tone="blue" />
+        <StatCard icon={CheckCircle2} label="Disetujui" value={stats.approved} tone="green" />
+        <StatCard icon={Clock3} label="Diproses" value={stats.processing} tone="yellow" />
+        <StatCard icon={XCircle} label="Ditolak" value={stats.rejected} tone="red" />
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
