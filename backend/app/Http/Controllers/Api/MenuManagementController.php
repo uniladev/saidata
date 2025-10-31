@@ -68,13 +68,28 @@ class MenuManagementController extends Controller
      *                     @OA\Property(
      *                         property="children",
      *                         type="array",
-     *                         description="Child menu items (only present in hierarchical response without level parameter)",
+     *                         description="Child menu items (L2/L3 nested hierarchy, only present without level parameter)",
      *                         @OA\Items(
      *                             type="object",
      *                             @OA\Property(property="_id", type="string", example="672313923808a3af4e0806c8"),
-     *                             @OA\Property(property="name", type="string", example="Permohonan Surat Keterangan"),
+     *                             @OA\Property(property="name", type="string", example="Layanan Akademik"),
      *                             @OA\Property(property="level", type="integer", example=2),
-     *                             @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas")
+     *                             @OA\Property(property="type", type="string", example="category", enum={"category", "subcategory", "form"}),
+     *                             @OA\Property(property="parent_id", type="string", example="fixed_l1_layanan_fakultas"),
+     *                             @OA\Property(
+     *                                 property="children", 
+     *                                 type="array", 
+     *                                 nullable=true,
+     *                                 description="L3 nested children (if L2 is category)",
+     *                                 @OA\Items(
+     *                                     type="object",
+     *                                     @OA\Property(property="_id", type="string", example="672313923808a3af4e0806c9"),
+     *                                     @OA\Property(property="name", type="string", example="Transkrip dan Ijazah"),
+     *                                     @OA\Property(property="level", type="integer", example=3),
+     *                                     @OA\Property(property="type", type="string", example="subcategory", enum={"subcategory", "form"}),
+     *                                     @OA\Property(property="parent_id", type="string", example="672313923808a3af4e0806c8")
+     *                                 )
+     *                             )
      *                         )
      *                     )
      *                 )
@@ -217,7 +232,7 @@ class MenuManagementController extends Controller
      *     path="/api/v1/management/menu",
      *     operationId="createMenu",
      *     summary="Create a new menu",
-     *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons.",
+     *     description="Create a new menu item (Level 2 or 3 only - Level 1 categories are fixed). Update Data scope can only have Level 2 forms. Only Level 1 can have icons. Level 3 can be both subcategory or form types for flexible hierarchy.",
      *     tags={"Menu Management"},
      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
@@ -308,9 +323,8 @@ class MenuManagementController extends Controller
             return response()->json(['success' => false, 'message' => 'Only Level 1 can have icons'], 400);
         }
 
-        if ($request->level === 3 && $request->type !== 'form') {
-            return response()->json(['success' => false, 'message' => 'Level 3 must be forms'], 400);
-        }
+        // Level 3 can be both subcategory and form, no restriction needed
+        // Business logic allows flexible L3 structure
 
         $menuData = $request->only(['name', 'level', 'scope', 'type', 'icon', 'parent_id', 'route', 'form_id', 'faculty_code', 'department_code', 'is_active', 'order']);
         $menu = Menu::create($menuData);
@@ -653,12 +667,11 @@ class MenuManagementController extends Controller
 
         $profile = is_object($user->profile) ? (array) $user->profile : $user->profile;
         
-        if (empty($profile['faculty_code']) && empty($profile['department_code'])) {
-            return 'admin_univ';
-        } elseif (!empty($profile['faculty_code']) && empty($profile['department_code'])) {
-            return 'admin_fakultas';
-        } elseif (!empty($profile['department_code'])) {
-            return 'admin_jurusan';
+        // Use profile.class field to determine admin type
+        $adminClass = $profile['class'] ?? null;
+        
+        if (in_array($adminClass, ['admin_univ', 'admin_fakultas', 'admin_jurusan'])) {
+            return $adminClass;
         }
 
         return null;
