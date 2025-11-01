@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\FormSubmissionController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\MenuManagementController;
+use App\Http\Controllers\Api\TelegramController;
+use App\Http\Controllers\Api\SubmissionController;
 
 Route::prefix('v1')->group(function () {
     
@@ -83,6 +85,8 @@ Route::prefix('v1')->group(function () {
                 ->where('id', '[a-f0-9]{24}');
             Route::delete('/{id}', [FormSubmissionController::class, 'destroy'])
                 ->where('id', '[a-f0-9]{24}');
+            Route::patch('/{id}/validate', [SubmissionController::class, 'validateSubmission']);
+
             
             // Get payload by submission ID
             // Route::get('/{submissionId}/payload', [FormSubmissionPayloadController::class, 'show'])
@@ -108,7 +112,9 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [UserProfileController::class, 'destroy'])
                 ->where('id', '[a-f0-9]{24}');
         });
-
-        
+    });
+    Route::prefix('telegram')->group(function () {
+        Route::get('/updates', [TelegramController::class, 'getUpdates']);
+        Route::get('/test', [TelegramController::class, 'testSend']);
     });
 });
