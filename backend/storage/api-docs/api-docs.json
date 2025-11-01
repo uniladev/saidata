@@ -3090,6 +3090,87 @@
                 ]
             }
         },
+        "/api/v1/submissions/{id}/validate": {
+            "post": {
+                "tags": [
+                    "Submission"
+                ],
+                "summary": "Validasi submission dan kirim notifikasi Telegram",
+                "operationId": "97e258ef9ca398520a7ab0bfaf4d6c90",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID submission yang akan divalidasi",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "66dfe88f8a9b1c0012a8d4e0"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "example": "approved"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Submission validated and Telegram notification sent"
+                    },
+                    "404": {
+                        "description": "Submission not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/telegram/updates": {
+            "get": {
+                "tags": [
+                    "Telegram"
+                ],
+                "summary": "Ambil update dari Telegram Bot",
+                "operationId": "b89b49b913db33ca87341107c3d89abd",
+                "responses": {
+                    "200": {
+                        "description": "List update dari Telegram"
+                    }
+                }
+            }
+        },
+        "/api/v1/telegram/test": {
+            "get": {
+                "tags": [
+                    "Telegram"
+                ],
+                "summary": "Kirim pesan percobaan ke Telegram",
+                "operationId": "46a57d45fca23787894e7e2745c62dde",
+                "responses": {
+                    "200": {
+                        "description": "Pesan terkirim ke Telegram"
+                    }
+                }
+            }
+        },
         "/api/v1/users/{userId}/profile": {
             "get": {
                 "tags": [
@@ -3647,6 +3728,10 @@
             "description": "API endpoints for managing hierarchical menu system with profile.class-based authorization. University admin (profile.class='university') manages universitas+update_data scopes, Faculty admin (profile.class='faculty') manages fakultas scope with faculty_code validation, Department admin (profile.class='department') manages jurusan scope with faculty_code+department_code validation."
         },
         {
+            "name": "Submission",
+            "description": "Manajemen validasi dan notifikasi pengajuan"
+        },
+        {
             "name": "Forms",
             "description": "Forms"
         },
@@ -3657,6 +3742,10 @@
         {
             "name": "Menu",
             "description": "Menu"
+        },
+        {
+            "name": "Telegram",
+            "description": "Telegram"
         },
         {
             "name": "User Profiles",
